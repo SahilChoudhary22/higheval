@@ -24,8 +24,8 @@ import ToastRegion from './ToastRegion.vue';
 
 const NAV = [
   { to: '/', label: 'Overview', icon: PhSquaresFour, exact: true },
-  // In the order you use them: configure the agents, write the test, run it.
-  { to: '/configs', label: 'Configs', icon: PhSlidersHorizontal },
+  // In the order you use them: build the agents, write the test, run it.
+  { to: '/agents', label: 'Agents', icon: PhSlidersHorizontal },
   { to: '/skills', label: 'Skills', icon: PhBookOpen },
   { to: '/suites', label: 'Suites', icon: PhListChecks },
   { to: '/experiments', label: 'Experiments', icon: PhFlask },

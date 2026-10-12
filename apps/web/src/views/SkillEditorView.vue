@@ -68,7 +68,7 @@ async function save(): Promise<void> {
     :crumbs="[{ label: 'Skills', to: '/skills' }, { label: id ? 'Edit' : 'New' }]"
   >
     <template #meta>
-      <span>Written to the run as SKILL.md and preloaded for every config that selects it.</span>
+      <span>Written to the run as SKILL.md and preloaded for every agent that selects it.</span>
     </template>
   </PageHeader>
 

@@ -186,7 +186,7 @@ async function remove(): Promise<void> {
     </section>
 
     <section v-if="comparison.data.value" class="section" aria-labelledby="arms-heading">
-      <div class="section__head"><h2 id="arms-heading">Configurations</h2></div>
+      <div class="section__head"><h2 id="arms-heading">Agents</h2></div>
       <div class="table-wrap">
         <table class="table">
           <thead>

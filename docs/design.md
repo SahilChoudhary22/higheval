@@ -13,7 +13,7 @@ flowchart LR
   end
   subgraph API["NestJS API (single process)"]
     C[Controllers<br/>Zod-validated · OpenAPI]
-    S[Suites · Configs · Skills]
+    S[Suites · Agents · Skills]
     A[Suite assistant]
     X[Experiments service]
     R[Experiment runner<br/>durable queue]

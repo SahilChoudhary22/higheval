@@ -42,16 +42,21 @@ function deleteConfig(config: AgentConfig): void {
 </script>
 
 <template>
-  <PageHeader title="Configs">
-    <template #meta><span>An agent setup: model, skills, memory and tools.</span></template>
+  <PageHeader title="Agents">
+    <template #meta
+      ><span
+        >Each agent is a Hermes configuration: a model plus the tools, skills and memory it
+        gets.</span
+      ></template
+    >
     <template #actions>
-      <RouterLink to="/configs/new" class="btn btn--primary">New config</RouterLink>
+      <RouterLink to="/agents/new" class="btn btn--primary">New agent</RouterLink>
     </template>
   </PageHeader>
   <section class="page-body">
     <ErrorNotice
       v-if="configs.error.value"
-      title="Couldn't load configs."
+      title="Couldn't load agents."
       :error="configs.error.value"
       @retry="configs.refresh"
     />
@@ -59,16 +64,16 @@ function deleteConfig(config: AgentConfig): void {
     <EmptyState
       v-else-if="visible.length === 0"
       :icon="PhSlidersHorizontal"
-      title="No configs yet."
-      detail="An experiment compares two configs, so you need at least two."
+      title="No agents yet."
+      detail="An experiment compares two agents, so you need at least two."
     >
-      <RouterLink to="/configs/new" class="btn btn--primary">New config</RouterLink>
+      <RouterLink to="/agents/new" class="btn btn--primary">New agent</RouterLink>
     </EmptyState>
     <div v-else class="table-wrap">
       <table class="table table--linked">
         <thead>
           <tr>
-            <th scope="col">Config</th>
+            <th scope="col">Agent</th>
             <th scope="col">Model</th>
             <th scope="col">Tools</th>
             <th scope="col">Skills</th>
@@ -80,7 +85,7 @@ function deleteConfig(config: AgentConfig): void {
         <tbody>
           <tr v-for="config in visible" :key="config.id">
             <td class="wrap-anywhere">
-              <RouterLink :to="`/configs/${config.id}/edit`" class="row-link">{{
+              <RouterLink :to="`/agents/${config.id}/edit`" class="row-link">{{
                 config.name
               }}</RouterLink>
             </td>
