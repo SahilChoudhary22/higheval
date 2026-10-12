@@ -2,11 +2,12 @@ import { ConfigService } from '@nestjs/config';
 import type { AgentEvent, ConfigSnapshot } from '@higheval/shared';
 import Database from 'better-sqlite3';
 import { config as loadDotenv } from 'dotenv';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { validateEnv } from '../src/config/env.schema.js';
 import { REPO_ROOT } from '../src/config/paths.js';
 import type { ExecutionOutcome } from '../src/execution/agent-executor.js';
+import { BundledSkillsService } from '../src/execution/hermes/bundled-skills.service.js';
 import { loadHermesRuntime } from '../src/execution/hermes/hermes-runtime.js';
 import { HermesExecutor } from '../src/execution/hermes/hermes.executor.js';
 
@@ -154,5 +155,21 @@ describe.skipIf(!ready)('HermesExecutor (live)', () => {
     expect(prompt).not.toContain('pnpm');
     // No skills index: none were selected and bundled skills are never seeded.
     expect(prompt).not.toMatch(/skills_list|skill_view/);
+  });
+
+  it('indexes only the built-in skills a configuration selects', async () => {
+    const { hermesCommit, bundledSkills } = new BundledSkillsService(
+      new ConfigService(env),
+    ).resolve({ mode: 'selected', names: ['meeting-action-items'] });
+    const { runDir } = await run('Reply with OK.', { toolsets: [], bundledSkills, hermesCommit });
+    expect(existsSync(join(runDir, 'home/skills/productivity/meeting-action-items/SKILL.md'))).toBe(
+      true,
+    );
+    const prompt = systemPrompt(runDir);
+    expect(prompt).toContain('meeting-action-items');
+    // Other bundled skills, including one from the same category, stay out.
+    for (const other of ['document-to-action-items', 'arxiv', 'himalaya', 'obsidian']) {
+      expect(prompt).not.toContain(other);
+    }
   });
 });
