@@ -37,7 +37,7 @@ Both models were called through OpenRouter `:free` endpoints, so provider cost w
 | ------------------------------- | ---: | ------------------------: |
 | Pilot, 12 tasks × 1 rep         |   24 |                        69 |
 | Model change, 16 tasks × 3 reps |   96 |                       361 |
-| Skill change, 16 tasks × 2 reps |   64 |            see its report |
+| Skill change, 16 tasks × 2 reps |   64 |                       279 |
 
 Hermes retries rate-limited calls internally (up to 3 times), and HighEval retries the whole run on a 429. Both kinds of retry consume quota, so leave 20–30% headroom when planning an experiment.
 
