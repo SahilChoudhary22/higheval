@@ -1,4 +1,3 @@
-import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import {
   comparisonSchema,
@@ -14,6 +13,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { configureApp } from '../src/configure-app.js';
 import { z } from 'zod';
 import { AppModule } from '../src/app.module.js';
 import {
@@ -108,7 +109,7 @@ const config = (name: string, model: string): AgentConfigInput => ({
 });
 
 describe('Experiment flow (e2e)', () => {
-  let app: INestApplication<App> | undefined;
+  let app: NestExpressApplication | undefined;
   const executor = new FakeExecutor();
   const server = (): App => {
     if (!app) throw new Error('App not initialized');
@@ -120,8 +121,8 @@ describe('Experiment flow (e2e)', () => {
       .overrideProvider(AgentExecutor)
       .useValue(executor)
       .compile();
-    const instance = moduleRef.createNestApplication<INestApplication<App>>();
-    instance.setGlobalPrefix('api');
+    const instance = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false });
+    configureApp(instance);
     await instance.init();
     app = instance;
   });

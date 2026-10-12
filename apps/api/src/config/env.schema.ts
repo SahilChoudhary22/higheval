@@ -5,6 +5,19 @@ import { REPO_ROOT } from './paths.js';
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   HOST: z.string().default('127.0.0.1'),
+  /**
+   * Extra hostnames the API answers to besides localhost (comma-separated),
+   * e.g. the public name of a tunnel. Requests for other hosts are rejected.
+   */
+  ALLOWED_HOSTS: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((host) => host.trim().toLowerCase())
+        .filter(Boolean),
+    ),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   LOG_FORMAT: z.enum(['pretty', 'json']).default('pretty'),
   /** Holds the SQLite database and per-run working directories. */

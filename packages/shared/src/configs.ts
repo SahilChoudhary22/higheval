@@ -28,8 +28,19 @@ export type MemorySettings = z.infer<typeof memorySettingsSchema>;
 
 export const modelSettingsSchema = z.object({
   provider: z.literal('openrouter'),
-  /** Exact provider model ID; never a router alias, so results stay attributable. */
-  model: z.string().min(1).max(200),
+  /**
+   * Exact provider model ID. Router aliases (`openrouter/auto`, `openrouter/free`)
+   * are rejected: they may pick a different model per request, which would make
+   * a comparison meaningless.
+   */
+  model: z
+    .string()
+    .min(1)
+    .max(200)
+    .refine((model) => !model.toLowerCase().startsWith('openrouter/'), {
+      message:
+        'Use an exact model ID; router aliases like openrouter/auto can change models between runs',
+    }),
 });
 export type ModelSettings = z.infer<typeof modelSettingsSchema>;
 
