@@ -334,6 +334,7 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
           type: 'json_field',
           target: fileJson('forecast.json'),
           path: 'stage_totals',
+          exact: true,
           expected: {
             Discovery: 16000,
             Proposal: 14700,
@@ -505,6 +506,7 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
           type: 'json_field',
           target: fileJson('churn.json'),
           path: 'tiers',
+          exact: true,
           expected: {
             'Brightline Dental': 'low',
             'Harbor Fitness': 'high',
@@ -595,6 +597,7 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
           type: 'json_field',
           target: fileJson('commission.json'),
           path: 'payouts',
+          exact: true,
           expected: { 'Maya Chen': 3276, 'Omar Haddad': 2860, 'Lena Brooks': 2370 },
           tolerance: 0.01,
           weight: 3,
@@ -689,6 +692,7 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
           type: 'json_field',
           target: fileJson('attribution.json'),
           path: 'credit',
+          exact: true,
           expected: {
             email: 1137.33,
             facebook: 603.33,
@@ -732,6 +736,7 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
           type: 'json_field',
           target: fileJson('orders.json'),
           path: 'orders',
+          exact: true,
           expected: { 'SKU-C': 96, 'SKU-D': 150 },
           weight: 2,
         },

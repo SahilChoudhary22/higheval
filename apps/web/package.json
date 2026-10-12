@@ -12,7 +12,8 @@
     "lint": "oxlint --deny-warnings . && eslint . --cache",
     "lint:fix": "oxlint . --fix && eslint . --cache --fix",
     "typecheck": "vue-tsc --build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage"
   },
   "dependencies": {
     "@higheval/shared": "workspace:*",
@@ -26,6 +27,7 @@
     "@types/jsdom": "^30.0.0",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "^6.0.10",
+    "@vitest/coverage-v8": "catalog:",
     "@vitest/eslint-plugin": "^1.6.27",
     "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/test-utils": "^2.5.0",

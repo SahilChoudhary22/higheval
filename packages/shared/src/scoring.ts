@@ -33,6 +33,40 @@ function compiles(pattern: string, flags = ''): boolean {
   }
 }
 
+const isRepeat = (char: string | undefined): boolean =>
+  char === '*' || char === '+' || char === '{';
+
+/**
+ * Heuristic guard against catastrophic backtracking: flags a quantified group
+ * whose body is itself quantified, the classic ReDoS shape, e.g. `(a+)+` or
+ * `(?:x*y)*`. Character classes and escapes are skipped; `?` is not counted.
+ */
+export function hasNestedQuantifier(pattern: string): boolean {
+  const groups: boolean[] = [];
+  for (let index = 0; index < pattern.length; index++) {
+    const char = pattern[index];
+    if (char === '\\') {
+      index++;
+    } else if (char === '[') {
+      index++;
+      while (index < pattern.length && pattern[index] !== ']') {
+        if (pattern[index] === '\\') index++;
+        index++;
+      }
+    } else if (char === '(') {
+      groups.push(false);
+    } else if (char === ')') {
+      const bodyRepeats = groups.pop() ?? false;
+      const groupRepeats = isRepeat(pattern[index + 1]);
+      if (bodyRepeats && groupRepeats) return true;
+      if ((bodyRepeats || groupRepeats) && groups.length > 0) groups[groups.length - 1] = true;
+    } else if (isRepeat(char) && groups.length > 0) {
+      groups[groups.length - 1] = true;
+    }
+  }
+  return false;
+}
+
 const scorerBase = {
   /** Human-readable label shown next to the result. */
   label: z.string().min(1).max(120).optional(),
@@ -69,6 +103,11 @@ export const scorerSpecSchema = z.discriminatedUnion('type', [
     .refine((spec) => compiles(spec.pattern, spec.flags), {
       message: 'Invalid regular expression for these flags',
       path: ['pattern'],
+    })
+    .refine((spec) => !hasNestedQuantifier(spec.pattern), {
+      message:
+        'Pattern repeats a group that itself repeats (e.g. (a+)+), which can take exponential time on long text',
+      path: ['pattern'],
     }),
   z.object({
     ...scorerBase,
@@ -86,6 +125,8 @@ export const scorerSpecSchema = z.discriminatedUnion('type', [
     tolerance: z.number().nonnegative().optional(),
     /** Compare arrays ignoring element order. */
     unordered: z.boolean().default(false),
+    /** Objects must have exactly the expected keys, so invented extra keys fail. */
+    exact: z.boolean().default(false),
   }),
   z.object({
     ...scorerBase,

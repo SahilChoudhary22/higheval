@@ -168,7 +168,8 @@ async function save(): Promise<void> {
         </li>
         <li>
           <code>json_field</code> — value at <code>path</code> equals <code>expected</code>;
-          optional <code>tolerance</code>, <code>unordered</code>
+          optional <code>tolerance</code>, <code>unordered</code>, and <code>exact</code> (no extra
+          keys)
         </li>
         <li><code>file_exists</code> — the agent created <code>path</code></li>
         <li>

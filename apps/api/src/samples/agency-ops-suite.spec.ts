@@ -223,6 +223,34 @@ describe('Agency operations sample suite', () => {
     ).toBeLessThan(1);
   });
 
+  it('rejects invented extra keys in object answers', async () => {
+    const task = suite.tasks.find((candidate) => candidate.key === 'churn-risk');
+    const padded = JSON.stringify({
+      tiers: {
+        'Brightline Dental': 'low',
+        'Harbor Fitness': 'high',
+        'Oakridge Realty': 'medium',
+        'Summit Roofing': 'medium',
+        'Lumen Spa': 'high',
+        'Cedar Law Group': 'high',
+        'Pinecrest Vet': 'low',
+        'Invented Co': 'high',
+      },
+      high_risk_seats: 30,
+    });
+    const result = await scoreTask(
+      task?.scorers ?? [],
+      {
+        taskPrompt: task?.prompt ?? '',
+        finalOutput: 'Done.',
+        readFile: () => padded,
+        toolCalls: [],
+      },
+      task?.passThreshold ?? 1,
+    );
+    expect(result.passed).toBe(false);
+  });
+
   it('keeps expected answers out of the fixtures the agent can read', () => {
     for (const task of suite.tasks) {
       const answers = task.scorers.flatMap((scorer) =>
