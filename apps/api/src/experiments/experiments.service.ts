@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { asc, count, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
 import {
   configSnapshotSchema,
   PROVIDERS,
@@ -28,7 +28,7 @@ import { PROJECT_CONTEXT_FILES } from '../execution/hermes/run-plan.js';
 import { InjectDb } from '../database/database.module.js';
 import { ProviderCredentials } from '../providers/provider-credentials.service.js';
 import type { Db } from '../database/database.js';
-import { experiments, runs } from '../database/schema.js';
+import { experiments, runEvents, runs, runScores } from '../database/schema.js';
 import { buildComparison } from '../statistics/comparison.js';
 import { createRandom } from '../statistics/random.js';
 import { hashTasks, SuitesService } from '../suites/suites.service.js';
@@ -191,6 +191,66 @@ export class ExperimentsService {
     this.db.delete(experiments).where(eq(experiments.id, id)).run();
     const dataDir = this.config.get('DATA_DIR', { infer: true });
     for (const run of runIds) rmSync(runDir(dataDir, run.id), { recursive: true, force: true });
+  }
+
+  /**
+   * Re-queues every errored run of a finished experiment, e.g. once a
+   * provider's daily quota has reset. Runs keep their place in the seeded
+   * order; each starts over from attempt 1 and its earlier output is dropped.
+   */
+  retryErrored(id: string): Experiment {
+    const experiment = this.getRow(id);
+    if (experiment.status === 'queued' || experiment.status === 'running') {
+      throw new ConflictException('The experiment is still running');
+    }
+    const errored = this.db
+      .select({ id: runs.id })
+      .from(runs)
+      .where(and(eq(runs.experimentId, id), eq(runs.status, 'errored')))
+      .all()
+      .map((run) => run.id);
+    if (errored.length === 0) throw new ConflictException('No errored runs to retry');
+
+    this.db.transaction((tx) => {
+      tx.delete(runEvents).where(inArray(runEvents.runId, errored)).run();
+      tx.delete(runScores).where(inArray(runScores.runId, errored)).run();
+      tx.update(runs)
+        .set({
+          status: 'queued',
+          attempts: 0,
+          notBefore: null,
+          termination: null,
+          errorKind: null,
+          errorMessage: null,
+          score: null,
+          passed: null,
+          durationMs: null,
+          tokens: null,
+          toolCalls: 0,
+          apiCalls: null,
+          costUsd: null,
+          judgeRequests: 0,
+          judgeTokens: 0,
+          judgeCostUsd: null,
+          exitCode: null,
+          finalOutput: null,
+          reportedModel: null,
+          sessionId: null,
+          stderrTail: null,
+          startedAt: null,
+          finishedAt: null,
+        })
+        .where(inArray(runs.id, errored))
+        .run();
+      tx.update(experiments)
+        .set({ status: 'queued', finishedAt: null })
+        .where(eq(experiments.id, id))
+        .run();
+    });
+    // Attempt directories are numbered from 1 again, so clear the old ones.
+    const dataDir = this.config.get('DATA_DIR', { infer: true });
+    for (const runId of errored) rmSync(runDir(dataDir, runId), { recursive: true, force: true });
+    return this.get(id);
   }
 
   private toExperiment(row: ExperimentRow): Experiment {

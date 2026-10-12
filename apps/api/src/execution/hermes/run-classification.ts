@@ -1,3 +1,4 @@
+import { DAILY_QUOTA_HINT, isDailyQuota } from '../../providers/rate-limits.js';
 import type { HermesResult } from './hermes-stream-parser.js';
 
 export type Classification =
@@ -30,6 +31,9 @@ export function classifyHermesExit(
   }
   if (!result.error) return result.exitCode === 0 ? { kind: 'completed' } : { kind: 'incomplete' };
   const message = result.error;
+  if (isDailyQuota(message)) {
+    return { kind: 'provider', retryable: false, message: `${message}. ${DAILY_QUOTA_HINT}` };
+  }
   if (FATAL_PROVIDER.test(message)) return { kind: 'provider', retryable: false, message };
   if (RETRYABLE_PROVIDER.test(message)) return { kind: 'provider', retryable: true, message };
   return { kind: 'crash', message };

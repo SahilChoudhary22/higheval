@@ -25,6 +25,18 @@ describe('classifyHermesExit', () => {
     });
   });
 
+  it('does not retry a daily quota, which only resets the next day', () => {
+    const classification = classifyHermesExit(
+      result({
+        exitCode: 1,
+        error: 'HTTP 429: Rate limit exceeded: free-models-per-day-high-balance',
+      }),
+      '',
+    );
+    expect(classification).toMatchObject({ kind: 'provider', retryable: false });
+    expect(classification).toHaveProperty('message', expect.stringContaining('00:00 UTC'));
+  });
+
   it('marks authentication failures as non-retryable', () => {
     expect(
       classifyHermesExit(result({ exitCode: 1, error: 'HTTP 401: invalid api key' }), ''),

@@ -104,6 +104,20 @@ describe('OpenRouterJudge', () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
+  it('stops at once when the daily free-model quota is used up', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response(
+          '{"error":{"message":"Rate limit exceeded: free-models-per-day-high-balance","code":429}}',
+          { status: 429 },
+        ),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(createJudge().evaluate(request)).rejects.toThrow('resets at 00:00 UTC');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('fails fast on client errors and when no key is configured', async () => {
     vi.stubGlobal(
       'fetch',

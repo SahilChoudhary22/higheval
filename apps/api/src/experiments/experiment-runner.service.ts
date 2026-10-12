@@ -18,6 +18,7 @@ import { InjectDb } from '../database/database.module.js';
 import type { Db } from '../database/database.js';
 import { experiments, runEvents, runs, runScores } from '../database/schema.js';
 import { AgentExecutor, type ExecutionOutcome } from '../execution/agent-executor.js';
+import { isRateLimited, retryDelayMs } from '../providers/rate-limits.js';
 import { Judge } from '../scoring/judge/judge.js';
 import { scoreTask } from '../scoring/scorers.js';
 import { runAttemptDir } from './run-paths.js';
@@ -376,10 +377,14 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
       experiment !== undefined &&
       (ACTIVE_EXPERIMENT_STATUSES as readonly string[]).includes(experiment.status);
     if (canRetry) {
-      const delay =
-        this.config.get('RETRY_BASE_DELAY_MS', { infer: true }) * 2 ** (run.attempts - 1);
+      const rateLimited = isRateLimited(outcome.errorMessage);
+      const delay = retryDelayMs(
+        run.attempts,
+        this.config.get('RETRY_BASE_DELAY_MS', { infer: true }),
+        rateLimited,
+      );
       this.logger.warn(
-        `Run ${run.id} hit a retryable error; retrying in ${String(Math.round(delay / 1000))}s`,
+        `Run ${run.id} hit a ${rateLimited ? 'rate limit' : 'retryable error'}; retrying in ${String(Math.round(delay / 1000))}s`,
       );
       this.db
         .update(runs)

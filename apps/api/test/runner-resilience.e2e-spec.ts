@@ -21,16 +21,18 @@ import {
   type ExecutionRequest,
 } from '../src/execution/agent-executor.js';
 
-type Behaviour = 'ok' | 'rate-limited-once' | 'hang';
+type Behaviour = 'ok' | 'rate-limited-once' | 'daily-quota' | 'hang';
 
 /**
  * Executor whose behaviour is chosen per model: succeed, fail once with a
- * retryable rate limit, or hang until aborted. Lets the runner's retry,
+ * retryable rate limit, hit a daily quota until `quotaReset`, or hang until
+ * aborted. Lets the runner's retry,
  * cancellation and restart-recovery paths be tested deterministically.
  */
 class ScriptedExecutor extends AgentExecutor {
   readonly attempts = new Map<string, number>();
   readonly started: string[] = [];
+  quotaReset = false;
 
   constructor(private readonly behaviour: (model: string) => Behaviour) {
     super();
@@ -65,6 +67,15 @@ class ScriptedExecutor extends AgentExecutor {
         errorKind: 'provider',
         errorMessage: 'HTTP 429',
         retryable: true,
+      };
+    }
+    if (mode === 'daily-quota' && !this.quotaReset) {
+      return {
+        ...base,
+        kind: 'errored',
+        errorKind: 'provider',
+        errorMessage: 'HTTP 429: Rate limit exceeded: free-models-per-day',
+        retryable: false,
       };
     }
     const workspaceDir = join(job.runDir, 'work');
@@ -173,6 +184,32 @@ describe('Experiment runner resilience (e2e)', () => {
       expect(experiment.progress).toMatchObject({ scored: 2, errored: 0 });
       const flaky = (await runsOf(server, id)).find((run) => run.arm === 'candidate');
       expect(flaky).toMatchObject({ status: 'scored', attempts: 2, score: 1 });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('retries errored runs on request, keeping the scored ones', async () => {
+    const executor = new ScriptedExecutor((model) => (model === 'free' ? 'daily-quota' : 'ok'));
+    const app = await startApp(executor);
+    try {
+      const server = app.getHttpServer();
+      const id = await launch(server, 'paid', 'free');
+      await waitFor(server, id, (current) => current.status === 'completed');
+      // A daily quota is not retried automatically: each run was tried once.
+      expect(executor.attempts.size).toBe(2);
+      expect((await runsOf(server, id)).map((run) => run.status).toSorted()).toEqual([
+        'errored',
+        'scored',
+      ]);
+
+      executor.quotaReset = true;
+      await request(server).post(`/api/experiments/${id}/retry-errored`).expect(200);
+      const experiment = await waitFor(server, id, (current) => current.status === 'completed');
+      expect(experiment.progress).toMatchObject({ scored: 2, errored: 0 });
+      const retried = (await runsOf(server, id)).find((run) => run.arm === 'candidate');
+      expect(retried).toMatchObject({ status: 'scored', attempts: 1, errorKind: null });
+      await request(server).post(`/api/experiments/${id}/retry-errored`).expect(409);
     } finally {
       await app.close();
     }

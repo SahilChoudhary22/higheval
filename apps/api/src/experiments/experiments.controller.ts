@@ -72,6 +72,21 @@ export class ExperimentsController {
     return this.experiments.get(id);
   }
 
+  @Post('experiments/:id/retry-errored')
+  @HttpCode(200)
+  @ApiDoc({
+    summary: 'Retry the errored runs of a finished experiment',
+    description:
+      'Re-queues every errored run, keeping the seeded order, e.g. after a provider quota resets. Scored runs are kept. Refused while the experiment is running or when nothing errored.',
+    response: experimentSchema,
+    params: { id: 'Experiment ID' },
+  })
+  retryErrored(@Param('id') id: string): Experiment {
+    const experiment = this.experiments.retryErrored(id);
+    this.runner.pump();
+    return experiment;
+  }
+
   @Delete('experiments/:id')
   @HttpCode(204)
   @ApiDoc({ summary: 'Delete a finished experiment and its runs', params: { id: 'Experiment ID' } })

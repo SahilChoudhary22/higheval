@@ -80,7 +80,9 @@ const modelMismatch = computed(() => {
           <p class="prose wrap-anywhere">{{ run.data.value.errorMessage }}</p>
           <p class="muted prose">
             Errored runs are infrastructure failures (provider, setup or crash). They are excluded
-            from the comparison and counted as missing coverage.
+            from the comparison and counted as missing coverage. Rate limits are retried
+            automatically; once the experiment finishes, you can retry its errored runs from the
+            experiment page.
           </p>
         </section>
 

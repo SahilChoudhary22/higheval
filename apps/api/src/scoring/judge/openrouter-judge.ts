@@ -4,6 +4,7 @@ import type { JudgeUsage } from '@higheval/shared';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { z } from 'zod';
 import type { Env } from '../../config/env.schema.js';
+import { DAILY_QUOTA_HINT, isDailyQuota, retryDelayMs } from '../../providers/rate-limits.js';
 import { ProviderCredentials } from '../../providers/provider-credentials.service.js';
 import { Judge, JudgeError, type JudgeRequest, type JudgeVerdict } from './judge.js';
 import { buildJudgeMessages, parseJudgeReply } from './judge-prompt.js';
@@ -11,6 +12,8 @@ import { buildJudgeMessages, parseJudgeReply } from './judge-prompt.js';
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 /** Rate limits and server errors are retried this many times in total. */
 const MAX_REQUESTS = 4;
+/** Longest wait taken from a provider's retry hint. */
+const MAX_HINTED_DELAY_MS = 60_000;
 /** Unparseable replies get one more chance before the run is marked `scoring`. */
 const MAX_PARSE_RETRIES = 1;
 /**
@@ -80,11 +83,15 @@ export class OpenRouterJudge extends Judge {
       });
       if (response.status === 429 || response.status >= 500) {
         lastError = `HTTP ${String(response.status)}`;
-        await sleep(
-          this.backoffMs(usage.requests, response.headers.get('retry-after')),
-          undefined,
-          { signal },
-        );
+        if (response.status === 429) {
+          const detail = await errorText(response);
+          if (isDailyQuota(`429 ${detail}`)) {
+            throw new JudgeError(
+              `Judge request failed with HTTP 429: ${detail}. ${DAILY_QUOTA_HINT}`,
+            );
+          }
+        }
+        await sleep(this.backoffMs(usage.requests, response), undefined, { signal });
         continue;
       }
       if (!response.ok) {
@@ -115,11 +122,17 @@ export class OpenRouterJudge extends Judge {
     );
   }
 
-  /** Exponential backoff, honouring Retry-After (seconds) when the provider sends one. */
-  private backoffMs(attempt: number, retryAfter: string | null): number {
-    const hinted = retryAfter === null ? Number.NaN : Number(retryAfter) * 1000;
-    if (Number.isFinite(hinted)) return Math.min(hinted, 60_000);
-    return this.retryBaseMs * 2 ** (attempt - 1);
+  /**
+   * Exponential backoff, longer for rate limits. Honours the provider's own
+   * hint when it sends one: Retry-After (seconds) or OpenRouter's
+   * X-RateLimit-Reset (epoch milliseconds), capped at a minute.
+   */
+  private backoffMs(attempt: number, response: Response): number {
+    const retryAfter = Number(response.headers.get('retry-after') ?? Number.NaN) * 1000;
+    const reset = Number(response.headers.get('x-ratelimit-reset') ?? Number.NaN) - Date.now();
+    const hinted = [retryAfter, reset].find((ms) => Number.isFinite(ms) && ms >= 0);
+    if (hinted !== undefined) return Math.min(hinted, MAX_HINTED_DELAY_MS);
+    return retryDelayMs(attempt, this.retryBaseMs, response.status === 429);
   }
 }
 
