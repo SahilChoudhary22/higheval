@@ -1,0 +1,24 @@
+# Hosted deployment: `docker compose up -d --build`.
+# Settings come from .env next to this file (see .env.example). Because the
+# container listens on all interfaces, AUTH_USERNAME and AUTH_PASSWORD are
+# required; publish it through a tunnel or reverse proxy that terminates HTTPS
+# and add that hostname to ALLOWED_HOSTS.
+services:
+  higheval:
+    build: .
+    image: higheval:latest
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    ports:
+      # Bound to loopback: only the tunnel or proxy on this machine can reach it.
+      - '127.0.0.1:${HIGHEVAL_PORT:-3000}:3000'
+    volumes:
+      - higheval-data:/app/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  higheval-data:
