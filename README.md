@@ -103,7 +103,7 @@ HighEval AI is a Hermes agent. It works in an isolated workspace, like any exper
 - two known-good example tasks
 - an authoring skill
 
-It writes the suite and a reference solution for each task. HighEval then requires every deterministic scorer to pass against that reference, and sends any problems back for another attempt. The draft opens in the editor for you to review; nothing is saved until you save it. You can follow up with changes ("make the second task stricter"), and it revises the draft. See [design decision 10](docs/design.md#10-hermes-drafts-suites-higheval-checks-them).
+It writes the suite and a reference solution for each task. HighEval then requires every deterministic scorer to pass against that reference, and sends any problems back for another attempt. You review the draft, with a summary of what it changes, then apply it to the editor or copy the JSON; nothing is saved until you save it. You can follow up with changes ("make the second task stricter"), and it revises the draft. See [design decision 10](docs/design.md#10-hermes-drafts-suites-higheval-checks-them).
 
 ## How it works
 
