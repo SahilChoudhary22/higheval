@@ -9,6 +9,8 @@ const base: ConfigSnapshot = {
   skills: [],
   bundledSkills: { mode: 'none', names: [], paths: [], contentHash: null },
   memory: { mode: 'disabled' },
+  soul: null,
+  instructions: null,
   toolsets: [],
   maxTurns: 8,
   timeoutSeconds: 120,
@@ -83,11 +85,59 @@ describe('buildRunPlan', () => {
 
   it('seeds memory entries using the Hermes delimiter and enables memory', () => {
     const plan = buildRunPlan(
-      { ...base, memory: { mode: 'seeded', entries: ['Fact A', 'Fact B'] } },
+      { ...base, memory: { mode: 'seeded', entries: ['Fact A', 'Fact B'], userProfile: [] } },
       paths,
     );
     expect(plan.homeFiles['memories/MEMORY.md']).toBe('Fact A\n§\nFact B');
     expect(hermesConfig(plan)).toMatchObject({ memory: { memory_enabled: true } });
+  });
+
+  it('seeds the user profile on its own and sizes the limits to fit', () => {
+    const long = 'x'.repeat(3_000);
+    const plan = buildRunPlan(
+      { ...base, memory: { mode: 'seeded', entries: [long], userProfile: ['Prefers SMS'] } },
+      paths,
+    );
+    expect(plan.homeFiles['memories/USER.md']).toBe('Prefers SMS');
+    expect(hermesConfig(plan)).toMatchObject({
+      memory: {
+        memory_enabled: true,
+        user_profile_enabled: true,
+        memory_char_limit: 3_000,
+        user_char_limit: 1_375,
+      },
+    });
+    const profileOnly = buildRunPlan(
+      { ...base, memory: { mode: 'seeded', entries: [], userProfile: ['Prefers SMS'] } },
+      paths,
+    );
+    expect(profileOnly.homeFiles['memories/MEMORY.md']).toBeUndefined();
+    expect(hermesConfig(profileOnly)).toMatchObject({
+      memory: { memory_enabled: false, user_profile_enabled: true },
+    });
+  });
+
+  it('writes no agent files unless the agent has them', () => {
+    const plan = buildRunPlan(base, paths);
+    expect(plan.homeFiles['SOUL.md']).toBeUndefined();
+    expect(plan.homeFiles['memories/USER.md']).toBeUndefined();
+    expect(plan.workFiles).toEqual({});
+    expect(hermesConfig(plan)).toMatchObject({
+      memory: { memory_enabled: false, user_profile_enabled: false },
+    });
+  });
+
+  it("writes the agent's persona into its home and its instructions into the workspace", () => {
+    const plan = buildRunPlan(
+      {
+        ...base,
+        soul: 'You are Lakeshore’s coordinator.',
+        instructions: 'Always cite the policy.',
+      },
+      paths,
+    );
+    expect(plan.homeFiles['SOUL.md']).toBe('You are Lakeshore’s coordinator.\n');
+    expect(plan.workFiles).toEqual({ 'AGENTS.md': 'Always cite the policy.\n' });
   });
 
   describe('built-in skills', () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Arm, ArmSummary } from '@higheval/shared';
+import type { Arm, ArmSummary, ConfigSnapshot } from '@higheval/shared';
 import { computed, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { api } from '@/api/endpoints';
@@ -66,6 +66,30 @@ const remaining = computed(() => {
 });
 
 const hasScores = computed(() => (experiment.data.value?.progress.scored ?? 0) > 0);
+
+/** How each agent was set up, from the experiment's frozen snapshots: what the comparison varied. */
+const SETUP_ROWS: { label: string; value: (agent: ConfigSnapshot) => string }[] = [
+  { label: 'Tools', value: (agent) => agent.toolsets.join(', ') || 'none' },
+  {
+    label: 'Skills',
+    value: (agent) =>
+      [
+        ...agent.skills.map((skill) => skill.name),
+        ...(agent.bundledSkills?.names.length
+          ? [`${String(agent.bundledSkills.names.length)} built-in`]
+          : []),
+      ].join(', ') || 'none',
+  },
+  {
+    label: 'Memory',
+    value: (agent) =>
+      agent.memory.mode === 'disabled'
+        ? 'off'
+        : `${String(agent.memory.entries.length)} notes, ${String(agent.memory.userProfile.length)} profile`,
+  },
+  { label: 'Persona', value: (agent) => (agent.soul ? 'custom SOUL.md' : 'Hermes default') },
+  { label: 'Instructions', value: (agent) => (agent.instructions ? 'AGENTS.md' : 'none') },
+];
 
 const ARM_ROWS: { label: string; value: (arm: ArmSummary) => string }[] = [
   { label: 'Model', value: (arm) => arm.model },
@@ -201,6 +225,31 @@ async function remove(): Promise<void> {
             </tr>
           </thead>
           <tbody>
+            <template v-if="experiment.data.value">
+              <tr
+                v-for="row in SETUP_ROWS"
+                :key="row.label"
+                :class="{
+                  'row--differs':
+                    row.value(experiment.data.value.baseline) !==
+                    row.value(experiment.data.value.candidate),
+                }"
+              >
+                <th scope="row" class="label">
+                  {{ row.label }}
+                  <span
+                    v-if="
+                      row.value(experiment.data.value.baseline) !==
+                      row.value(experiment.data.value.candidate)
+                    "
+                    class="differs"
+                    >differs</span
+                  >
+                </th>
+                <td class="num wrap-anywhere">{{ row.value(experiment.data.value.baseline) }}</td>
+                <td class="num wrap-anywhere">{{ row.value(experiment.data.value.candidate) }}</td>
+              </tr>
+            </template>
             <tr v-for="row in armRows" :key="row.label">
               <th scope="row" class="label">{{ row.label }}</th>
               <td class="num wrap-anywhere">{{ row.value(comparison.data.value.baseline) }}</td>
@@ -288,5 +337,19 @@ async function remove(): Promise<void> {
 .task-key {
   display: block;
   font-size: var(--text-xs);
+}
+.row--differs td {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.differs {
+  margin-left: var(--space-2xs);
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-tag);
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  text-transform: none;
+  letter-spacing: 0;
 }
 </style>

@@ -8,6 +8,8 @@ const config = (name: string, model: string): ConfigSnapshot => ({
   model: { provider: 'openrouter', model },
   skills: [],
   memory: { mode: 'disabled' },
+  soul: null,
+  instructions: null,
   toolsets: ['file'],
   maxTurns: 10,
   timeoutSeconds: 120,

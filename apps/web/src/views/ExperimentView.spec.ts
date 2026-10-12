@@ -17,6 +17,8 @@ const snapshot = (name: string): ConfigSnapshot => ({
   model: { provider: 'openrouter', model: `vendor/${name}` },
   skills: [],
   memory: { mode: 'disabled' },
+  soul: null,
+  instructions: null,
   toolsets: ['file'],
   maxTurns: 10,
   timeoutSeconds: 120,

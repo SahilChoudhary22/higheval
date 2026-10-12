@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { asc, eq, sql } from 'drizzle-orm';
-import type {
-  AgentConfig,
-  agentConfigInputSchema,
-  BundledSkills,
-  ConfigSnapshot,
-  Skill,
+import {
+  agentConfigSchema,
+  type AgentConfig,
+  type agentConfigInputSchema,
+  type BundledSkills,
+  type ConfigSnapshot,
+  type Skill,
 } from '@higheval/shared';
 import type { z } from 'zod';
 import { sha256Hex } from '../common/hash.js';
@@ -94,6 +95,9 @@ export class ConfigsService {
       bundledSkills: { names: bundledSkills.names, contentHash: bundledSkills.contentHash },
       hermesCommit: hermesCommit ?? null,
       memory: config.memory,
+      // Added only when set, so agents without them keep the hashes they had before these existed.
+      ...(config.soul === null ? {} : { soul: config.soul }),
+      ...(config.instructions === null ? {} : { instructions: config.instructions }),
       toolsets: config.toolsets.toSorted(),
       maxTurns: config.maxTurns,
       timeoutSeconds: config.timeoutSeconds,
@@ -107,6 +111,8 @@ export class ConfigsService {
       bundledSkills,
       ...(hermesCommit === undefined ? {} : { hermesCommit }),
       memory: config.memory,
+      soul: config.soul,
+      instructions: config.instructions,
       toolsets: config.toolsets,
       maxTurns: config.maxTurns,
       timeoutSeconds: config.timeoutSeconds,
@@ -140,7 +146,8 @@ export class ConfigsService {
 
 function toConfig(row: AgentConfigRow): AgentConfig {
   const { provider, model, ...rest } = row;
-  return { ...rest, model: { provider, model } };
+  // Parsed so agents saved before newer settings existed get their defaults, and hash consistently.
+  return agentConfigSchema.parse({ ...rest, model: { provider, model } });
 }
 
 function toRow(config: AgentConfig): AgentConfigRow {

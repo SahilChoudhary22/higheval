@@ -44,6 +44,8 @@ const snapshot: ConfigSnapshot = {
   model: { provider: 'openrouter', model: 'fake/model' },
   skills: [],
   memory: { mode: 'disabled' },
+  soul: null,
+  instructions: null,
   toolsets: ['file'],
   maxTurns: 5,
   timeoutSeconds: 60,

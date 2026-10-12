@@ -1,4 +1,4 @@
-import type { Comparison, Experiment, RunSummary, Verdict } from '@higheval/shared';
+import type { Comparison, ConfigSnapshot, Experiment, RunSummary, Verdict } from '@higheval/shared';
 
 const VERDICT_TEXT: Record<Verdict, string> = {
   candidate_better: 'Candidate is better',
@@ -73,7 +73,9 @@ export function renderExperimentReport(
     `| Config | ${experiment.baseline.name} | ${experiment.candidate.name} |`,
     `| Model | \`${experiment.baseline.model.model}\` | \`${experiment.candidate.model.model}\` |`,
     `| Skills | ${experiment.baseline.skills.map((skill) => `\`${skill.name}\``).join(', ') || 'none'} | ${experiment.candidate.skills.map((skill) => `\`${skill.name}\``).join(', ') || 'none'} |`,
-    `| Memory | ${experiment.baseline.memory.mode} | ${experiment.candidate.memory.mode} |`,
+    `| Memory | ${describeMemory(experiment.baseline)} | ${describeMemory(experiment.candidate)} |`,
+    `| Persona (SOUL.md) | ${experiment.baseline.soul ? 'custom' : 'Hermes default'} | ${experiment.candidate.soul ? 'custom' : 'Hermes default'} |`,
+    `| Instructions (AGENTS.md) | ${experiment.baseline.instructions ? 'yes' : 'none'} | ${experiment.candidate.instructions ? 'yes' : 'none'} |`,
     `| Toolsets | ${experiment.baseline.toolsets.join(', ') || 'none'} | ${experiment.candidate.toolsets.join(', ') || 'none'} |`,
     `| Max turns / timeout | ${String(experiment.baseline.maxTurns)} / ${String(experiment.baseline.timeoutSeconds)} s | ${String(experiment.candidate.maxTurns)} / ${String(experiment.candidate.timeoutSeconds)} s |`,
     `| Config hash | \`${experiment.baseline.hash.slice(0, 16)}\` | \`${experiment.candidate.hash.slice(0, 16)}\` |`,
@@ -121,4 +123,11 @@ export function renderExperimentReport(
     '',
   ];
   return lines.filter((line, index, all) => !(line === '' && all[index - 1] === '')).join('\n');
+}
+
+/** "disabled", or the number of seeded entries in each memory file. */
+function describeMemory(config: ConfigSnapshot): string {
+  if (config.memory.mode === 'disabled') return 'disabled';
+  const { entries, userProfile } = config.memory;
+  return `seeded: ${String(entries.length)} notes, ${String(userProfile.length)} profile`;
 }

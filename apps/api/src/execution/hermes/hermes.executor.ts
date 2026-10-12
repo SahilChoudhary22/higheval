@@ -248,10 +248,11 @@ export class HermesExecutor extends AgentExecutor {
     await writeFiles(dirs.home, plan.homeFiles);
     await copyBundledSkills(bundledSkillsRoot, dirs.home, plan.bundledSkillPaths);
     await this.catalog.seed(dirs.home);
-    await writeFiles(
-      dirs.work,
-      Object.fromEntries(request.fixtures.map((file) => [file.path, file.content])),
-    );
+    await writeFiles(dirs.work, {
+      ...Object.fromEntries(request.fixtures.map((file) => [file.path, file.content])),
+      // The agent's own files (its AGENTS.md); launch refuses tasks whose fixtures would clash.
+      ...plan.workFiles,
+    });
     // A git root at the workspace stops Hermes from walking up into this
     // repository for AGENTS.md / .hermes.md context files.
     try {

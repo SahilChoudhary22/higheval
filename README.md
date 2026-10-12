@@ -37,7 +37,7 @@ HighEval runs the same task suite under two Hermes configurations, scores every 
 
 - **Tasks and scoring.** Suites of tasks with fixture files and typed scorers: JSON fields with tolerances, regular expressions, files created, tools used, and a pinned LLM judge for conversational quality. Every scorer explains its result, and hard rules can be marked `required`.
 - **Draft suites with HighEval AI.** Describe what to test in plain language. HighEval AI, an agent built on Hermes, writes the tasks, fixtures and scorers, computes expected values with a script, and HighEval checks the draft against the schema and the agent's own reference answers before you review it.
-- **Configurations.** Provider and model, skills, Hermes' built-in skills, memory (off or seeded), toolsets and limits, snapshotted and hashed at launch so edits never rewrite history.
+- **Agents.** Each agent is a Hermes configuration: provider and model, tools, skills, Hermes' built-in skills, a persona (`SOUL.md`), standing instructions (`AGENTS.md`), memory (agent notes and user profile) and limits. Agent files can be imported from a Hermes home or an OpenClaw workspace. Everything is snapshotted and hashed at launch, so edits never rewrite history.
 - **Isolated, durable runs.** Every run gets a fresh Hermes home, workspace and environment. Runs are interleaved in a seeded random order, with retries, cancellation, hard timeouts and restart recovery.
 - **Statistics you can defend.** Paired per-task differences, a seeded 95% bootstrap interval, an exact sign-flip permutation test, and an explicit equivalence margin.
 - **Run inspector.** Scorer results, the final reply, the tool-call timeline, workspace files, tokens, API calls and cost for every run.

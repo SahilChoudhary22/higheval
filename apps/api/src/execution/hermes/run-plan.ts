@@ -4,12 +4,34 @@ import type { ProviderSort } from '../agent-executor.js';
 /** Reasoning effort is pinned so both arms send identical reasoning settings. */
 export const REASONING_EFFORT = 'medium';
 
-/** Hermes joins memory entries with this delimiter in MEMORY.md. */
+/** Hermes joins memory entries with this delimiter in MEMORY.md and USER.md. */
 const MEMORY_DELIMITER = '\n§\n';
+const DEFAULT_MEMORY_CHARS = 2_200;
+const DEFAULT_USER_CHARS = 1_375;
+
+/** Where an agent's standing instructions go in the run's working directory. */
+export const AGENT_INSTRUCTIONS_FILE = 'AGENTS.md';
+/**
+ * Files Hermes reads from the working directory as project instructions. The
+ * first kind found wins, so a task fixture with any of these names would
+ * replace or hide an agent's AGENTS.md.
+ */
+export const PROJECT_CONTEXT_FILES = [
+  '.hermes.md',
+  'HERMES.md',
+  'AGENTS.override.md',
+  'AGENTS.md',
+  'agents.md',
+  'CLAUDE.md',
+  'claude.md',
+  '.cursorrules',
+] as const;
 
 export interface RunPlan {
   /** Files to write under the run's HERMES_HOME, keyed by relative path. */
   homeFiles: Record<string, string>;
+  /** Files to write into the agent's working directory, after the task's fixtures. */
+  workFiles: Record<string, string>;
   /**
    * Paths under Hermes' bundled skills root to copy unchanged into the home's
    * `skills/` directory (skill directories and category descriptions).
@@ -38,7 +60,9 @@ export function buildRunPlan(
   paths: { promptFile: string; workDir: string },
   providerSort: ProviderSort = 'price',
 ): RunPlan {
-  const seededMemory = config.memory.mode === 'seeded';
+  const memory = config.memory.mode === 'seeded' ? config.memory : { entries: [], userProfile: [] };
+  const memoryFile = memory.entries.join(MEMORY_DELIMITER);
+  const userFile = memory.userProfile.join(MEMORY_DELIMITER);
   const bundledSkillPaths = config.bundledSkills?.paths ?? [];
   const toolsets: Toolset[] =
     bundledSkillPaths.length > 0
@@ -64,8 +88,12 @@ export function buildRunPlan(
       api_max_retries: 3,
     },
     memory: {
-      memory_enabled: seededMemory,
-      user_profile_enabled: false,
+      memory_enabled: memoryFile.length > 0,
+      user_profile_enabled: userFile.length > 0,
+      // Hermes' defaults (2,200 and 1,375 characters) cap what the agent may add, not what it
+      // loads; raising them to fit avoids warnings about seeded memory being "over the limit".
+      memory_char_limit: Math.max(DEFAULT_MEMORY_CHARS, memoryFile.length),
+      user_char_limit: Math.max(DEFAULT_USER_CHARS, userFile.length),
       provider: '',
       nudge_interval: 0,
     },
@@ -93,9 +121,15 @@ export function buildRunPlan(
     homeFiles[`skills/${skill.name}/SKILL.md`] =
       `---\nname: ${skill.name}\ndescription: ${JSON.stringify(skill.description)}\n---\n\n${skill.content.trim()}\n`;
   }
-  if (config.memory.mode === 'seeded') {
-    homeFiles['memories/MEMORY.md'] = config.memory.entries.join(MEMORY_DELIMITER);
-  }
+  if (memoryFile) homeFiles['memories/MEMORY.md'] = memoryFile;
+  if (userFile) homeFiles['memories/USER.md'] = userFile;
+  // Without a SOUL.md, Hermes writes its built-in persona on first start.
+  if (config.soul) homeFiles['SOUL.md'] = `${config.soul}\n`;
+
+  // Hermes loads AGENTS.md from the working directory as standing instructions.
+  const workFiles: Record<string, string> = config.instructions
+    ? { [AGENT_INSTRUCTIONS_FILE]: `${config.instructions}\n` }
+    : {};
 
   const args = [
     'chat',
@@ -116,5 +150,5 @@ export function buildRunPlan(
   if (config.skills.length > 0)
     args.push('--skills', config.skills.map((skill) => skill.name).join(','));
 
-  return { homeFiles, bundledSkillPaths, args };
+  return { homeFiles, workFiles, bundledSkillPaths, args };
 }

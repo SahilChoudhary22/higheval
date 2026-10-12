@@ -235,6 +235,8 @@ export class SuiteAssistantService implements OnModuleDestroy {
       model: draft.model,
       skills: [SUITE_AUTHORING_SKILL],
       memory: { mode: 'disabled' as const },
+      soul: null,
+      instructions: null,
       // The terminal lets the agent compute expected values with a script instead of guessing.
       toolsets: ['file' as const, 'terminal' as const],
       maxTurns: 40,

@@ -29,7 +29,22 @@ function skillNames(config: AgentConfig): string {
   return names.join(', ') || 'none';
 }
 const memory = (config: AgentConfig): string =>
-  config.memory.mode === 'disabled' ? 'off' : `${String(config.memory.entries.length)} seeded`;
+  config.memory.mode === 'disabled'
+    ? 'off'
+    : [
+        config.memory.entries.length > 0 ? `${String(config.memory.entries.length)} notes` : '',
+        config.memory.userProfile.length > 0
+          ? `${String(config.memory.userProfile.length)} profile`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(', ');
+
+/** The agent files it sets beyond memory; Hermes' defaults are left unsaid. */
+const agentFiles = (config: AgentConfig): string =>
+  [config.soul ? 'SOUL.md' : '', config.instructions ? 'AGENTS.md' : '']
+    .filter(Boolean)
+    .join(', ') || '—';
 
 function deleteConfig(config: AgentConfig): void {
   remove({
@@ -78,6 +93,7 @@ function deleteConfig(config: AgentConfig): void {
             <th scope="col">Tools</th>
             <th scope="col">Skills</th>
             <th scope="col">Memory</th>
+            <th scope="col">Files</th>
             <th scope="col" class="num">Turns</th>
             <th scope="col"><span class="visually-hidden">Actions</span></th>
           </tr>
@@ -105,6 +121,7 @@ function deleteConfig(config: AgentConfig): void {
               {{ skillNames(config) }}
             </td>
             <td>{{ memory(config) }}</td>
+            <td class="mono">{{ agentFiles(config) }}</td>
             <td class="num">{{ config.maxTurns }}</td>
             <td class="num actions">
               <button
