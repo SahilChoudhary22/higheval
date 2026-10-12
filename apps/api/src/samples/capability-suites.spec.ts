@@ -6,6 +6,8 @@ import {
   FILE_READING_SUITE,
   HOUSE_STYLE_SKILL,
   HOUSE_STYLE_SUITE,
+  PERSONA_SUITE,
+  QUILL_SOUL,
   SERVICE_CATALOG_SKILL,
   SERVICE_CATALOG_SUITE,
 } from './capability-suites.js';
@@ -76,11 +78,27 @@ const REFERENCE: Record<string, string> = {
       `Subject: [Lakeshore] Update\n\nHi ${name},\n\n${body}\n\n— The Lakeshore team`,
     ]),
   ),
+  ...Object.fromEntries(
+    [
+      ['persona-ads-down', 'Priya'],
+      ['persona-discount', 'Tom'],
+      ['persona-launch-date', 'Ana'],
+      ['persona-late-report', 'Marcus'],
+      ['persona-add-service', 'Dana'],
+      ['persona-double-charge', 'Elena'],
+      ['persona-guarantee', 'Sam'],
+      ['persona-engagement', 'Jo'],
+    ].map(([key = '', name = '']) => [
+      key,
+      `Hi ${name},\n\nI understand, and I'd like to help. Let me set up a call with your account team so we can go through it together.\n\n— Quill, Lakeshore Digital`,
+    ]),
+  ),
 };
 
 const SUITES = [
   SERVICE_CATALOG_SUITE,
   HOUSE_STYLE_SUITE,
+  PERSONA_SUITE,
   CLIENT_MEMORY_SUITE,
   FILE_READING_SUITE,
 ].map((suite) => suiteInputSchema.parse(suite));
@@ -97,7 +115,7 @@ const score = async (task: (typeof TASKS)[number], output: string): Promise<numb
 
 describe('Capability suites', () => {
   it('are valid, with eight tasks each and a reference reply for every task', () => {
-    expect(SUITES.map((suite) => suite.tasks.length)).toEqual([8, 8, 8, 8]);
+    expect(SUITES.map((suite) => suite.tasks.length)).toEqual([8, 8, 8, 8, 8]);
     expect(Object.keys(REFERENCE).toSorted()).toEqual(TASKS.map((task) => task.key).toSorted());
     expect(skillInputSchema.safeParse(SERVICE_CATALOG_SKILL).success).toBe(true);
     expect(skillInputSchema.safeParse(HOUSE_STYLE_SKILL).success).toBe(true);
@@ -111,9 +129,12 @@ describe('Capability suites', () => {
     async (key, task) => {
       expect(await score(task, REFERENCE[key] ?? '')).toBe(1);
       // Without the capability: no answer, or for emails, a typical reply in no particular style.
+      // Without the capability: no answer, or a reply in the model's own voice.
       const without = key.startsWith('style-')
         ? 'Subject: Update\n\nDear client,\n\nPlease note the details below!\n\nBest regards,\nAccount team'
-        : "I don't have that information.";
+        : key.startsWith('persona-')
+          ? "Hi there!\n\nThanks for reaching out. We'll look into it right away.\n\nBest,\nSupport"
+          : "I don't have that information.";
       expect(await score(task, without)).toBe(0);
     },
   );
@@ -137,7 +158,7 @@ describe('Capability suites', () => {
   });
 
   it('differs from its baseline in exactly one setting', () => {
-    const [baseline, skill, memory, emailStyle] = CAPABILITY_CONFIGS({
+    const [baseline, skill, memory, emailStyle, persona] = CAPABILITY_CONFIGS({
       catalog: 'catalog-id',
       emailStyle: 'style-id',
     }).map((config) => {
@@ -151,5 +172,7 @@ describe('Capability suites', () => {
     expect({ ...skill, skillIds: [] }).toEqual(baseline);
     expect({ ...memory, memory: { mode: 'disabled' } }).toEqual(baseline);
     expect({ ...emailStyle, skillIds: [] }).toEqual(baseline);
+    expect({ ...persona, soul: null }).toEqual(baseline);
+    expect(persona?.soul).toBe(QUILL_SOUL);
   });
 });

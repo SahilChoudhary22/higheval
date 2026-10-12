@@ -446,3 +446,108 @@ export const HOUSE_STYLE_SUITE: SuiteInput = {
     },
   ],
 };
+
+// --- Persona: who the agent is (SOUL.md), not what it knows -----------------
+
+export const QUILL_SOUL = [
+  '# Quill',
+  '',
+  'You are Quill, the client coordinator at Lakeshore Digital, a small marketing agency. You are warm, calm and brief.',
+  '',
+  'How you write to clients:',
+  '- Start every reply with "Hi <first name>," on its own line.',
+  '- Never use exclamation marks; calm reassurance works better.',
+  '- Never quote prices, discounts or dates you cannot guarantee. When a client is unhappy, or asks about money or deadlines, offer a call with their account team.',
+  '- End every reply with the line "— Quill, Lakeshore Digital".',
+].join('\n');
+
+/** The persona's four habits, checked on every reply. */
+const personaChecks = (firstName: string): ScorerSpecInput[] => [
+  { ...line(`^Hi ${firstName},$`), label: 'Greets by first name' },
+  {
+    type: 'regex',
+    target: { kind: 'final_output' },
+    pattern: '^[^!]*$',
+    label: 'No exclamation marks',
+  },
+  {
+    type: 'contains',
+    target: { kind: 'final_output' },
+    value: 'account team',
+    label: 'Offers a call with the account team',
+  },
+  { ...line('^[—–-] Quill, Lakeshore Digital$'), label: 'Signs as Quill' },
+];
+
+const REPLY = 'Reply to this message from a client. Reply with only your message.';
+
+const client = (key: string, title: string, from: string, company: string, message: string) => ({
+  key,
+  title,
+  prompt: `${REPLY}\n\nFrom: ${from} (${company})\n\n${message}`,
+  scorers: personaChecks(from.split(' ')[0] ?? from),
+});
+
+export const PERSONA_SUITE: SuiteInput = {
+  name: 'Capability: persona',
+  description:
+    'Replies to clients that should sound like Quill, the coordinator described in a SOUL.md: how it greets, its calm tone, what it never promises and how it signs off.',
+  tasks: [
+    client(
+      'persona-ads-down',
+      'Ads stopped showing',
+      'Priya Raman',
+      'Brightline Dental',
+      "Our ads stopped showing yesterday and we're losing bookings. What's going on?",
+    ),
+    client(
+      'persona-discount',
+      'Discount request',
+      'Tom Reyes',
+      'Harbor Fitness',
+      'Can you give us a discount if we sign up for a full year?',
+    ),
+    client(
+      'persona-launch-date',
+      'Launch date',
+      'Ana Cruz',
+      'Summit Roofing',
+      'When exactly will the new website go live? We need a date for our launch event.',
+    ),
+    client(
+      'persona-late-report',
+      'Late report',
+      'Marcus Bell',
+      'Oakridge Realty',
+      "This month's report is late again. Honestly, I'm frustrated.",
+    ),
+    client(
+      'persona-add-service',
+      'Adding a service',
+      'Dana Ortiz',
+      'Cedar Law Group',
+      'How much would it cost to add email marketing to our plan?',
+    ),
+    client(
+      'persona-double-charge',
+      'Charged twice',
+      'Elena Park',
+      'Lumen Spa',
+      'We were charged twice this month. Please fix this.',
+    ),
+    client(
+      'persona-guarantee',
+      'Ranking guarantee',
+      'Sam Lee',
+      'Pinecrest Vet',
+      "Can you guarantee we'll be on Google's first page by December?",
+    ),
+    client(
+      'persona-engagement',
+      'Low engagement',
+      'Jo Kim',
+      'Bayview Bakery',
+      'Our social posts got zero engagement this week. Is it worth continuing?',
+    ),
+  ],
+};

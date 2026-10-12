@@ -1,5 +1,5 @@
 import type { AgentConfigInput, SkillInput } from '@higheval/shared';
-import { CLIENT_MEMORY_ENTRIES } from './capability-suites.js';
+import { CLIENT_MEMORY_ENTRIES, QUILL_SOUL } from './capability-suites.js';
 
 /** A reusable skill demonstrating how skills change agent behaviour. */
 export const DATA_TASK_CHECKLIST_SKILL: SkillInput = {
@@ -88,5 +88,13 @@ export const CAPABILITY_CONFIGS = (skillIds: {
     ...shared,
     toolsets: [],
     skillIds: [skillIds.emailStyle],
+  },
+  {
+    name: 'Nemotron 3 Super · no tools + Quill persona',
+    description: "Replaces Hermes' built-in persona with Quill's SOUL.md; nothing else changes.",
+    model: { provider: 'openrouter', model: SAMPLE_MODELS.baseline },
+    ...shared,
+    toolsets: [],
+    soul: QUILL_SOUL,
   },
 ];
