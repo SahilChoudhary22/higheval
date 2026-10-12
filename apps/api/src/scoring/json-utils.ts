@@ -118,7 +118,7 @@ export function jsonMatches(actual: unknown, expected: JsonValue, options: Match
 
 /** Compact, length-limited rendering for scorer reasons. */
 export function preview(value: unknown, limit = 120): string {
-  const text =
-    typeof value === 'string' ? JSON.stringify(value) : (JSON.stringify(value) ?? 'undefined');
+  // Strings are quoted but not escaped, so reasons stay readable.
+  const text = typeof value === 'string' ? `"${value}"` : (JSON.stringify(value) ?? 'undefined');
   return text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
 }

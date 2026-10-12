@@ -12,7 +12,12 @@ export interface VerdictInput {
   level: number;
 }
 
-const fmt = (value: number): string => (value >= 0 ? '+' : '') + value.toFixed(3);
+/** Signed with a true minus sign, matching how the UI renders differences. */
+const fmt = (value: number): string => {
+  const fixed = Math.abs(value).toFixed(3);
+  if (Number(fixed) === 0) return fixed;
+  return `${value > 0 ? '+' : '\u2212'}${fixed}`;
+};
 
 /**
  * Decision rule, fixed before any data is seen:
@@ -26,7 +31,7 @@ export function decideVerdict(input: VerdictInput): { verdict: Verdict; reason: 
   if (pairedTasks < MIN_PAIRED_TASKS || meanDifference === null || interval === null) {
     return {
       verdict: 'insufficient_data',
-      reason: `Only ${String(pairedTasks)} task(s) were scored under both configurations; at least ${String(MIN_PAIRED_TASKS)} are needed.`,
+      reason: `${pairedTasks === 1 ? 'Only 1 task was' : `Only ${String(pairedTasks)} tasks were`} scored under both configurations; at least ${String(MIN_PAIRED_TASKS)} are needed.`,
     };
   }
   const ci = `${String(Math.round(level * 100))}% CI [${fmt(interval.lower)}, ${fmt(interval.upper)}]`;

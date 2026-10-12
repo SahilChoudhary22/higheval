@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { desc, eq } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 import type { AgentConfig, agentConfigInputSchema, ConfigSnapshot } from '@higheval/shared';
 import type { z } from 'zod';
 import { sha256Hex } from '../common/hash.js';
@@ -20,10 +20,11 @@ export class ConfigsService {
   ) {}
 
   list(): AgentConfig[] {
+    // Creation order, with rowid as a tie-break for rows created in the same millisecond.
     return this.db
       .select()
       .from(agentConfigs)
-      .orderBy(desc(agentConfigs.createdAt))
+      .orderBy(asc(agentConfigs.createdAt), asc(sql`rowid`))
       .all()
       .map(toConfig);
   }
