@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, HttpCode, Param, Post } from '@nestjs/common';
 import {
   experimentInputSchema,
   type Comparison,
@@ -9,6 +9,7 @@ import {
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { ExperimentRunner } from './experiment-runner.service.js';
 import { ExperimentsService, type ExperimentData } from './experiments.service.js';
+import { renderExperimentReport } from './report.js';
 import { RunsService } from './runs.service.js';
 
 @Controller()
@@ -58,6 +59,31 @@ export class ExperimentsController {
   @Get('experiments/:id/comparison')
   comparison(@Param('id') id: string): Comparison {
     return this.experiments.comparison(id);
+  }
+
+  /** Self-contained Markdown report regenerated from stored evidence. */
+  @Get('experiments/:id/report.md')
+  @Header('Content-Type', 'text/markdown; charset=utf-8')
+  report(@Param('id') id: string): string {
+    return renderExperimentReport(
+      this.experiments.get(id),
+      this.experiments.comparison(id),
+      this.experiments.listRuns(id),
+    );
+  }
+
+  /** Full evidence bundle: experiment snapshot, comparison and every run's details. */
+  @Get('experiments/:id/export.json')
+  export(@Param('id') id: string): {
+    experiment: Experiment;
+    comparison: Comparison;
+    runs: RunDetail[];
+  } {
+    return {
+      experiment: this.experiments.get(id),
+      comparison: this.experiments.comparison(id),
+      runs: this.experiments.listRuns(id).map((run) => this.runs.get(run.id)),
+    };
   }
 
   @Get('runs/:id')
