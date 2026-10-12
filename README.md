@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/experiment-results.png" alt="An experiment's verdict: the confidence interval for candidate minus baseline, the decision rule's inputs, and per-configuration results" width="880" />
+  <img src="docs/images/experiment-results.png" alt="A conclusive verdict: adding a skill made the candidate better on all 8 tasks, with the confidence interval, permutation test and per-configuration results" width="880" />
 </p>
 
 HighEval runs the same task suite under two Hermes configurations, scores every run, and reports the paired difference with a 95% confidence interval and a verdict from a rule fixed before the data. It never calls a difference real when the evidence can't support it, and every run can be opened to see exactly why it passed or failed.
@@ -44,8 +44,8 @@ HighEval runs the same task suite under two Hermes configurations, scores every 
 - **Typed API.** Every endpoint is described by an OpenAPI 3.1 document generated from the same Zod schemas that validate it.
 
 <p align="center">
-  <img src="docs/images/run-inspector.png" alt="The run inspector: three failing scorers, the agent's final reply with the correct dates, and run metadata" width="880" />
-  <br /><sub>A failed run, opened in the inspector. The agent computed the right dates but never wrote the file.</sub>
+  <img src="docs/images/run-inspector.png" alt="The run inspector: six passing scorers with their reasons, the agent's final reply, and run metadata" width="880" />
+  <br /><sub>One run opened in the inspector: every check passed, each with the evidence it matched.</sub>
 </p>
 
 ## Quick start
