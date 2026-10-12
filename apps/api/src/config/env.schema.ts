@@ -30,7 +30,9 @@ export type Env = z.infer<typeof envSchema>;
 
 /** Used by `ConfigModule` to fail fast on invalid configuration. */
 export function validateEnv(raw: Record<string, unknown>): Env {
-  const result = envSchema.safeParse(raw);
+  // Blank values (e.g. `OPENROUTER_API_KEY=` copied from .env.example) mean "unset".
+  const present = Object.fromEntries(Object.entries(raw).filter(([, value]) => value !== ''));
+  const result = envSchema.safeParse(present);
   if (!result.success) {
     throw new Error(`Invalid environment configuration:\n${z.prettifyError(result.error)}`);
   }

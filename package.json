@@ -10,6 +10,7 @@
     "node": ">=22.18"
   },
   "scripts": {
+    "start": "bash scripts/start.sh",
     "setup:hermes": "bash scripts/setup-hermes.sh",
     "build": "pnpm -r build",
     "dev": "pnpm --filter @higheval/shared build && pnpm -r --parallel dev",

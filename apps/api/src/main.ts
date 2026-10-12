@@ -16,7 +16,13 @@ async function bootstrap(): Promise<void> {
   const host = config.get('HOST', { infer: true });
   const port = config.get('PORT', { infer: true });
   await app.listen(port, host);
-  Logger.log(`API listening on http://${host}:${port}/api`, 'Bootstrap');
+  const url = `http://${host === '0.0.0.0' ? 'localhost' : host}:${String(port)}`;
+  Logger.log(
+    config.get('NODE_ENV', { infer: true }) === 'production'
+      ? `HighEval is running at ${url}`
+      : `API listening on ${url}/api`,
+    'Bootstrap',
+  );
 }
 
 await bootstrap();

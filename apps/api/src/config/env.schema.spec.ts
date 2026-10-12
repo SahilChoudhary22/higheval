@@ -18,6 +18,11 @@ describe('validateEnv', () => {
     });
   });
 
+  it('treats blank values as unset', () => {
+    expect(validateEnv({ OPENROUTER_API_KEY: '', PORT: '' })).toMatchObject({ PORT: 3000 });
+    expect(validateEnv({ OPENROUTER_API_KEY: '' }).OPENROUTER_API_KEY).toBeUndefined();
+  });
+
   it('coerces numeric strings', () => {
     expect(validateEnv({ PORT: '8080' }).PORT).toBe(8080);
   });
