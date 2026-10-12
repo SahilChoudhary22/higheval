@@ -48,11 +48,17 @@ const TOOLSET_HELP: Record<Toolset, string> = {
   todo: 'Keep a task list while working.',
   skills: 'List and open the available skills on demand.',
 };
-/** Free OpenRouter models used by the samples. */
-const SUGGESTED_MODELS = [
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'nvidia/nemotron-3.5-lightning:free',
-  'cohere/north-mini-code:free',
+/**
+ * OpenRouter models offered as suggestions: the free ones the samples use, and
+ * low-cost paid ones. Prices are OpenRouter's lowest, per million input/output tokens.
+ */
+const SUGGESTED_MODELS: { id: string; note: string }[] = [
+  { id: 'nvidia/nemotron-3-super-120b-a12b:free', note: 'Free' },
+  { id: 'nvidia/nemotron-3.5-lightning:free', note: 'Free' },
+  { id: 'cohere/north-mini-code:free', note: 'Free' },
+  { id: 'deepseek/deepseek-v4.1-flash', note: '$0.15 / $0.60' },
+  { id: 'mistralai/mistral-nemo', note: '$0.03 / $0.03' },
+  { id: 'mistralai/mistral-small-24b-instruct-2501', note: '$0.05 / $0.08 · no tool calling' },
 ];
 
 interface ConfigForm {
@@ -119,6 +125,13 @@ watch(
 );
 
 const providerInfo = computed(() => PROVIDERS[form.provider]);
+const modelHelp = computed(
+  () =>
+    `Exact ${providerInfo.value.name} model ID. Router aliases are not allowed, so results stay attributable.` +
+    (form.provider === 'openrouter'
+      ? ' Runs use the cheapest provider OpenRouter offers for the model.'
+      : ''),
+);
 /** False only once we know the selected provider has no key; unknown counts as fine. */
 const providerReady = computed(
   () => providers.data.value?.find((provider) => provider.id === form.provider)?.configured ?? true,
@@ -236,7 +249,7 @@ async function save(): Promise<void> {
       v-slot="field"
       label="Model"
       :error="errorFor('model.model')"
-      :help="`Exact ${providerInfo.name} model ID. Router aliases are not allowed, so results stay attributable.`"
+      :help="modelHelp"
     >
       <input
         id="model"
@@ -249,7 +262,9 @@ async function save(): Promise<void> {
         :aria-describedby="field.describedby"
       />
       <datalist id="model-suggestions">
-        <option v-for="model in SUGGESTED_MODELS" :key="model" :value="model" />
+        <option v-for="model in SUGGESTED_MODELS" :key="model.id" :value="model.id">
+          {{ model.note }}
+        </option>
       </datalist>
     </FormField>
 

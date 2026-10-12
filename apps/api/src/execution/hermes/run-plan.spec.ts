@@ -41,6 +41,7 @@ describe('buildRunPlan', () => {
     expect(config).toMatchObject({
       fallback_providers: [],
       openrouter: { response_cache: false },
+      provider_routing: { sort: 'price' },
       agent: { coding_context: 'off', max_turns: 8 },
       memory: { memory_enabled: false, user_profile_enabled: false },
       skills: { external_dirs: [], project_discovery: false, auto_load: [] },

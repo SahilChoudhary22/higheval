@@ -57,7 +57,12 @@ describe('OpenRouterJudge', () => {
     });
     const sent = fetchMock.mock.calls[0]?.[1]?.body;
     const body: unknown = JSON.parse(typeof sent === 'string' ? sent : '{}');
-    expect(body).toMatchObject({ model: 'judge/model', temperature: 0, usage: { include: true } });
+    expect(body).toMatchObject({
+      model: 'judge/model',
+      temperature: 0,
+      usage: { include: true },
+      provider: { sort: 'price' },
+    });
   });
 
   it('retries once on an unparseable reply and accumulates usage', async () => {
