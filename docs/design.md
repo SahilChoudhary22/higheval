@@ -1,0 +1,218 @@
+# HighEval design
+
+HighEval answers one question with evidence: **after changing an agent's model, skills, memory or tools, did it get better, worse, or stay the same?** It runs the same task suite under two [Hermes Agent](https://github.com/NousResearch/hermes-agent) configurations, scores every run deterministically, and reports a paired comparison with an uncertainty interval and a pre-registered decision rule.
+
+This document covers the architecture, the main decisions and the alternatives considered. Known limits are in [limitations.md](limitations.md) and running costs in [costs.md](costs.md).
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Browser
+    W[Vue 3 SPA]
+  end
+  subgraph API["NestJS API (single process)"]
+    C[Controllers<br/>Zod-validated]
+    S[Suites · Configs · Skills]
+    X[Experiments service]
+    R[Experiment runner<br/>durable queue]
+    SC[Scoring]
+    ST[Statistics]
+    E[[AgentExecutor]]
+    H[HermesExecutor]
+  end
+  DB[(SQLite<br/>Drizzle)]
+  FS[/data/runs/&lt;run&gt;/attempt-n<br/>home · work · stdout · stderr/]
+  HM[Hermes CLI<br/>pinned commit, own venv]
+  OR[(OpenRouter)]
+
+  W -- JSON over /api --> C
+  C --> S & X
+  X --> R
+  R --> E
+  E -.implements.-> H
+  H -- spawn per run --> HM
+  HM --> OR
+  H --> FS
+  R --> SC
+  X --> ST
+  S & X & R --> DB
+```
+
+| Package           | Responsibility                                                                                                                                                                                                        |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/shared` | Zod schemas for every request and response. The API validates input with them; the web app validates every response with them. One source of truth for the contract.                                                  |
+| `apps/api`        | NestJS modules: `suites`, `skills`, `configs`, `experiments` (service, runner, run inspection), `execution` (executor interface + Hermes implementation), `scoring`, `statistics`, `samples` (seed data), `database`. |
+| `apps/web`        | Vue 3 SPA: overview, experiment launch and detail, run inspector, suite/config/skill editors.                                                                                                                         |
+
+### Request lifecycle of an experiment
+
+1. **Launch** (`POST /api/experiments`). The service snapshots the suite's tasks and both configurations, inlining skill contents, and hashes everything that can change behaviour. It then creates every run up front (`tasks × 2 arms × repetitions`) in a **seeded random order**, so both arms are interleaved over time.
+2. **Execute.** The runner claims queued runs in a SQLite transaction, up to a global concurrency limit, and hands each to the `AgentExecutor`. Normalized events (`session`, `text`, `tool_call`, `tool_result`, `error`) are persisted as they stream in.
+3. **Score.** When a run completes, its scorers read the final reply, files in the run's workspace, and the tool-call trace. Each scorer stores a pass/fail, a 0–1 score and a human-readable reason.
+4. **Compare** (`GET /api/experiments/:id/comparison`). Computed on read from the stored runs, so it is always consistent with the evidence.
+5. **Inspect** (`GET /api/runs/:id`). Prompt, final output, scorer reasons, event timeline, workspace files, tokens, API calls, cost and stderr.
+
+## Key decisions
+
+### 1. Hermes is invoked as a CLI subprocess, behind an interface
+
+The platform must be TypeScript, and Hermes is Python. The options were a Python sidecar service, embedding Hermes as a library through a bridge, or spawning its CLI. The CLI's `--format stream-json` mode already emits structured events (session, text deltas, tool calls and results, a final token envelope), so a subprocess needs no authored Python and no long-lived state.
+
+- `AgentExecutor` is an abstract class. Scoring, storage and statistics consume only its normalized outcome, so another agent runtime could be added without touching them. The e2e tests use a deterministic fake executor through this seam.
+- Processes are spawned **with an argument array, never a shell**, in their own process group. Cancellation and hard timeouts send SIGTERM and then SIGKILL to the whole group, so tools the agent started die with it.
+- Hermes is installed from a **pinned commit** into `./.hermes-runtime` by `scripts/setup-hermes.sh`, which skips the browser and computer-use extras. The API calls the installed interpreter directly, avoiding a wrapper that re-verified dependencies on every call (15–20 s each).
+
+### 2. Every run is isolated, and the isolation is tested
+
+A comparison is only meaningful if the two arms differ **only** in the configuration under test. Reading the Hermes source turned up several ways state could leak between runs or arms. Each run gets a fresh `HERMES_HOME`, a throwaway `HOME`, and a fresh working directory, and the generated `config.yaml` pins the following:
+
+| Leak                                                                                                                                      | Mitigation                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hermes copies its 58 bundled skills into every new home and lists them in the prompt                                                      | `HERMES_BUNDLED_SKILLS` points at a non-existent directory; only the configuration's skills are written to `home/skills/` and preloaded with `--skills`                   |
+| "Coding context" walks up from the working directory, finds this repo's `package.json`, and injects git state and scripts into the prompt | `agent.coding_context: off`, plus `git init` in each workspace so context-file discovery stops there                                                                      |
+| OpenRouter response caching is on by default, so a repetition could be served the previous reply                                          | `openrouter.response_cache: false`                                                                                                                                        |
+| Silent model fallback                                                                                                                     | `fallback_providers: []`; the model Hermes actually used is read back from its session database and shown next to the requested one                                       |
+| Memory and background learning                                                                                                            | Built-in memory, user profile, memory providers, background review, title generation and the curator are all disabled; "seeded" memory writes only the configured entries |
+| Host side effects (`~/.local/bin` publication, lazy package installs, update checks)                                                      | `cli.expose_on_path: false`, `HERMES_DISABLE_LAZY_INSTALLS=1`, `updates.check: false`, fake `HOME`                                                                        |
+| Inherited secrets                                                                                                                         | The child environment is built from scratch: `PATH`, locale, Hermes paths and the provider key only                                                                       |
+
+`test:live` checks these claims against the real runtime and a real model:
+
+- a selected skill's instruction is visible only to the configuration that selects it
+- a seeded memory fact is recalled only when memory is seeded
+- "no tools" produces no tool calls
+- the stored system prompt contains no host project context
+
+Expected answers live only in scorer definitions in the database, never in files the agent can read; a unit test enforces this for the sample suite.
+
+### 3. Failures are classified, not averaged away
+
+Runs end in one of two classes, and the distinction drives the statistics:
+
+- **Scored**, with termination `completed`, `max_turns` or `timeout`. The agent produced something (or ran out of budget), so its output is scored. Running out of turns or time is agent behaviour and counts against it.
+- **Errored**, with kind `provider`, `setup`, `crash` or `interrupted`. These are infrastructure failures that say nothing about agent quality, so they are excluded from the comparison and reported as missing coverage. Rate limits (HTTP 429) are retried with exponential backoff up to `MAX_RUN_ATTEMPTS`.
+
+The classification uses Hermes' exit contract: exit 0 means completed; exit 1 _without_ an error field means the turn did not complete, which is a turn-limit stop when the API call count reached `maxTurns`; exit 1 _with_ an error is matched against provider error patterns. `--run-budget` is only advisory in Hermes, so the executor enforces a hard wall-clock limit itself.
+
+### 4. Statistics: paired, task-level, pre-registered
+
+Each task is run under both arms, so the natural unit of analysis is the **paired per-task difference** (candidate − baseline).
+
+1. Repetitions are **averaged per task and arm first**. Repeats of one task are not independent evidence about the suite, so resampling them separately would overstate confidence.
+2. **95% paired bootstrap percentile interval** for the mean difference: 10,000 resamples of tasks, using a seeded PRNG so the same experiment always reports the same interval.
+3. **Sign-flip permutation test** for a p-value: exact enumeration up to 16 tasks, seeded Monte Carlo above that.
+4. **Decision rule**, fixed before data and shown in the UI:
+   - fewer than 5 paired tasks → _not enough data_
+   - interval entirely above 0 → _candidate better_; entirely below 0 → _candidate worse_
+   - interval entirely inside ±margin → _practically equivalent_
+   - anything else → _inconclusive_
+
+An interval that merely contains zero is never reported as "no difference". Equivalence needs an explicit practical margin, chosen when the experiment is launched. A judge's self-reported confidence or a raw score gap is not used as confidence.
+
+The percentile bootstrap is known to be somewhat anti-conservative for small task counts. With 16 tasks the interval should be read as approximate, and the permutation p-value offers a second, assumption-light view. See [limitations.md](limitations.md).
+
+### 5. Experiments are immutable snapshots
+
+Editing a suite or configuration after launch must not change what an experiment measured. Each experiment stores:
+
+- the full task list
+- both configuration snapshots, with skill contents inlined
+- a SHA-256 of the task definitions and of each configuration's behaviour-affecting fields
+- the PRNG seed used for both run order and resampling
+
+Every number on the results page can therefore be traced to exact inputs.
+
+### 6. Durable, restart-safe execution in one process
+
+There is no external queue. All execution state lives in SQLite:
+
+- Runs are claimed transactionally.
+- Retry backoff is stored as `not_before`, so it survives restarts.
+- On boot, runs left `running` are re-queued if attempts remain, or marked `interrupted` if not.
+- Shutdown aborts in-flight processes.
+
+This was exercised in practice: restarting the API mid-experiment recovered the in-flight runs, with no orphaned Hermes processes. The trade-off is single-node execution, which is fine for a local tool and noted in the limitations.
+
+### 7. Deterministic scorers first
+
+Scorers are typed and declarative:
+
+- `contains`
+- `regex`
+- `json_valid`
+- `json_field`, with numeric tolerance and order-insensitive arrays
+- `file_exists`
+- `tool_called`, with min/max bounds
+
+They can target the final reply or any file in the workspace. JSON is extracted leniently from replies (whole text, then a fenced block, then the first balanced object), so tasks measure correctness rather than formatting habits.
+
+Every result carries a reason ("Field `overdue_total` = 5800.5 (±0.01)"), which is what makes the run inspector useful. LLM-as-judge scoring was deliberately left out (see limitations): it adds cost, variance and a second model whose drift would contaminate the comparison.
+
+### 8. One validated contract across the stack
+
+Zod schemas in `packages/shared` define every payload.
+
+- The API validates bodies with a `ZodValidationPipe` and returns field-level issues.
+- The web client parses every response with the same schemas, so drift between backend and frontend fails loudly instead of rendering `undefined`.
+- Environment variables are validated at boot, and the app refuses to start on invalid configuration.
+
+### 9. Interface
+
+The UI follows a "lab ledger" direction derived from the [Hallmark](https://github.com/Nutlope/hallmark) design guidance (Almanac theme, adapted for a dense tool):
+
+- cool paper background, a single ink-blue accent, hairline rules instead of cards
+- tabular figures throughout
+- outcome colours that remain distinguishable without red/green (teal = better, rust = worse, crimson reserved for system errors)
+
+The verdict is a sentence first; the interval chart and numbers support it. Every value is a design token in `apps/web/src/styles/tokens.css`, with a dark mode.
+
+## Data model
+
+```mermaid
+erDiagram
+  suites ||--o{ tasks : contains
+  skills }o--o{ agent_configs : "selected by (skill_ids)"
+  experiments ||--o{ runs : plans
+  runs ||--o{ run_events : streams
+  runs ||--o{ run_scores : "scored by"
+  experiments {
+    json tasks "snapshot"
+    json baseline "config snapshot + hash"
+    json candidate "config snapshot + hash"
+    text suite_hash
+    int seed
+  }
+  runs {
+    text arm
+    int repetition
+    int sequence "randomized order"
+    text status "queued|running|scored|errored|cancelled"
+    text termination "completed|max_turns|timeout"
+    text error_kind "provider|setup|crash|interrupted"
+    real score
+    json tokens
+    int api_calls
+    real cost_usd
+  }
+```
+
+## Assumptions
+
+- **"TypeScript throughout"** means all authored application code is TypeScript. Hermes is a required Python dependency invoked as an external program; no Python was written for this project.
+- **Single user, local first.** No authentication. The API binds to `127.0.0.1` by default. A public deployment would need authentication in front of every endpoint that launches agents, since those spend provider quota.
+- **OpenRouter as the provider.** The configuration contract has a `provider` field ready for others, but only OpenRouter is wired and tested. Free-tier models were used for the reported experiments.
+- **Model IDs are exact.** Router aliases such as `openrouter/free` are rejected, because a comparison is meaningless if the model can change underneath it.
+- **Toolsets offered are `file`, `terminal` and `todo`.** Hermes denies `execute_code` in non-interactive runs, and `web` depends on third-party search accounts that would make results irreproducible.
+- **Reasoning effort is pinned to `medium`** for both arms and is not yet a configurable dimension.
+- **Tasks are synthetic.** The sample suite models agency back-office work (billing, CRM hygiene, scheduling, compliance, reporting) with no external accounts, so anyone can reproduce it.
+
+## Testing strategy
+
+| Layer                            | What it proves                                                                                                                                                                                                                                                |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit (Vitest)                    | Scorers, JSON extraction, statistics (exact p-values, degenerate and seeded cases), stream parsing across arbitrary chunk boundaries, exit classification, process control (no shell interpolation, group kill, timeout), workspace path safety, run planning |
+| Sample-suite reference solutions | Every task scores exactly 1 for a correct answer and rejects plausible wrong ones; no answer leaks into fixtures                                                                                                                                              |
+| API e2e (fake executor)          | Launch → interleaved execution → scoring → comparison → run detail through HTTP, plus validation errors                                                                                                                                                       |
+| Live (`test:live`, opt-in)       | The real Hermes runtime with a real model: tool use, no-tools, skill isolation, memory isolation, no host-context leakage                                                                                                                                     |
+| CI                               | Format, lint (type-aware oxlint + ESLint for Vue), typecheck, unit and e2e tests, build                                                                                                                                                                       |
