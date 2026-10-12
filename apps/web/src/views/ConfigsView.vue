@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhSlidersHorizontal } from '@phosphor-icons/vue';
+import { PhRobot } from '@phosphor-icons/vue';
 import { PROVIDERS, type AgentConfig } from '@higheval/shared';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -63,7 +63,7 @@ function deleteConfig(config: AgentConfig): void {
     <SkeletonRows v-else-if="!configs.data.value" />
     <EmptyState
       v-else-if="visible.length === 0"
-      :icon="PhSlidersHorizontal"
+      :icon="PhRobot"
       title="No agents yet."
       detail="An experiment compares two agents, so you need at least two."
     >
