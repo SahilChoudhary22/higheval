@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { asc, count, desc, eq } from 'drizzle-orm';
 import type {
   Comparison,
@@ -6,6 +11,7 @@ import type {
   experimentInputSchema,
   RunProgress,
   RunSummary,
+  Task,
 } from '@higheval/shared';
 import { randomInt } from 'node:crypto';
 import { rmSync } from 'node:fs';
@@ -45,6 +51,7 @@ export class ExperimentsService {
     const suite = this.suites.get(input.suiteId);
     const baseline = this.configs.snapshot(input.baselineConfigId);
     const candidate = this.configs.snapshot(input.candidateConfigId);
+    assertIndependentJudges(suite.tasks, [baseline.model.model, candidate.model.model]);
     const seed = randomInt(1, 2 ** 31 - 1);
     const id = newId();
 
@@ -194,4 +201,26 @@ function shuffle<T>(items: readonly T[], random: () => number): T[] {
     }
   }
   return result;
+}
+
+/**
+ * An LLM judge grading its own output is biased toward it, so a judge model
+ * may not be either of the models under test.
+ */
+function assertIndependentJudges(tasks: readonly Task[], modelsUnderTest: readonly string[]): void {
+  for (const task of tasks) {
+    for (const scorer of task.scorers) {
+      if (scorer.type === 'llm_judge' && modelsUnderTest.includes(scorer.judge.model)) {
+        throw new BadRequestException({
+          message: 'Validation failed',
+          issues: [
+            {
+              path: 'candidateConfigId',
+              message: `Task "${task.key}" is judged by ${scorer.judge.model}, which is also a model under test. Choose a different judge or configuration.`,
+            },
+          ],
+        });
+      }
+    }
+  }
 }

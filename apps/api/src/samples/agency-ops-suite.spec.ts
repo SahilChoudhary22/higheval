@@ -141,7 +141,7 @@ describe('Agency operations sample suite', () => {
 
   it.each(suite.tasks.map((task) => [task.key, task] as const))(
     '%s scores 1 for its reference solution',
-    (key, task) => {
+    async (key, task) => {
       const reference = REFERENCE[key] ?? {};
       const files = Object.fromEntries(
         Object.entries(reference.files ?? {}).map(([path, value]) => [
@@ -149,9 +149,10 @@ describe('Agency operations sample suite', () => {
           JSON.stringify(value, null, 2),
         ]),
       );
-      const result = scoreTask(
+      const result = await scoreTask(
         task.scorers,
         {
+          taskPrompt: task.prompt,
           finalOutput: reference.output ?? 'Done.',
           readFile: (path) => files[path] ?? null,
           toolCalls: [],
@@ -163,12 +164,17 @@ describe('Agency operations sample suite', () => {
     },
   );
 
-  it('rejects a plausible wrong answer for the harder tasks', () => {
+  it('rejects a plausible wrong answer for the harder tasks', async () => {
     const task = suite.tasks.find((candidate) => candidate.key === 'reorder-quantities');
     const wrong = JSON.stringify({ orders: { 'SKU-C': 96, 'SKU-D': 150, 'SKU-E': 6 } });
-    const result = scoreTask(
+    const result = await scoreTask(
       task?.scorers ?? [],
-      { finalOutput: 'Done.', readFile: () => wrong, toolCalls: [] },
+      {
+        taskPrompt: task?.prompt ?? '',
+        finalOutput: 'Done.',
+        readFile: () => wrong,
+        toolCalls: [],
+      },
       task?.passThreshold ?? 1,
     );
     expect(result.passed).toBe(false);
@@ -182,35 +188,38 @@ describe('Agency operations sample suite', () => {
     );
   });
 
-  it('accepts both correct roundings of an exact half and rejects a bare "3"', () => {
+  it('accepts both correct roundings of an exact half and rejects a bare "3"', async () => {
     const roi = suite.tasks.find((task) => task.key === 'campaign-roi');
     const leads = suite.tasks.find((task) => task.key === 'lead-qualification');
-    const scoreOutput = (task: typeof roi, output: string) =>
-      scoreTask(
-        task?.scorers ?? [],
-        {
-          finalOutput: output,
-          readFile: () => JSON.stringify({ qualified: ['L-101', 'L-104', 'L-106'] }),
-          toolCalls: [],
-        },
-        1,
+    const scoreOutput = async (task: typeof roi, output: string): Promise<number> =>
+      (
+        await scoreTask(
+          task?.scorers ?? [],
+          {
+            taskPrompt: task?.prompt ?? '',
+            finalOutput: output,
+            readFile: () => JSON.stringify({ qualified: ['L-101', 'L-104', 'L-106'] }),
+            toolCalls: [],
+          },
+          1,
+        )
       ).score;
     for (const overall of [1.87, 1.875, 1.88]) {
       expect(
-        scoreOutput(
+        await scoreOutput(
           roi,
           JSON.stringify({ best_campaign: 'Reactivation', best_roi: 3.5, overall_roi: overall }),
         ),
       ).toBe(1);
     }
     expect(
-      scoreOutput(
+      await scoreOutput(
         roi,
         JSON.stringify({ best_campaign: 'Reactivation', best_roi: 3.5, overall_roi: 1.86 }),
       ),
     ).toBeLessThan(1);
     expect(
-      scoreOutput(leads, 'Wrote the file. Lead L-103 has 3 contacts; 2 qualified.'),
+      await scoreOutput(leads, 'Wrote the file. Lead L-103 has 3 contacts; 2 qualified.'),
     ).toBeLessThan(1);
   });
 

@@ -23,6 +23,7 @@ import {
   type ExecutionOutcome,
   type ExecutionRequest,
 } from '../src/execution/agent-executor.js';
+import { Judge, type JudgeRequest, type JudgeVerdict } from '../src/scoring/judge/judge.js';
 
 /**
  * Deterministic stand-in for Hermes: the "strong" model writes the right
@@ -87,6 +88,43 @@ class FakeExecutor extends AgentExecutor {
   }
 }
 
+/** Deterministic judge: rates every criterion 4/5 and reports fixed usage. */
+class FakeJudge extends Judge {
+  readonly requests: JudgeRequest[] = [];
+
+  evaluate(judgeRequest: JudgeRequest): Promise<JudgeVerdict> {
+    this.requests.push(judgeRequest);
+    return Promise.resolve({
+      criteria: judgeRequest.criteria.map((criterion) => ({
+        key: criterion.key,
+        rating: 4,
+        reason: 'Clear.',
+      })),
+      overallReason: 'Helpful reply.',
+      usage: { inputTokens: 200, outputTokens: 40, costUsd: 0.0005, requests: 1 },
+    });
+  }
+}
+
+const judgedSuite = (judgeModel: string): SuiteInput => ({
+  name: `Judged by ${judgeModel}`,
+  tasks: Array.from({ length: 5 }, (_, index) => ({
+    key: `reply-${String(index)}`,
+    title: `Reply ${String(index)}`,
+    prompt: 'Reply to the customer.',
+    scorers: [
+      { type: 'contains', target: { kind: 'final_output' }, value: 'done' },
+      {
+        type: 'llm_judge',
+        target: { kind: 'final_output' },
+        judge: { provider: 'openrouter', model: judgeModel },
+        rubric: 'Be helpful.',
+        criteria: [{ key: 'helpfulness', description: 'Moves the customer forward' }],
+      },
+    ],
+  })),
+});
+
 const suite: SuiteInput = {
   name: 'Arithmetic',
   tasks: Array.from({ length: 6 }, (_, index) => ({
@@ -111,6 +149,7 @@ const config = (name: string, model: string): AgentConfigInput => ({
 describe('Experiment flow (e2e)', () => {
   let app: NestExpressApplication | undefined;
   const executor = new FakeExecutor();
+  const judge = new FakeJudge();
   const server = (): App => {
     if (!app) throw new Error('App not initialized');
     return app.getHttpServer();
@@ -120,6 +159,8 @@ describe('Experiment flow (e2e)', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(AgentExecutor)
       .useValue(executor)
+      .overrideProvider(Judge)
+      .useValue(judge)
       .compile();
     const instance = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false });
     configureApp(instance);
@@ -255,6 +296,109 @@ describe('Experiment flow (e2e)', () => {
     expect(
       runs.filter((run) => run.arm === 'candidate').every((run) => run.errorKind === 'scoring'),
     ).toBe(true);
+  });
+
+  it('scores with an LLM judge and reports its details and cost separately', async () => {
+    const suiteId = idOf(
+      (await request(server()).post('/api/suites').send(judgedSuite('judge/model')).expect(201))
+        .body,
+    );
+    const baselineId = idOf(
+      (
+        await request(server())
+          .post('/api/configs')
+          .send(config('Judged A', 'weak-model'))
+          .expect(201)
+      ).body,
+    );
+    const candidateId = idOf(
+      (
+        await request(server())
+          .post('/api/configs')
+          .send(config('Judged B', 'strong-model'))
+          .expect(201)
+      ).body,
+    );
+    const created = experimentSchema.parse(
+      (
+        await request(server())
+          .post('/api/experiments')
+          .send({
+            name: 'Judged',
+            suiteId,
+            baselineConfigId: baselineId,
+            candidateConfigId: candidateId,
+          })
+          .expect(201)
+      ).body,
+    );
+    let experiment: Experiment = created;
+    for (let attempt = 0; attempt < 100 && experiment.status !== 'completed'; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      experiment = experimentSchema.parse(
+        (await request(server()).get(`/api/experiments/${created.id}`)).body,
+      );
+    }
+    expect(experiment.progress).toMatchObject({ scored: 10, errored: 0 });
+
+    const comparison = comparisonSchema.parse(
+      (await request(server()).get(`/api/experiments/${created.id}/comparison`).expect(200)).body,
+    );
+    expect(comparison.baseline).toMatchObject({ judgeRequests: 5, judgeTokens: 1200 });
+    expect(comparison.baseline.judgeCostUsd).toBeCloseTo(0.0025, 6);
+
+    const runs = z
+      .array(runSummarySchema)
+      .parse((await request(server()).get(`/api/experiments/${created.id}/runs`).expect(200)).body);
+    const detail = runDetailSchema.parse(
+      (
+        await request(server())
+          .get(`/api/runs/${runs[0]?.id ?? ''}`)
+          .expect(200)
+      ).body,
+    );
+    expect(detail.scores[1]).toMatchObject({
+      type: 'llm_judge',
+      score: 0.75,
+      details: {
+        model: 'judge/model',
+        criteria: [{ key: 'helpfulness', rating: 4, reason: 'Clear.' }],
+      },
+    });
+    expect(judge.requests[0]?.taskPrompt).toBe('Reply to the customer.');
+  });
+
+  it('refuses to launch when the judge is also a model under test', async () => {
+    const suiteId = idOf(
+      (await request(server()).post('/api/suites').send(judgedSuite('strong-model')).expect(201))
+        .body,
+    );
+    const baselineId = idOf(
+      (
+        await request(server())
+          .post('/api/configs')
+          .send(config('Self A', 'weak-model'))
+          .expect(201)
+      ).body,
+    );
+    const candidateId = idOf(
+      (
+        await request(server())
+          .post('/api/configs')
+          .send(config('Self B', 'strong-model'))
+          .expect(201)
+      ).body,
+    );
+    const response = await request(server())
+      .post('/api/experiments')
+      .send({
+        name: 'Self-judged',
+        suiteId,
+        baselineConfigId: baselineId,
+        candidateConfigId: candidateId,
+      })
+      .expect(400);
+    expect(JSON.stringify(response.body)).toContain('also a model under test');
   });
 
   it('snapshots configurations so later edits do not change a launched experiment', async () => {

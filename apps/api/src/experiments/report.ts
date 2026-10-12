@@ -96,6 +96,13 @@ export function renderExperimentReport(
     `| Total tokens | ${count(baseline.totalTokens)} | ${count(candidate.totalTokens)} |`,
     `| Model API calls | ${count(baseline.totalApiCalls)} | ${count(candidate.totalApiCalls)} |`,
     `| Provider cost | ${usd(baseline.totalCostUsd)} | ${usd(candidate.totalCostUsd)} |`,
+    ...(baseline.judgeRequests + candidate.judgeRequests > 0
+      ? [
+          `| LLM-judge requests (scoring) | ${count(baseline.judgeRequests)} | ${count(candidate.judgeRequests)} |`,
+          `| LLM-judge tokens | ${count(baseline.judgeTokens)} | ${count(candidate.judgeTokens)} |`,
+          `| LLM-judge cost | ${usd(baseline.judgeCostUsd)} | ${usd(candidate.judgeCostUsd)} |`,
+        ]
+      : []),
     '',
     retried > 0
       ? `${String(retried)} run(s) needed more than one attempt (rate limits or restarts); only final attempts are scored.`

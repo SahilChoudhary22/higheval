@@ -115,6 +115,10 @@ export const runSummarySchema = z.object({
   apiCalls: z.int().nonnegative().nullable(),
   /** Provider-reported cost when available, otherwise the runtime's estimate. */
   costUsd: z.number().nonnegative().nullable(),
+  /** LLM-judge requests, tokens and cost spent scoring this run (kept separate from the agent's). */
+  judgeRequests: z.int().nonnegative().default(0),
+  judgeTokens: z.int().nonnegative().default(0),
+  judgeCostUsd: z.number().nonnegative().nullable().default(null),
   attempts: z.int().nonnegative(),
   startedAt: timestampSchema.nullable(),
   finishedAt: timestampSchema.nullable(),
@@ -194,6 +198,10 @@ export const armSummarySchema = z.object({
   totalApiCalls: z.int().nonnegative(),
   /** Null when no run reported a cost. */
   totalCostUsd: z.number().nonnegative().nullable(),
+  /** Scoring cost from LLM judges, reported separately from the agent's own usage. */
+  judgeRequests: z.int().nonnegative(),
+  judgeTokens: z.int().nonnegative(),
+  judgeCostUsd: z.number().nonnegative().nullable(),
 });
 export type ArmSummary = z.infer<typeof armSummarySchema>;
 

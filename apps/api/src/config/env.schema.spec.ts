@@ -16,6 +16,7 @@ describe('validateEnv', () => {
       MAX_RUN_ATTEMPTS: 3,
       RETRY_BASE_DELAY_MS: 15_000,
       SEED_SAMPLES: true,
+      JUDGE_RETRY_BASE_DELAY_MS: 2_000,
     });
   });
 
