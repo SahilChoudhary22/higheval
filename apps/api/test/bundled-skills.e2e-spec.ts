@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { bundledSkillCatalogSchema } from '@higheval/shared';
+import { agentConfigSchema, bundledSkillCatalogSchema } from '@higheval/shared';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -45,6 +45,29 @@ describe('Hermes built-in skills (e2e)', () => {
           platforms: ['linux', 'macos', 'windows'],
         },
       ],
+    });
+  });
+
+  it('validates built-in skill names against the catalog when a config is saved', async () => {
+    const config = {
+      name: 'With built-in skills',
+      model: { provider: 'openrouter', model: 'vendor/model' },
+    };
+    const rejected = await request(server())
+      .post('/api/configs')
+      .send({ ...config, bundledSkills: { mode: 'selected', names: ['arxiv', 'imaginary'] } })
+      .expect(400);
+    expect(rejected.body).toMatchObject({
+      issues: [{ path: 'bundledSkills.names.1', message: expect.stringContaining('imaginary') }],
+    });
+
+    const created = await request(server())
+      .post('/api/configs')
+      .send({ ...config, bundledSkills: { mode: 'selected', names: ['arxiv'] } })
+      .expect(201);
+    expect(agentConfigSchema.parse(created.body).bundledSkills).toEqual({
+      mode: 'selected',
+      names: ['arxiv'],
     });
   });
 });

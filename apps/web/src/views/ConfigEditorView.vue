@@ -22,6 +22,7 @@ const TOOLSET_HELP: Record<Toolset, string> = {
   file: 'Read, write, patch and search files in the task workspace.',
   terminal: 'Run shell commands in the workspace (not sandboxed; dangerous commands are denied).',
   todo: 'Keep a task list while working.',
+  skills: 'List and open the available skills on demand.',
 };
 const SUGGESTED_MODELS = [
   'nvidia/nemotron-3-super-120b-a12b:free',

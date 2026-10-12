@@ -1,7 +1,14 @@
+import type { ResolvedBundledSkills } from '@higheval/shared';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { scanBundledSkills } from './bundled-skills.js';
+import {
+  NO_BUNDLED_SKILLS,
+  resolveBundledSkills,
+  scanBundledSkills,
+  type BundledSkillScan,
+  type ScannedBundledSkill,
+} from './bundled-skills.js';
 
 const skill = (frontmatter: string, body = '# Skill\n'): string =>
   `---\n${frontmatter}\n---\n\n${body}`;
@@ -95,5 +102,68 @@ describe('scanBundledSkills', () => {
 
     write('productivity/notes/scripts/extract.py', 'print("changed")\n');
     expect(hashOf('notes')).not.toBe(before);
+  });
+});
+
+const entry = (category: string, name: string, contentHash = name): ScannedBundledSkill => ({
+  name,
+  category,
+  description: '',
+  platforms: [],
+  path: `${category}/${name}`,
+  contentHash,
+});
+const scanOf = (skills: ScannedBundledSkill[]): BundledSkillScan => ({
+  skills,
+  categoryFiles: new Map([
+    ['research', { path: 'research/DESCRIPTION.md', contentHash: 'research-blurb' }],
+  ]),
+  skipped: [],
+});
+const resolved = (result: ReturnType<typeof resolveBundledSkills>): ResolvedBundledSkills => {
+  if (!result.ok) throw new Error(`Unexpected unknown skills: ${JSON.stringify(result.unknown)}`);
+  return result.resolved;
+};
+const selectionHash = (source: BundledSkillScan, names: string[]): string | null =>
+  resolved(resolveBundledSkills(source, { mode: 'selected', names })).contentHash;
+
+describe('resolveBundledSkills', () => {
+  const scan = scanOf([entry('productivity', 'notes'), entry('research', 'arxiv')]);
+
+  it('copies nothing for "none"', () => {
+    expect(resolveBundledSkills(scan, { mode: 'none' })).toEqual({
+      ok: true,
+      resolved: NO_BUNDLED_SKILLS,
+    });
+  });
+
+  it('copies the selected skills with their category descriptions', () => {
+    expect(resolved(resolveBundledSkills(scan, { mode: 'selected', names: ['arxiv'] }))).toEqual({
+      mode: 'selected',
+      names: ['arxiv'],
+      paths: ['research/DESCRIPTION.md', 'research/arxiv'],
+      contentHash: expect.stringMatching(/^[0-9a-f]{64}$/) as unknown,
+    });
+  });
+
+  it('copies every skill for "all"', () => {
+    const all = resolved(resolveBundledSkills(scan, { mode: 'all' }));
+    expect(all.names).toEqual(['notes', 'arxiv']);
+    expect(all.paths).toEqual(['productivity/notes', 'research/DESCRIPTION.md', 'research/arxiv']);
+  });
+
+  it('hashes what is copied: the selection and the file contents', () => {
+    const arxiv = selectionHash(scan, ['arxiv']);
+    expect(selectionHash(scan, ['arxiv'])).toBe(arxiv);
+    expect(selectionHash(scan, ['arxiv', 'notes'])).not.toBe(arxiv);
+    expect(selectionHash(scanOf([entry('research', 'arxiv', 'edited')]), ['arxiv'])).not.toBe(
+      arxiv,
+    );
+  });
+
+  it('reports names the catalog does not have, by position', () => {
+    expect(resolveBundledSkills(scan, { mode: 'selected', names: ['arxiv', 'imaginary'] })).toEqual(
+      { ok: false, unknown: [{ index: 1, name: 'imaginary' }] },
+    );
   });
 });

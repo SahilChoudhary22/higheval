@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idSchema, slugSchema, timestampSchema } from './common.js';
+import { idSchema, relativePathSchema, slugSchema, timestampSchema } from './common.js';
 
 export const skillInputSchema = z.object({
   name: slugSchema,
@@ -65,13 +65,30 @@ export const bundledSkillsSchema = z.discriminatedUnion('mode', [
 ]);
 export type BundledSkills = z.infer<typeof bundledSkillsSchema>;
 
+/** A built-in skills setting resolved against the installed Hermes when an experiment starts. */
+export const resolvedBundledSkillsSchema = z.object({
+  mode: z.enum(['none', 'all', 'selected']),
+  /** Every skill copied into each run (all of them for `all`), sorted. */
+  names: z.array(slugSchema),
+  /**
+   * What is copied into each run's skills directory, relative to Hermes'
+   * bundled skills root: skill directories and their category descriptions.
+   */
+  paths: z.array(relativePathSchema),
+  /** SHA-256 over the copied files; null when nothing is copied. */
+  contentHash: z.string().length(64).nullable(),
+});
+export type ResolvedBundledSkills = z.infer<typeof resolvedBundledSkillsSchema>;
+
 /**
  * Hermes toolsets exposed by the platform. Limited to tools that work offline
  * in the run's working directory, so results do not depend on third-party
  * accounts. `code_execution` is omitted because Hermes denies it in
- * non-interactive runs; skills and memory have their own settings.
+ * non-interactive runs; memory has its own setting. `skills` lets the agent
+ * list and open the skills in its home on demand; runs with built-in skills
+ * always get it, since an undiscoverable skill would be an unrecorded no-op.
  */
-export const toolsetSchema = z.enum(['file', 'terminal', 'todo']);
+export const toolsetSchema = z.enum(['file', 'terminal', 'todo', 'skills']);
 export type Toolset = z.infer<typeof toolsetSchema>;
 
 export const agentConfigInputSchema = z.object({
@@ -113,6 +130,13 @@ export const configSnapshotSchema = agentConfigSchema
   .omit({ skillIds: true, bundledSkills: true, createdAt: true, updatedAt: true })
   .extend({
     skills: z.array(skillInputSchema),
+    /**
+     * Built-in skills copied into every run. Absent on snapshots taken before
+     * they were configurable, which ran without any.
+     */
+    bundledSkills: resolvedBundledSkillsSchema.optional(),
+    /** Hermes commit installed at launch; absent if Hermes was not installed (or on older snapshots). */
+    hermesCommit: z.string().optional(),
     /** SHA-256 over every behavior-affecting field. */
     hash: z.string().length(64),
   });

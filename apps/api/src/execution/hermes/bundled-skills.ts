@@ -1,4 +1,9 @@
-import { slugSchema, type BundledSkill } from '@higheval/shared';
+import {
+  slugSchema,
+  type BundledSkill,
+  type BundledSkills,
+  type ResolvedBundledSkills,
+} from '@higheval/shared';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -92,6 +97,57 @@ export function scanBundledSkills(root: string): BundledSkillScan {
   }
   scan.skills.sort((a, b) => byCodePoint(a.name, b.name));
   return scan;
+}
+
+export const NO_BUNDLED_SKILLS: ResolvedBundledSkills = {
+  mode: 'none',
+  names: [],
+  paths: [],
+  contentHash: null,
+};
+
+export type BundledSkillsResolution =
+  | { ok: true; resolved: ResolvedBundledSkills }
+  | { ok: false; unknown: { index: number; name: string }[] };
+
+/**
+ * Expands a setting into the exact files each run receives: the selected skill
+ * directories plus their categories' descriptions, which Hermes shows in its
+ * skills index. The content hash covers all of them.
+ */
+export function resolveBundledSkills(
+  scan: BundledSkillScan,
+  setting: BundledSkills,
+): BundledSkillsResolution {
+  if (setting.mode === 'none') return { ok: true, resolved: NO_BUNDLED_SKILLS };
+  const byName = new Map(scan.skills.map((skill) => [skill.name, skill]));
+  const unknown =
+    setting.mode === 'selected'
+      ? setting.names.flatMap((name, index) => (byName.has(name) ? [] : [{ index, name }]))
+      : [];
+  if (unknown.length > 0) return { ok: false, unknown };
+
+  const selected =
+    setting.mode === 'all'
+      ? scan.skills
+      : scan.skills.filter((skill) => setting.names.includes(skill.name));
+  const categories = new Set(selected.map((skill) => skill.category));
+  const entries: { path: string; contentHash: string }[] = [
+    ...selected,
+    ...[...categories].flatMap((category) => scan.categoryFiles.get(category) ?? []),
+  ].toSorted((a, b) => byCodePoint(a.path, b.path));
+  return {
+    ok: true,
+    resolved: {
+      mode: setting.mode,
+      names: selected.map((skill) => skill.name),
+      paths: entries.map((entry) => entry.path),
+      contentHash:
+        entries.length > 0
+          ? sha256Hex(entries.map(({ path, contentHash }) => [path, contentHash]))
+          : null,
+    },
+  };
 }
 
 type FrontmatterResult =

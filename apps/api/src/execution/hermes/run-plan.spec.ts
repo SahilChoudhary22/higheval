@@ -7,6 +7,7 @@ const base: ConfigSnapshot = {
   description: '',
   model: { provider: 'openrouter', model: 'vendor/model:free' },
   skills: [],
+  bundledSkills: { mode: 'none', names: [], paths: [], contentHash: null },
   memory: { mode: 'disabled' },
   toolsets: [],
   maxTurns: 8,
@@ -77,5 +78,81 @@ describe('buildRunPlan', () => {
     );
     expect(plan.homeFiles['memories/MEMORY.md']).toBe('Fact A\n§\nFact B');
     expect(hermesConfig(plan)).toMatchObject({ memory: { memory_enabled: true } });
+  });
+
+  describe('built-in skills', () => {
+    const contentHash = 'c'.repeat(64);
+
+    it('copies nothing and leaves the skills toolset off when none are selected', () => {
+      const plan = buildRunPlan({ ...base, toolsets: ['file'] }, paths);
+      expect(plan.bundledSkillPaths).toEqual([]);
+      expect(plan.args).toEqual(expect.arrayContaining(['--toolsets', 'file']));
+      expect(hermesConfig(plan)).toMatchObject({ platform_toolsets: { cli: ['file'] } });
+    });
+
+    it('treats snapshots from before built-in skills existed as having none', () => {
+      const { bundledSkills: _omitted, ...legacy } = base;
+      const plan = buildRunPlan(legacy, paths);
+      expect(plan.bundledSkillPaths).toEqual([]);
+      expect(plan.args).not.toContain('--toolsets');
+    });
+
+    it('copies the selected skills and enables discovery without preloading them', () => {
+      const plan = buildRunPlan(
+        {
+          ...base,
+          toolsets: ['file'],
+          bundledSkills: {
+            mode: 'selected',
+            names: ['arxiv'],
+            paths: ['research/DESCRIPTION.md', 'research/arxiv'],
+            contentHash,
+          },
+        },
+        paths,
+      );
+      expect(plan.bundledSkillPaths).toEqual(['research/DESCRIPTION.md', 'research/arxiv']);
+      expect(plan.args).toEqual(expect.arrayContaining(['--toolsets', 'file,skills']));
+      expect(plan.args).not.toContain('--skills');
+      expect(hermesConfig(plan)).toMatchObject({
+        platform_toolsets: { cli: ['file', 'skills'] },
+        skills: { external_dirs: [], project_discovery: false, auto_load: [] },
+      });
+      expect(Object.keys(plan.homeFiles)).toEqual(['config.yaml']);
+    });
+
+    it('copies every skill for "all", even in a run with no other tools', () => {
+      const plan = buildRunPlan(
+        {
+          ...base,
+          bundledSkills: {
+            mode: 'all',
+            names: ['arxiv', 'notes'],
+            paths: ['productivity/notes', 'research/arxiv'],
+            contentHash,
+          },
+        },
+        paths,
+      );
+      expect(plan.bundledSkillPaths).toEqual(['productivity/notes', 'research/arxiv']);
+      expect(plan.args).toEqual(expect.arrayContaining(['--toolsets', 'skills']));
+    });
+
+    it('does not list the skills toolset twice when the config already enables it', () => {
+      const plan = buildRunPlan(
+        {
+          ...base,
+          toolsets: ['skills'],
+          bundledSkills: {
+            mode: 'selected',
+            names: ['arxiv'],
+            paths: ['research/arxiv'],
+            contentHash,
+          },
+        },
+        paths,
+      );
+      expect(hermesConfig(plan)).toMatchObject({ platform_toolsets: { cli: ['skills'] } });
+    });
   });
 });

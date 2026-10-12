@@ -1,14 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { BundledSkillCatalog } from '@higheval/shared';
+import type { BundledSkillCatalog, BundledSkills, ResolvedBundledSkills } from '@higheval/shared';
+import { validationError } from '../../common/validation-error.js';
 import type { Env } from '../../config/env.schema.js';
-import { scanBundledSkills, type BundledSkillScan } from './bundled-skills.js';
+import {
+  NO_BUNDLED_SKILLS,
+  resolveBundledSkills,
+  scanBundledSkills,
+  type BundledSkillScan,
+} from './bundled-skills.js';
 import {
   bundledSkillsDir,
   HERMES_NOT_INSTALLED,
   loadHermesRuntime,
   type HermesRuntime,
 } from './hermes-runtime.js';
+
+export interface BundledSkillsResolved {
+  /** Commit of the installed Hermes; undefined when Hermes is not installed. */
+  hermesCommit: string | undefined;
+  bundledSkills: ResolvedBundledSkills;
+}
 
 /**
  * Catalog of the built-in skills shipped with the installed Hermes. The scan
@@ -23,12 +35,12 @@ export class BundledSkillsService {
   constructor(private readonly config: ConfigService<Env, true>) {}
 
   catalog(): BundledSkillCatalog {
-    const installed = this.load();
-    if (!installed) return { status: 'unavailable', message: HERMES_NOT_INSTALLED, skills: [] };
+    const runtime = this.runtime();
+    if (!runtime) return { status: 'unavailable', message: HERMES_NOT_INSTALLED, skills: [] };
     return {
       status: 'available',
-      hermesCommit: installed.runtime.commit,
-      skills: installed.scan.skills.map(({ name, category, description, platforms }) => ({
+      hermesCommit: runtime.commit,
+      skills: this.scan(runtime).skills.map(({ name, category, description, platforms }) => ({
         name,
         category,
         description,
@@ -37,9 +49,41 @@ export class BundledSkillsService {
     };
   }
 
-  private load(): { runtime: HermesRuntime; scan: BundledSkillScan } | null {
-    const runtime = loadHermesRuntime(this.config.get('HERMES_MANIFEST', { infer: true }));
-    if (!runtime) return null;
+  /**
+   * Resolves a setting against the installed Hermes. Throws a 400 with field
+   * issues when it names skills this Hermes does not ship, or needs built-in
+   * skills while Hermes is not installed.
+   */
+  resolve(setting: BundledSkills): BundledSkillsResolved {
+    const runtime = this.runtime();
+    if (setting.mode === 'none') {
+      return { hermesCommit: runtime?.commit, bundledSkills: NO_BUNDLED_SKILLS };
+    }
+    if (!runtime) {
+      throw validationError([
+        {
+          path: 'bundledSkills.mode',
+          message: 'Hermes is not installed, so its built-in skills are unavailable',
+        },
+      ]);
+    }
+    const resolution = resolveBundledSkills(this.scan(runtime), setting);
+    if (!resolution.ok) {
+      throw validationError(
+        resolution.unknown.map(({ index, name }) => ({
+          path: `bundledSkills.names.${String(index)}`,
+          message: `Hermes ${runtime.commit.slice(0, 7)} has no built-in skill "${name}"`,
+        })),
+      );
+    }
+    return { hermesCommit: runtime.commit, bundledSkills: resolution.resolved };
+  }
+
+  private runtime(): HermesRuntime | null {
+    return loadHermesRuntime(this.config.get('HERMES_MANIFEST', { infer: true }));
+  }
+
+  private scan(runtime: HermesRuntime): BundledSkillScan {
     const key = `${runtime.repo}@${runtime.commit}`;
     if (this.cached?.key !== key) {
       const scan = scanBundledSkills(bundledSkillsDir(runtime));
@@ -48,6 +92,6 @@ export class BundledSkillsService {
       }
       this.cached = { key, scan };
     }
-    return { runtime, scan: this.cached.scan };
+    return this.cached.scan;
   }
 }
