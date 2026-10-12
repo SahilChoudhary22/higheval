@@ -10,8 +10,9 @@ ARG UV_VERSION=0.11.31
 FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
 FROM node:${NODE_VERSION}-bookworm-slim AS base
+# libatomic1: required by the Node.js binary Hermes installs for its own tools.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates git \
+  && apt-get install -y --no-install-recommends ca-certificates git libatomic1 \
   && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 WORKDIR /app
