@@ -1,12 +1,5 @@
+import { apiErrorSchema, type FieldIssue } from '@higheval/shared';
 import { z } from 'zod';
-
-const issueSchema = z.object({ path: z.string(), message: z.string() });
-const errorBodySchema = z.object({
-  message: z.union([z.string(), z.array(z.string())]).optional(),
-  issues: z.array(issueSchema).optional(),
-});
-
-export type FieldIssue = z.infer<typeof issueSchema>;
 
 export class ApiError extends Error {
   constructor(
@@ -47,7 +40,7 @@ async function call<T>(
 async function toApiError(method: Method, path: string, response: Response): Promise<ApiError> {
   const fallback = `${method} ${path} failed with ${String(response.status)}`;
   try {
-    const parsed = errorBodySchema.safeParse(await response.json());
+    const parsed = apiErrorSchema.safeParse(await response.json());
     if (!parsed.success) return new ApiError(fallback, response.status);
     const { message, issues } = parsed.data;
     const text = Array.isArray(message) ? message.join('; ') : message;

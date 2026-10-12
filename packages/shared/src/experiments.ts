@@ -248,3 +248,11 @@ export const comparisonSchema = z.object({
   tasks: z.array(taskComparisonSchema),
 });
 export type Comparison = z.infer<typeof comparisonSchema>;
+
+/** Evidence bundle: the experiment's snapshots, its comparison and every run in full. */
+export const experimentExportSchema = z.object({
+  experiment: experimentSchema,
+  comparison: comparisonSchema,
+  runs: z.array(runDetailSchema),
+});
+export type ExperimentExport = z.infer<typeof experimentExportSchema>;

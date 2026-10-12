@@ -1,4 +1,20 @@
-import type { z } from 'zod';
+import { z } from 'zod';
+
+/** A problem with one input field, keyed by its dotted path (e.g. `tasks.0.key`). */
+export const fieldIssueSchema = z.object({ path: z.string(), message: z.string() });
+export type FieldIssue = z.infer<typeof fieldIssueSchema>;
+
+/**
+ * Body of every 4xx/5xx response. Validation failures (400) carry one issue
+ * per invalid field so forms can show each message next to its field.
+ */
+export const apiErrorSchema = z.object({
+  message: z.union([z.string(), z.array(z.string())]).optional(),
+  issues: z.array(fieldIssueSchema).optional(),
+  error: z.string().optional(),
+  statusCode: z.int().optional(),
+});
+export type ApiErrorBody = z.infer<typeof apiErrorSchema>;
 
 type Bound = number | bigint;
 

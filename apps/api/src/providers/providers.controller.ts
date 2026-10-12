@@ -1,23 +1,17 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Put,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
 import {
   providerIdSchema,
   providerKeyInputSchema,
+  providerStatusSchema,
+  providerTestResultSchema,
   type ProviderId,
   type ProviderStatus,
   type ProviderTestResult,
 } from '@higheval/shared';
-import type { z } from 'zod';
+import { z } from 'zod';
+import { validationError } from '../common/validation-error.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
+import { ApiDoc } from '../openapi/api-doc.decorator.js';
 import { ProviderCredentials } from './provider-credentials.service.js';
 import { ProviderKeyTester } from './provider-key-tester.js';
 
@@ -29,12 +23,25 @@ export class ProvidersController {
   ) {}
 
   @Get()
+  @ApiDoc({
+    summary: 'List providers and whether each has a key',
+    description: 'Keys are never returned, only their last four characters.',
+    response: z.array(providerStatusSchema),
+  })
   list(): ProviderStatus[] {
     return this.credentials.statuses();
   }
 
   /** Saves a key, verifying it with the provider first. Returns the verification result. */
   @Put(':id/key')
+  @ApiDoc({
+    summary: 'Verify and save a provider key',
+    description:
+      'The key is checked with the provider first. A rejected key is not saved (400); one that cannot be verified is saved and reported as unverified.',
+    body: providerKeyInputSchema,
+    response: providerTestResultSchema,
+    params: { id: 'Provider ID' },
+  })
   async save(
     @Param('id', new ZodValidationPipe(providerIdSchema)) id: ProviderId,
     @Body(new ZodValidationPipe(providerKeyInputSchema))
@@ -43,10 +50,7 @@ export class ProvidersController {
     const result = await this.tester.test(id, input.apiKey);
     // A rejected key is not saved; an unverifiable one is (the provider may just be unreachable).
     if (result.status === 'rejected') {
-      throw new BadRequestException({
-        message: 'Validation failed',
-        issues: [{ path: 'apiKey', message: result.message }],
-      });
+      throw validationError([{ path: 'apiKey', message: result.message }]);
     }
     this.credentials.save(id, input.apiKey);
     return result;
@@ -54,12 +58,22 @@ export class ProvidersController {
 
   @Delete(':id/key')
   @HttpCode(204)
+  @ApiDoc({
+    summary: 'Remove a saved provider key',
+    description: 'A key from .env, if any, applies again.',
+    params: { id: 'Provider ID' },
+  })
   remove(@Param('id', new ZodValidationPipe(providerIdSchema)) id: ProviderId): void {
     this.credentials.remove(id);
   }
 
   @Post(':id/test')
   @HttpCode(200)
+  @ApiDoc({
+    summary: 'Check the current key with the provider',
+    response: providerTestResultSchema,
+    params: { id: 'Provider ID' },
+  })
   async test(
     @Param('id', new ZodValidationPipe(providerIdSchema)) id: ProviderId,
   ): Promise<ProviderTestResult> {
