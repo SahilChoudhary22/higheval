@@ -1,5 +1,6 @@
 export * from './common.js';
 export * from './configs.js';
+export * from './errors.js';
 export * from './experiments.js';
 export * from './health.js';
 export * from './hermes.js';

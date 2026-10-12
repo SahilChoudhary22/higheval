@@ -12,6 +12,8 @@ import {
 import { computed, reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { api } from '@/api/endpoints';
+import FormAlert from '@/components/FormAlert.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SkeletonRows from '@/components/SkeletonRows.vue';
 import { useFormErrors } from '@/composables/useFormErrors';
@@ -23,7 +25,22 @@ const router = useRouter();
 const skills = useResource(() => api.skills.list());
 const catalog = useResource(() => api.hermes.skills());
 const providers = useResource(() => api.providers.list());
-const { errors, formError, validate, fromError, clear } = useFormErrors();
+const { formError, validate, fromError, errorFor, unclaimed, focusFirstInvalid, clear } =
+  useFormErrors();
+/** Every input path with a place to show its error; anything else is listed in the alert. */
+const FIELDS = [
+  'name',
+  'model.provider',
+  'model.model',
+  'toolsets',
+  'skillIds',
+  'bundledSkills',
+  'memory',
+  'maxTurns',
+  'timeoutSeconds',
+  'description',
+] as const;
+const formEl = ref<HTMLFormElement | null>(null);
 
 const TOOLSET_HELP: Record<Toolset, string> = {
   file: 'Read, write, patch and search files in the task workspace.',
@@ -113,9 +130,6 @@ const bundledCatalog = computed(() =>
 );
 const bundledGroups = computed(() => groupByCategory(bundledCatalog.value, bundledQuery.value));
 const usesBundledSkills = computed(() => form.bundledMode !== 'none');
-const bundledError = computed(
-  () => Object.entries(errors.value).find(([path]) => path.startsWith('bundledSkills'))?.[1],
-);
 const bundledSkills = computed((): BundledSkills =>
   form.bundledMode === 'selected'
     ? { mode: 'selected', names: form.bundledNames }
@@ -153,7 +167,10 @@ async function save(): Promise<void> {
     maxTurns: form.maxTurns,
     timeoutSeconds: form.timeoutSeconds,
   };
-  if (!validate(agentConfigInputSchema, input)) return;
+  if (!validate(agentConfigInputSchema, input)) {
+    await focusFirstInvalid(formEl.value);
+    return;
+  }
   saving.value = true;
   try {
     if (props.id) await api.configs.update(props.id, input);
@@ -161,6 +178,7 @@ async function save(): Promise<void> {
     await router.push('/configs');
   } catch (error) {
     fromError(error);
+    await focusFirstInvalid(formEl.value);
   } finally {
     saving.value = false;
   }
@@ -178,50 +196,48 @@ async function save(): Promise<void> {
   </PageHeader>
 
   <SkeletonRows v-if="loading" :rows="8" />
-  <form v-else class="form" novalidate @submit.prevent="save">
-    <div class="field">
-      <label class="field__label" for="name">Name</label>
+  <form v-else ref="formEl" class="form" novalidate @submit.prevent="save">
+    <FormField id="name" v-slot="field" label="Name" :error="errorFor('name')">
       <input
         id="name"
         v-model="form.name"
         class="input"
         placeholder="Model · tools · skills"
-        :aria-invalid="Boolean(errors.name)"
+        :aria-invalid="field.invalid"
+        :aria-describedby="field.describedby"
       />
-      <p class="field__help" :class="{ 'field__help--error': errors.name }">
-        {{ errors.name ?? '' }}
-      </p>
-    </div>
+    </FormField>
 
-    <div class="field">
-      <label class="field__label" for="provider">Provider</label>
-      <select
-        id="provider"
-        v-model="form.provider"
-        class="select"
-        aria-describedby="provider-help"
-        :aria-invalid="Boolean(errors['model.provider'])"
-      >
-        <option v-for="providerId in PROVIDER_IDS" :key="providerId" :value="providerId">
-          {{ PROVIDERS[providerId].name }}
-        </option>
-      </select>
-      <p
-        id="provider-help"
-        class="field__help"
-        :class="{ 'field__help--error': errors['model.provider'] }"
-      >
-        <template v-if="errors['model.provider']">{{ errors['model.provider'] }}</template>
-        <template v-else-if="!providerReady">
-          No {{ providerInfo.name }} key yet. Runs with this config will fail until you
+    <FormField id="provider" label="Provider" :error="errorFor('model.provider')">
+      <template #default="field">
+        <select
+          id="provider"
+          v-model="form.provider"
+          class="select"
+          :aria-invalid="field.invalid"
+          :aria-describedby="field.describedby"
+        >
+          <option v-for="providerId in PROVIDER_IDS" :key="providerId" :value="providerId">
+            {{ PROVIDERS[providerId].name }}
+          </option>
+        </select>
+      </template>
+      <template #help>
+        <template v-if="!providerReady">
+          No {{ providerInfo.name }} key yet. Experiments with this config can't launch until you
           <RouterLink to="/settings">add one in Settings</RouterLink>.
         </template>
         <template v-else>Runs use this provider's key from Settings or .env.</template>
-      </p>
-    </div>
+      </template>
+    </FormField>
 
-    <div class="field">
-      <label class="field__label" for="model">Model</label>
+    <FormField
+      id="model"
+      v-slot="field"
+      label="Model"
+      :error="errorFor('model.model')"
+      :help="`Exact ${providerInfo.name} model ID. Router aliases are not allowed, so results stay attributable.`"
+    >
       <input
         id="model"
         v-model="form.model"
@@ -229,20 +245,20 @@ async function save(): Promise<void> {
         :list="form.provider === 'openrouter' ? 'model-suggestions' : undefined"
         :placeholder="providerInfo.modelExample"
         spellcheck="false"
-        :aria-invalid="Boolean(errors['model.model'])"
+        :aria-invalid="field.invalid"
+        :aria-describedby="field.describedby"
       />
       <datalist id="model-suggestions">
         <option v-for="model in SUGGESTED_MODELS" :key="model" :value="model" />
       </datalist>
-      <p class="field__help" :class="{ 'field__help--error': errors['model.model'] }">
-        {{
-          errors['model.model'] ??
-          `Exact ${providerInfo.name} model ID. Router aliases are not allowed, so results stay attributable.`
-        }}
-      </p>
-    </div>
+    </FormField>
 
-    <fieldset class="group">
+    <fieldset
+      class="group"
+      tabindex="-1"
+      aria-describedby="toolsets-help"
+      :aria-invalid="Boolean(errorFor('toolsets'))"
+    >
       <legend class="field__label">Tools</legend>
       <label
         v-for="toolset in toolsetSchema.options"
@@ -260,16 +276,26 @@ async function save(): Promise<void> {
           }}</span>
         </span>
       </label>
-      <p class="field__help">
+      <p
+        id="toolsets-help"
+        class="field__help"
+        :class="{ 'field__help--error': errorFor('toolsets') }"
+      >
         {{
-          form.toolsets.length === 0 && !usesBundledSkills
+          errorFor('toolsets') ??
+          (form.toolsets.length === 0 && !usesBundledSkills
             ? 'No tools: the agent can only reply in text.'
-            : ''
+            : '')
         }}
       </p>
     </fieldset>
 
-    <fieldset class="group">
+    <fieldset
+      class="group"
+      tabindex="-1"
+      aria-describedby="skills-help"
+      :aria-invalid="Boolean(errorFor('skillIds'))"
+    >
       <legend class="field__label">Skills</legend>
       <p v-if="skills.data.value?.length === 0" class="muted">
         No skills yet. <RouterLink to="/skills/new">Create a skill</RouterLink> to preload
@@ -286,10 +312,23 @@ async function save(): Promise<void> {
           <span class="muted option-help">{{ skill.description }}</span>
         </span>
       </label>
-      <p class="field__help">Selected skills are preloaded into the agent's context in full.</p>
+      <p
+        id="skills-help"
+        class="field__help"
+        :class="{ 'field__help--error': errorFor('skillIds') }"
+      >
+        {{
+          errorFor('skillIds') ?? "Selected skills are preloaded into the agent's context in full."
+        }}
+      </p>
     </fieldset>
 
-    <fieldset class="group">
+    <fieldset
+      class="group"
+      tabindex="-1"
+      aria-describedby="bundled-help"
+      :aria-invalid="Boolean(errorFor('bundledSkills'))"
+    >
       <legend class="field__label">Hermes built-in skills</legend>
       <p v-if="catalog.data.value?.status === 'unavailable'" class="muted">
         {{ catalog.data.value.message }} Until then, built-in skills can't be selected.
@@ -353,8 +392,12 @@ async function save(): Promise<void> {
           </p>
         </div>
       </div>
-      <p class="field__help" :class="{ 'field__help--error': bundledError }">
-        {{ bundledError ?? bundledHelp }}
+      <p
+        id="bundled-help"
+        class="field__help"
+        :class="{ 'field__help--error': errorFor('bundledSkills') }"
+      >
+        {{ errorFor('bundledSkills') ?? bundledHelp }}
       </p>
     </fieldset>
 
@@ -373,12 +416,13 @@ async function save(): Promise<void> {
         v-model="form.memoryEntries"
         class="textarea"
         placeholder="One fact per line"
-        :aria-invalid="Boolean(errors['memory.entries'])"
+        :aria-invalid="Boolean(errorFor('memory'))"
         aria-label="Memory entries"
+        aria-describedby="memory-help"
       />
-      <p class="field__help" :class="{ 'field__help--error': errors['memory.entries'] }">
+      <p id="memory-help" class="field__help" :class="{ 'field__help--error': errorFor('memory') }">
         {{
-          errors['memory.entries'] ??
+          errorFor('memory') ??
           (form.memoryMode === 'seeded'
             ? `${entries.length} entries. Runs never write back, so arms stay comparable.`
             : '')
@@ -387,8 +431,13 @@ async function save(): Promise<void> {
     </fieldset>
 
     <div class="form__pair">
-      <div class="field">
-        <label class="field__label" for="turns">Max turns</label>
+      <FormField
+        id="turns"
+        v-slot="field"
+        label="Max turns"
+        :error="errorFor('maxTurns')"
+        help="Tool-calling iterations before the agent must stop."
+      >
         <input
           id="turns"
           v-model.number="form.maxTurns"
@@ -396,14 +445,17 @@ async function save(): Promise<void> {
           type="number"
           min="1"
           max="100"
-          :aria-invalid="Boolean(errors.maxTurns)"
+          :aria-invalid="field.invalid"
+          :aria-describedby="field.describedby"
         />
-        <p class="field__help" :class="{ 'field__help--error': errors.maxTurns }">
-          {{ errors.maxTurns ?? 'Tool-calling iterations before the agent must stop.' }}
-        </p>
-      </div>
-      <div class="field">
-        <label class="field__label" for="timeout">Timeout (seconds)</label>
+      </FormField>
+      <FormField
+        id="timeout"
+        v-slot="field"
+        label="Timeout (seconds)"
+        :error="errorFor('timeoutSeconds')"
+        help="Wall-clock limit per run."
+      >
         <input
           id="timeout"
           v-model.number="form.timeoutSeconds"
@@ -411,26 +463,24 @@ async function save(): Promise<void> {
           type="number"
           min="10"
           max="1800"
-          :aria-invalid="Boolean(errors.timeoutSeconds)"
+          :aria-invalid="field.invalid"
+          :aria-describedby="field.describedby"
         />
-        <p class="field__help" :class="{ 'field__help--error': errors.timeoutSeconds }">
-          {{ errors.timeoutSeconds ?? 'Wall-clock limit per run.' }}
-        </p>
-      </div>
+      </FormField>
     </div>
 
-    <div class="field">
-      <label class="field__label" for="description">Description</label>
+    <FormField id="description" v-slot="field" label="Description" :error="errorFor('description')">
       <textarea
         id="description"
         v-model="form.description"
         class="textarea"
         placeholder="What changes in this config, and why"
+        :aria-invalid="field.invalid"
+        :aria-describedby="field.describedby"
       />
-      <p class="field__help" />
-    </div>
+    </FormField>
 
-    <p v-if="formError" class="field__help field__help--error" role="alert">{{ formError }}</p>
+    <FormAlert :message="formError" :details="unclaimed(FIELDS)" />
     <div class="form__actions">
       <button type="submit" class="btn btn--primary" :disabled="saving">
         {{ saving ? 'Saving…' : id ? 'Save config' : 'Create config' }}

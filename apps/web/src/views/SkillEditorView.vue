@@ -3,13 +3,18 @@ import { skillInputSchema, type SkillInput } from '@higheval/shared';
 import { reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { api } from '@/api/endpoints';
+import FormAlert from '@/components/FormAlert.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SkeletonRows from '@/components/SkeletonRows.vue';
 import { useFormErrors } from '@/composables/useFormErrors';
 
 const props = defineProps<{ id?: string }>();
 const router = useRouter();
-const { errors, formError, validate, fromError, clear } = useFormErrors();
+const { formError, validate, fromError, errorFor, unclaimed, focusFirstInvalid, clear } =
+  useFormErrors();
+const FIELDS = ['name', 'description', 'content'] as const;
+const formEl = ref<HTMLFormElement | null>(null);
 
 const form = reactive<SkillInput>({ name: '', description: '', content: '' });
 const loading = ref(Boolean(props.id));
@@ -39,7 +44,10 @@ async function save(): Promise<void> {
     description: form.description.trim(),
     content: form.content,
   };
-  if (!validate(skillInputSchema, input)) return;
+  if (!validate(skillInputSchema, input)) {
+    await focusFirstInvalid(formEl.value);
+    return;
+  }
   saving.value = true;
   try {
     if (props.id) await api.skills.update(props.id, input);
@@ -47,6 +55,7 @@ async function save(): Promise<void> {
     await router.push('/skills');
   } catch (error) {
     fromError(error);
+    await focusFirstInvalid(formEl.value);
   } finally {
     saving.value = false;
   }
@@ -64,48 +73,50 @@ async function save(): Promise<void> {
   </PageHeader>
 
   <SkeletonRows v-if="loading" :rows="6" />
-  <form v-else class="form" novalidate @submit.prevent="save">
-    <div class="field">
-      <label class="field__label" for="name">Name</label>
+  <form v-else ref="formEl" class="form" novalidate @submit.prevent="save">
+    <FormField
+      id="name"
+      v-slot="field"
+      label="Name"
+      :error="errorFor('name')"
+      help="Also the skill’s directory name."
+    >
       <input
         id="name"
         v-model="form.name"
         class="input mono"
         placeholder="lowercase-with-hyphens"
         spellcheck="false"
-        :aria-invalid="Boolean(errors.name)"
+        :aria-invalid="field.invalid"
+        :aria-describedby="field.describedby"
       />
-      <p class="field__help" :class="{ 'field__help--error': errors.name }">
-        {{ errors.name ?? 'Also the skill’s directory name.' }}
-      </p>
-    </div>
-    <div class="field">
-      <label class="field__label" for="description">Description</label>
+    </FormField>
+    <FormField id="description" v-slot="field" label="Description" :error="errorFor('description')">
       <input
         id="description"
         v-model="form.description"
         class="input"
         placeholder="When the agent should use this skill"
-        :aria-invalid="Boolean(errors.description)"
+        :aria-invalid="field.invalid"
+        :aria-describedby="field.describedby"
       />
-      <p class="field__help" :class="{ 'field__help--error': errors.description }">
-        {{ errors.description ?? '' }}
-      </p>
-    </div>
-    <div class="field">
-      <label class="field__label" for="content">Instructions (markdown)</label>
+    </FormField>
+    <FormField
+      id="content"
+      v-slot="field"
+      label="Instructions (markdown)"
+      :error="errorFor('content')"
+    >
       <textarea
         id="content"
         v-model="form.content"
         class="textarea textarea--code content"
         spellcheck="false"
-        :aria-invalid="Boolean(errors.content)"
+        :aria-invalid="field.invalid"
+        :aria-describedby="field.describedby"
       />
-      <p class="field__help" :class="{ 'field__help--error': errors.content }">
-        {{ errors.content ?? '' }}
-      </p>
-    </div>
-    <p v-if="formError" class="field__help field__help--error" role="alert">{{ formError }}</p>
+    </FormField>
+    <FormAlert :message="formError" :details="unclaimed(FIELDS)" />
     <div class="form__actions">
       <button type="submit" class="btn btn--primary" :disabled="saving">
         {{ saving ? 'Saving…' : id ? 'Save skill' : 'Create skill' }}
