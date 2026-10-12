@@ -7,6 +7,7 @@ import ErrorNotice from '@/components/ErrorNotice.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useFormErrors } from '@/composables/useFormErrors';
 import { useResource } from '@/composables/useResource';
+import { estimateDurationMs, formatApproxDuration, TYPICAL_RUN_SECONDS } from '@/lib/timing';
 
 /** Rough planning figure from pilot runs: model requests per agent run. */
 const REQUESTS_PER_RUN = 3;
@@ -14,6 +15,7 @@ const REQUESTS_PER_RUN = 3;
 const router = useRouter();
 const suites = useResource(() => api.suites.list());
 const configs = useResource(() => api.configs.list());
+const health = useResource(() => api.health());
 const { errors, formError, validate, fromError, clear } = useFormErrors();
 const submitting = ref(false);
 
@@ -44,6 +46,10 @@ const defaultName = computed(() =>
     : '',
 );
 const runCount = computed(() => (suite.value?.taskCount ?? 0) * 2 * form.repetitions);
+const concurrency = computed(() => health.data.value?.maxConcurrentRuns ?? 1);
+const duration = computed(() =>
+  formatApproxDuration(estimateDurationMs(runCount.value, concurrency.value)),
+);
 const disabledReason = computed(() => {
   if (!form.suiteId) return 'Choose a suite.';
   if (!form.baselineConfigId || !form.candidateConfigId) return 'Choose two configs.';
@@ -190,6 +196,8 @@ async function submit(): Promise<void> {
       <dd>{{ runCount }}</dd>
       <dt class="label">Model requests (approx.)</dt>
       <dd>~{{ runCount * REQUESTS_PER_RUN }}</dd>
+      <dt class="label">Duration on free models</dt>
+      <dd>{{ duration }} · {{ concurrency }} at a time, ~{{ TYPICAL_RUN_SECONDS }} s each</dd>
     </dl>
 
     <p v-if="formError" class="field__help field__help--error" role="alert">{{ formError }}</p>

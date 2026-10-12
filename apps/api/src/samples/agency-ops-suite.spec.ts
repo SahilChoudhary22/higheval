@@ -1,6 +1,7 @@
 import { suiteInputSchema } from '@higheval/shared';
 import { scoreTask } from '../scoring/scorers.js';
 import { AGENCY_OPS_SUITE } from './agency-ops-suite.js';
+import { QUICK_CHECK_SUITE } from './quick-check-suite.js';
 
 /**
  * Reference solutions: what a perfect agent would leave behind. Every task
@@ -171,6 +172,14 @@ describe('Agency operations sample suite', () => {
       task?.passThreshold ?? 1,
     );
     expect(result.passed).toBe(false);
+  });
+
+  it('builds a valid quick-check subset with enough tasks for a verdict', () => {
+    const quick = suiteInputSchema.parse(QUICK_CHECK_SUITE);
+    expect(quick.tasks).toHaveLength(5);
+    expect(quick.tasks.every((task) => suite.tasks.some((full) => full.key === task.key))).toBe(
+      true,
+    );
   });
 
   it('keeps expected answers out of the fixtures the agent can read', () => {
