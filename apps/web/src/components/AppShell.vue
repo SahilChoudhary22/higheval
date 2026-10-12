@@ -17,6 +17,7 @@ import { computed, ref, watch, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useHealth } from '@/composables/useHealth';
 import LogoMark from './LogoMark.vue';
+import ThemeSwitch from './ThemeSwitch.vue';
 import ToastRegion from './ToastRegion.vue';
 
 const NAV = [
@@ -120,22 +121,25 @@ const ICON: Record<CheckState, Component> = {
           </li>
         </ul>
       </nav>
-      <dl class="health" aria-label="System status">
-        <div v-for="check in checks" :key="check.label" class="health__row">
-          <dt class="label">{{ check.label }}</dt>
-          <dd :class="`health__${check.state}`">
-            <component :is="ICON[check.state]" aria-hidden="true" />
-            <RouterLink v-if="check.to" :to="check.to" class="health__link">{{
-              check.detail
-            }}</RouterLink>
-            <template v-else>{{ check.detail }}</template>
-          </dd>
-        </div>
-      </dl>
-      <a class="api-link" href="/api/docs" target="_blank" rel="noopener">
-        <PhBracketsCurly aria-hidden="true" />
-        API reference<span class="visually-hidden"> (opens in a new tab)</span>
-      </a>
+      <div class="rail-footer">
+        <dl class="health" aria-label="System status">
+          <div v-for="check in checks" :key="check.label" class="health__row">
+            <dt class="label">{{ check.label }}</dt>
+            <dd :class="`health__${check.state}`">
+              <component :is="ICON[check.state]" aria-hidden="true" />
+              <RouterLink v-if="check.to" :to="check.to" class="health__link">{{
+                check.detail
+              }}</RouterLink>
+              <template v-else>{{ check.detail }}</template>
+            </dd>
+          </div>
+        </dl>
+        <ThemeSwitch />
+        <a class="api-link" href="/api/docs" target="_blank" rel="noopener">
+          <PhBracketsCurly aria-hidden="true" />
+          API reference<span class="visually-hidden"> (opens in a new tab)</span>
+        </a>
+      </div>
     </aside>
 
     <main class="shell__main">
@@ -248,12 +252,18 @@ const ICON: Record<CheckState, Component> = {
   }
 }
 
-.health {
+.rail-footer {
   display: grid;
-  gap: var(--space-xs);
+  gap: var(--space-md);
   margin: auto 0 0;
   padding-top: var(--space-sm);
   border-top: 1px solid var(--color-rule);
+}
+
+.health {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
 }
 
 .health__row {
@@ -279,7 +289,7 @@ const ICON: Record<CheckState, Component> = {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
-  margin-top: calc(-1 * var(--space-md));
+  justify-self: start;
   color: var(--color-muted);
   font-size: var(--text-sm);
   text-decoration: none;
