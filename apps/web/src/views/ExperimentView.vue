@@ -112,6 +112,20 @@ async function remove(): Promise<void> {
         <span class="mono">seed {{ experiment.data.value.seed }}</span>
       </template>
       <template #actions>
+        <a
+          :href="`/api/experiments/${id}/report.md`"
+          :download="`higheval-${shortId(id)}-report.md`"
+          class="btn btn--quiet"
+        >
+          Report
+        </a>
+        <a
+          :href="`/api/experiments/${id}/export.json`"
+          :download="`higheval-${shortId(id)}-evidence.json`"
+          class="btn btn--quiet"
+        >
+          Evidence
+        </a>
         <button v-if="active" type="button" class="btn btn--danger" @click="cancel">
           Cancel experiment
         </button>
