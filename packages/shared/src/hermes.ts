@@ -17,6 +17,7 @@ export const bundledSkillCatalogSchema = z.discriminatedUnion('status', [
     status: z.literal('available'),
     /** Pinned Hermes commit the skills were read from. */
     hermesCommit: z.string(),
+    /** Ordered by category, then name. */
     skills: z.array(bundledSkillSchema),
   }),
   /** Hermes is not installed, so there is nothing to list. */

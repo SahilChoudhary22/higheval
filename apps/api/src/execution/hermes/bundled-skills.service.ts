@@ -4,6 +4,7 @@ import type { BundledSkillCatalog, BundledSkills, ResolvedBundledSkills } from '
 import { validationError } from '../../common/validation-error.js';
 import type { Env } from '../../config/env.schema.js';
 import {
+  byCodePoint,
   NO_BUNDLED_SKILLS,
   resolveBundledSkills,
   scanBundledSkills,
@@ -40,12 +41,14 @@ export class BundledSkillsService {
     return {
       status: 'available',
       hermesCommit: runtime.commit,
-      skills: this.scan(runtime).skills.map(({ name, category, description, platforms }) => ({
-        name,
-        category,
-        description,
-        platforms,
-      })),
+      skills: this.scan(runtime)
+        .skills.map(({ name, category, description, platforms }) => ({
+          name,
+          category,
+          description,
+          platforms,
+        }))
+        .toSorted((a, b) => byCodePoint(a.category, b.category) || byCodePoint(a.name, b.name)),
     };
   }
 

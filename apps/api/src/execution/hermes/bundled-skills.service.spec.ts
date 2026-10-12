@@ -57,14 +57,14 @@ describe('BundledSkillsService', () => {
     });
   });
 
-  it('rescans when a different Hermes commit is installed', () => {
+  it('rescans when a different Hermes commit is installed, listing by category', () => {
     install('abc123');
     const catalogs = service();
     expect(catalogs.catalog().skills).toHaveLength(1);
 
-    addSkill('research', 'citations');
+    addSkill('ai', 'zeta');
     expect(catalogs.catalog().skills).toHaveLength(1);
     install('def456');
-    expect(catalogs.catalog().skills.map((skill) => skill.name)).toEqual(['arxiv', 'citations']);
+    expect(catalogs.catalog().skills.map((skill) => skill.name)).toEqual(['zeta', 'arxiv']);
   });
 });
