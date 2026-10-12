@@ -94,13 +94,45 @@ const REFERENCE: Record<string, { files?: Record<string, unknown>; output?: stri
     },
   },
   'support-sla-breaches': { files: { 'breaches.json': { breached: ['T-302', 'T-304', 'T-306'] } } },
+  'tiered-commission': {
+    files: {
+      'commission.json': {
+        payouts: { 'Maya Chen': 3276, 'Omar Haddad': 2860, 'Lena Brooks': 2370 },
+        total_payout: 8506,
+      },
+    },
+  },
+  'dunning-schedule': {
+    files: {
+      'reminders.json': {
+        'INV-3101': ['2026-11-25', '2026-12-03', '2026-12-14'],
+        'INV-3102': ['2026-12-01'],
+        'INV-3103': ['2026-12-23', '2026-12-30', '2027-01-08'],
+      },
+    },
+  },
+  'position-attribution': {
+    files: {
+      'attribution.json': {
+        credit: {
+          email: 1137.33,
+          facebook: 603.33,
+          google_ads: 1123.33,
+          organic: 610,
+          referral: 1840,
+          sms: 256,
+        },
+      },
+    },
+  },
+  'reorder-quantities': { files: { 'orders.json': { orders: { 'SKU-C': 96, 'SKU-D': 150 } } } },
 };
 
 describe('Agency operations sample suite', () => {
   const suite = suiteInputSchema.parse(AGENCY_OPS_SUITE);
 
   it('is a valid suite with a reference solution for every task', () => {
-    expect(suite.tasks).toHaveLength(12);
+    expect(suite.tasks).toHaveLength(16);
     expect(Object.keys(REFERENCE).toSorted()).toEqual(
       suite.tasks.map((task) => task.key).toSorted(),
     );
@@ -129,6 +161,17 @@ describe('Agency operations sample suite', () => {
       expect(result.score).toBe(1);
     },
   );
+
+  it('rejects a plausible wrong answer for the harder tasks', () => {
+    const task = suite.tasks.find((candidate) => candidate.key === 'reorder-quantities');
+    const wrong = JSON.stringify({ orders: { 'SKU-C': 96, 'SKU-D': 150, 'SKU-E': 6 } });
+    const result = scoreTask(
+      task?.scorers ?? [],
+      { finalOutput: 'Done.', readFile: () => wrong, toolCalls: [] },
+      task?.passThreshold ?? 1,
+    );
+    expect(result.passed).toBe(false);
+  });
 
   it('keeps expected answers out of the fixtures the agent can read', () => {
     for (const task of suite.tasks) {

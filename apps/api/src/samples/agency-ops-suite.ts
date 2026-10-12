@@ -14,7 +14,7 @@ const finalOutput = { kind: 'final_output' as const };
 export const AGENCY_OPS_SUITE: SuiteInput = {
   name: 'Agency operations',
   description:
-    'Twelve synthetic back-office tasks for a marketing agency: billing, CRM hygiene, scheduling, compliance and reporting. Every task has a single correct answer checked by deterministic scorers.',
+    'Sixteen synthetic back-office tasks for a marketing agency: billing, CRM hygiene, scheduling, compliance and reporting. The last four are multi-step calculations. Every task has a single correct answer checked by deterministic scorers.',
   tasks: [
     {
       key: 'overdue-invoices',
@@ -549,6 +549,190 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
           path: 'breached',
           expected: ['T-302', 'T-304', 'T-306'],
           weight: 3,
+        },
+      ],
+    },
+    {
+      key: 'tiered-commission',
+      title: 'Quarterly tiered commission',
+      tags: ['finance', 'files', 'multi-step'],
+      prompt: [
+        'Read deals.csv and compute Q3 2026 sales commission for each rep.',
+        '- Q3 2026 is 2026-07-01 through 2026-09-30 inclusive, by close_date.',
+        '- Refunded deals earn no commission.',
+        "- Commission is marginal on each rep's total Q3 bookings: 5% on the first $50,000 and 8% on everything above $50,000.",
+        'Write commission.json as {"payouts": {"<rep>": <amount, 2 decimals>, ...}, "total_payout": <sum>}. Include only reps with Q3 bookings.',
+      ].join('\n'),
+      fixtures: [
+        {
+          path: 'deals.csv',
+          content: [
+            'deal_id,rep,amount,close_date,refunded',
+            'Q-501,Maya Chen,18000,2026-07-03,no',
+            'Q-502,Omar Haddad,32000,2026-07-09,no',
+            'Q-503,Maya Chen,27500,2026-07-21,no',
+            'Q-504,Lena Brooks,12000,2026-06-30,no',
+            'Q-505,Omar Haddad,9000,2026-08-02,yes',
+            'Q-506,Maya Chen,14200,2026-08-15,no',
+            'Q-507,Lena Brooks,41000,2026-08-19,no',
+            'Q-508,Omar Haddad,22500,2026-09-04,no',
+            'Q-509,Lena Brooks,6400,2026-09-30,no',
+            'Q-510,Maya Chen,8800,2026-10-01,no',
+            'Q-511,Lena Brooks,7600,2026-09-12,yes',
+            '',
+          ].join('\n'),
+        },
+      ],
+      scorers: [
+        {
+          type: 'json_field',
+          target: fileJson('commission.json'),
+          path: 'payouts',
+          expected: { 'Maya Chen': 3276, 'Omar Haddad': 2860, 'Lena Brooks': 2370 },
+          tolerance: 0.01,
+          weight: 3,
+        },
+        {
+          type: 'json_field',
+          target: fileJson('commission.json'),
+          path: 'total_payout',
+          expected: 8506,
+          tolerance: 0.01,
+        },
+      ],
+    },
+    {
+      key: 'dunning-schedule',
+      title: 'Payment reminder schedule',
+      tags: ['billing', 'dates', 'files'],
+      prompt: [
+        'Read invoices.csv. For each invoice, schedule payment reminders on the 3rd, 7th and 14th business day after its due date (the due date itself is day 0).',
+        '- Business days are Monday to Friday, excluding holidays.',
+        '- The only holidays are 2026-11-26, 2026-11-27 and 2026-12-25. Treat every other weekday as a business day.',
+        '- If paid_on is set, drop every reminder that falls on or after the payment date.',
+        'Write reminders.json as {"<invoice_id>": ["YYYY-MM-DD", ...], ...} with one entry per invoice (an empty list if no reminders remain).',
+      ].join('\n'),
+      fixtures: [
+        {
+          path: 'invoices.csv',
+          content: [
+            'invoice_id,due_date,paid_on',
+            'INV-3101,2026-11-20,',
+            'INV-3102,2026-11-24,2026-12-03',
+            'INV-3103,2026-12-18,',
+            '',
+          ].join('\n'),
+        },
+      ],
+      scorers: [
+        {
+          type: 'json_field',
+          target: fileJson('reminders.json'),
+          path: 'INV-3101',
+          expected: ['2026-11-25', '2026-12-03', '2026-12-14'],
+        },
+        {
+          type: 'json_field',
+          target: fileJson('reminders.json'),
+          path: 'INV-3102',
+          expected: ['2026-12-01'],
+        },
+        {
+          type: 'json_field',
+          target: fileJson('reminders.json'),
+          path: 'INV-3103',
+          expected: ['2026-12-23', '2026-12-30', '2027-01-08'],
+        },
+      ],
+    },
+    {
+      key: 'position-attribution',
+      title: 'Position-based revenue attribution',
+      tags: ['reporting', 'files', 'multi-step'],
+      prompt: [
+        'Read conversions.json. Attribute each conversion value to its touchpoints with a position-based model:',
+        '- one touchpoint: 100% to it',
+        '- two touchpoints: 50% each',
+        '- three or more: 40% to the first, 40% to the last, and the remaining 20% split evenly across the touchpoints in between',
+        'A channel can appear more than once in a journey; each appearance earns its own share.',
+        'Write attribution.json as {"credit": {"<channel>": <total credited revenue, 2 decimals>, ...}} for every channel that appears.',
+      ].join('\n'),
+      fixtures: [
+        {
+          path: 'conversions.json',
+          content: `${JSON.stringify(
+            [
+              { id: 'CV-1', value: 1200, touchpoints: ['google_ads', 'email', 'organic', 'email'] },
+              { id: 'CV-2', value: 450, touchpoints: ['facebook'] },
+              { id: 'CV-3', value: 980, touchpoints: ['organic', 'google_ads'] },
+              {
+                id: 'CV-4',
+                value: 2300,
+                touchpoints: ['referral', 'facebook', 'email', 'google_ads', 'referral'],
+              },
+              { id: 'CV-5', value: 640, touchpoints: ['email', 'email', 'sms'] },
+            ],
+            null,
+            2,
+          )}\n`,
+        },
+      ],
+      scorers: [
+        {
+          type: 'json_field',
+          target: fileJson('attribution.json'),
+          path: 'credit',
+          expected: {
+            email: 1137.33,
+            facebook: 603.33,
+            google_ads: 1123.33,
+            organic: 610,
+            referral: 1840,
+            sms: 256,
+          },
+          tolerance: 0.02,
+          weight: 3,
+        },
+      ],
+    },
+    {
+      key: 'reorder-quantities',
+      title: 'Inventory reorder with case packs',
+      tags: ['operations', 'files', 'multi-step'],
+      prompt: [
+        'Read inventory.csv and decide what to reorder.',
+        '- Reorder point = avg_daily_usage × (lead_time_days + safety_days).',
+        '- Reorder a SKU only when on_hand is at or below its reorder point.',
+        '- Order enough to reach avg_daily_usage × (lead_time_days + safety_days + 30) units, then round the order up to a whole number of case_pack units.',
+        'Write orders.json as {"orders": {"<sku>": <units to order>, ...}} listing only SKUs that need an order.',
+      ].join('\n'),
+      fixtures: [
+        {
+          path: 'inventory.csv',
+          content: [
+            'sku,on_hand,avg_daily_usage,lead_time_days,safety_days,case_pack',
+            'SKU-A,120,8.5,7,3,24',
+            'SKU-B,400,12,10,5,50',
+            'SKU-C,30,2.25,14,7,12',
+            'SKU-D,75,5,9,6,10',
+            'SKU-E,52,1.5,20,10,6',
+            '',
+          ].join('\n'),
+        },
+      ],
+      scorers: [
+        {
+          type: 'json_field',
+          target: fileJson('orders.json'),
+          path: 'orders',
+          expected: { 'SKU-C': 96, 'SKU-D': 150 },
+          weight: 2,
+        },
+        {
+          type: 'regex',
+          target: fileJson('orders.json'),
+          pattern: '^(?![\\s\\S]*SKU-[ABE])[\\s\\S]*$',
+          label: 'No order for SKUs above their reorder point',
         },
       ],
     },
