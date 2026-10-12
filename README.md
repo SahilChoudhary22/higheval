@@ -28,6 +28,7 @@
 
 <p align="center">
   <img src="docs/images/experiment-results.png" alt="A conclusive verdict: adding a skill made the candidate better on all 8 tasks, with the confidence interval, permutation test and per-configuration results" width="880" />
+  <br /><sub>The same model, Nemotron 3 Super, with and without one skill. Holding everything else fixed isolates the skill's effect: better on all 8 tasks.</sub>
 </p>
 
 HighEval runs the same task suite under two Hermes configurations, scores every run, and reports the paired difference with a 95% confidence interval and a verdict from a rule fixed before the data. It never calls a difference real when the evidence can't support it, and every run can be opened to see exactly why it passed or failed.
@@ -215,6 +216,12 @@ docker compose up -d --build
 ```
 
 Then point a tunnel (for example Cloudflare Tunnel or Tailscale Funnel) or an HTTPS reverse proxy at `http://127.0.0.1:3000`, and add its public hostname to `ALLOWED_HOSTS`.
+
+Without a domain, `compose.tailscale.yaml` publishes HighEval through Tailscale Funnel as its own tailnet node, at `https://higheval.<your-tailnet>.ts.net`. Add a Tailscale auth key as `TS_AUTHKEY` in `.env`, then run:
+
+```bash
+docker compose -f compose.yaml -f compose.tailscale.yaml up -d
+```
 
 What protects a hosted instance:
 

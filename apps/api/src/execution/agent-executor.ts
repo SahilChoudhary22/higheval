@@ -20,7 +20,15 @@ export interface ExecutionRequest {
   config: ConfigSnapshot;
   /** Directory owned exclusively by this run attempt; the executor may write anything inside it. */
   runDir: string;
+  /**
+   * How OpenRouter picks among a model's providers: `price` (the default, for
+   * experiments: cheapest, and fixed for reproducibility) or `throughput`
+   * (fastest, for interactive work such as drafting suites).
+   */
+  providerSort?: ProviderSort;
 }
+
+export type ProviderSort = 'price' | 'throughput';
 
 export interface ExecutionHooks {
   signal: AbortSignal;

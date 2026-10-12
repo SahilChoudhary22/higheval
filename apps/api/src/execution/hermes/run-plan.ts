@@ -1,4 +1,5 @@
 import type { ConfigSnapshot, Toolset } from '@higheval/shared';
+import type { ProviderSort } from '../agent-executor.js';
 
 /** Reasoning effort is pinned so both arms send identical reasoning settings. */
 export const REASONING_EFFORT = 'medium';
@@ -35,6 +36,7 @@ export interface RunPlan {
 export function buildRunPlan(
   config: ConfigSnapshot,
   paths: { promptFile: string; workDir: string },
+  providerSort: ProviderSort = 'price',
 ): RunPlan {
   const seededMemory = config.memory.mode === 'seeded';
   const bundledSkillPaths = config.bundledSkills?.paths ?? [];
@@ -47,9 +49,9 @@ export function buildRunPlan(
     fallback_providers: [],
     openrouter: { response_cache: false },
     // OpenRouter serves most models through several providers at different
-    // prices. Always taking the cheapest makes runs reproducible and cheap;
-    // other providers ignore this setting.
-    provider_routing: { sort: 'price' },
+    // prices and speeds. Experiments take the cheapest, which also keeps the
+    // provider fixed; other model providers ignore this setting.
+    provider_routing: { sort: providerSort },
     // Used when --toolsets is omitted, which is how "no tools" is expressed.
     platform_toolsets: { cli: toolsets },
     timezone: 'UTC',

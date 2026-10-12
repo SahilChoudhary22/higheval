@@ -125,6 +125,7 @@ describe('SuiteAssistantService', () => {
     const [first, second] = executor.requests;
     expect(first?.config.skills.map((skill) => skill.name)).toEqual(['suite-authoring']);
     expect(first?.config.toolsets).toEqual(['file', 'terminal']);
+    expect(first?.providerSort).toBe('throughput');
     expect(first?.fixtures.map((fixture) => fixture.path)).toEqual([
       'request.md',
       'suite.schema.json',

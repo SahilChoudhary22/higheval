@@ -86,7 +86,11 @@ export class HermesExecutor extends AgentExecutor {
       work: join(request.runDir, WORKSPACE_DIRNAME),
     };
     const promptFile = join(request.runDir, 'prompt.md');
-    const plan = buildRunPlan(request.config, { promptFile, workDir: dirs.work });
+    const plan = buildRunPlan(
+      request.config,
+      { promptFile, workDir: dirs.work },
+      request.providerSort,
+    );
     await this.prepareRunDir(request, dirs, promptFile, plan, bundledSkillsDir(runtime));
 
     const { command, prefixArgs } = hermesCommand(runtime);
