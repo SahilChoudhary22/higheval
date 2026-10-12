@@ -10,18 +10,21 @@ function mockFetch(status: number, body: unknown): void {
   );
 }
 
+const HEALTHY = {
+  status: 'ok',
+  version: '0.1.0',
+  uptimeSeconds: 3,
+  checks: { providerKey: true, hermesVersion: 'Hermes 1.0' },
+};
+
 describe('getJson', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   it('returns a body that matches the contract', async () => {
-    mockFetch(200, { status: 'ok', version: '0.1.0', uptimeSeconds: 3 });
-    await expect(getJson('/health', healthResponseSchema)).resolves.toEqual({
-      status: 'ok',
-      version: '0.1.0',
-      uptimeSeconds: 3,
-    });
+    mockFetch(200, HEALTHY);
+    await expect(getJson('/health', healthResponseSchema)).resolves.toEqual(HEALTHY);
   });
 
   it('throws ApiError on a non-2xx response', async () => {
