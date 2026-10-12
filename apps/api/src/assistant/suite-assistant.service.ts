@@ -5,7 +5,6 @@ import {
   suiteInputSchema,
   type AgentEvent,
   type ConfigSnapshot,
-  type FixtureFile,
   type SuiteDraft,
   type suiteDraftRequestSchema,
 } from '@higheval/shared';
@@ -32,10 +31,9 @@ const MAX_KEPT_DRAFTS = 20;
 const MAX_ACTIVITY = 12;
 const MAX_OUTPUT_BYTES = 1_000_000;
 
+/** Compact: it is long, and the agent reads it as data rather than prose. */
 const SUITE_JSON_SCHEMA = JSON.stringify(
   z.toJSONSchema(suiteInputSchema, { io: 'input', unrepresentable: 'any' }),
-  null,
-  2,
 );
 
 /** Two known-good tasks: one deterministic, one judged. */
@@ -172,7 +170,7 @@ export class SuiteAssistantService implements OnModuleDestroy {
   private async run(job: Job, input: SuiteDraftData): Promise<void> {
     const { draft, controller } = job;
     const snapshot = this.snapshot(draft);
-    let previous: { suite: string | null; problems: string[] } | null = null;
+    let previous: PreviousAttempt | null = null;
 
     for (let attempt = 1; attempt <= MAX_DRAFT_ATTEMPTS; attempt++) {
       draft.attempt = attempt;
@@ -181,7 +179,7 @@ export class SuiteAssistantService implements OnModuleDestroy {
         {
           runId: `draft-${draft.id}-${String(attempt)}`,
           prompt: prompt(input, previous),
-          fixtures: fixtures(input, previous),
+          fixtures: [],
           config: snapshot,
           runDir: join(this.draftDir(draft.id), `attempt-${String(attempt)}`),
           // Drafting is interactive, so it takes the fastest provider rather than the cheapest.
@@ -265,47 +263,59 @@ export class SuiteAssistantService implements OnModuleDestroy {
   }
 }
 
-function prompt(input: SuiteDraftData, previous: { problems: string[] } | null): string {
+/** Previous attempt's output and what was wrong with it, for a retry. */
+interface PreviousAttempt {
+  suite: string | null;
+  problems: string[];
+}
+
+const fenced = (language: string, text: string): string =>
+  `\`\`\`${language}\n${text.trim()}\n\`\`\``;
+
+/**
+ * Everything the agent needs goes in the prompt rather than in workspace
+ * files, so it spends no tool calls reading inputs: its calls go to the
+ * scripts that compute expected values and to writing its two output files.
+ */
+function prompt(input: SuiteDraftData, previous: PreviousAttempt | null): string {
   return [
     'You are writing an evaluation suite for HighEval. Follow the suite-authoring skill.',
-    input.suite
-      ? 'Read request.md for the change the user wants, and current-suite.json for the suite to revise. Keep what the request does not ask to change.'
-      : 'Read request.md for what the user wants the suite to test.',
-    'suite.schema.json is the JSON Schema a suite must satisfy; example-suite.json shows two good tasks.',
+    'Everything you need is in this message; there are no input files to read.',
     '',
-    'Write two files in the current directory:',
-    '1. suite.json: the suite, valid against suite.schema.json.',
-    '2. reference.json: for every task key, what a perfect agent would leave behind, as {"<task key>": {"files": {"<path>": "<file content>"}, "output": "<final reply>"}}.',
+    input.suite ? '## Change the user wants' : '## What the user wants the suite to test',
+    fenced('text', input.description),
+    ...(input.suite
+      ? [
+          '',
+          '## Current suite',
+          'Revise this suite. Keep everything the request does not ask to change.',
+          fenced('json', JSON.stringify(input.suite, null, 2)),
+        ]
+      : []),
     ...(previous
       ? [
           '',
-          'A previous attempt is in previous-suite.json and problems.md lists what is wrong with it. Fix every problem; keep what is right.',
+          '## Your previous attempt',
+          'Fix every problem listed below; keep what is right.',
+          fenced('json', previous.suite ?? '(suite.json was not written)'),
+          'Problems:',
+          ...previous.problems.map((problem) => `- ${problem}`),
         ]
       : []),
     '',
+    '## Suite JSON Schema',
+    'suite.json must be valid against this schema.',
+    fenced('json', SUITE_JSON_SCHEMA),
+    '',
+    '## Example',
+    'Two good tasks from the sample suites: one checked deterministically, one by an LLM judge.',
+    fenced('json', EXAMPLE_SUITE),
+    '',
+    '## What to write',
+    'Write two files in the current directory:',
+    '1. suite.json: the suite, valid against the schema above.',
+    '2. reference.json: for every task key, what a perfect agent would leave behind, as {"<task key>": {"files": {"<path>": "<file content>"}, "output": "<final reply>"}}.',
+    '',
     'Calculate expected values with a script in the terminal. When both files are written, reply with one line: DONE.',
   ].join('\n');
-}
-
-function fixtures(
-  input: SuiteDraftData,
-  previous: { suite: string | null; problems: string[] } | null,
-): FixtureFile[] {
-  return [
-    { path: 'request.md', content: `${input.description}\n` },
-    { path: 'suite.schema.json', content: SUITE_JSON_SCHEMA },
-    { path: 'example-suite.json', content: EXAMPLE_SUITE },
-    ...(input.suite
-      ? [{ path: 'current-suite.json', content: JSON.stringify(input.suite, null, 2) }]
-      : []),
-    ...(previous
-      ? [
-          { path: 'previous-suite.json', content: previous.suite ?? '(not written)' },
-          {
-            path: 'problems.md',
-            content: previous.problems.map((problem) => `- ${problem}`).join('\n'),
-          },
-        ]
-      : []),
-  ];
 }

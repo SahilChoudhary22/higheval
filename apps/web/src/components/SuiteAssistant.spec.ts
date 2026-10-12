@@ -1,20 +1,16 @@
-import { flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SuiteDraft, SuiteDraftRequest, SuiteInput } from '@higheval/shared';
 import { ApiError } from '@/api/client';
 import SuiteAssistant from './SuiteAssistant.vue';
 
-const SUITE: SuiteInput = {
-  name: 'Clinic',
-  tasks: [
-    {
-      key: 'double-booked',
-      title: 'Double-booked',
-      prompt: 'Find conflicts.',
-      scorers: [{ type: 'file_exists', path: 'conflicts.json' }],
-    },
-  ],
+const TASK: SuiteInput['tasks'][number] = {
+  key: 'double-booked',
+  title: 'Double-booked',
+  prompt: 'Find conflicts.',
+  scorers: [{ type: 'file_exists', path: 'conflicts.json' }],
 };
+const SUITE: SuiteInput = { name: 'Clinic', tasks: [TASK] };
 
 const draft = (overrides: Partial<SuiteDraft>): SuiteDraft => ({
   id: 'd1',
@@ -42,6 +38,14 @@ const api = vi.hoisted(() => ({
 vi.mock('@/api/endpoints', () => ({ api: { suiteDrafts: api } }));
 
 const DESCRIPTION = 'Three tasks for a dental clinic front desk.';
+
+const applyButton = (wrapper: VueWrapper) => {
+  const button = wrapper
+    .findAll('button')
+    .find((candidate) => candidate.text() === 'Apply to editor');
+  if (!button) throw new Error('No "Apply to editor" button');
+  return button;
+};
 
 describe('SuiteAssistant', () => {
   beforeEach(() => {
@@ -76,9 +80,33 @@ describe('SuiteAssistant', () => {
 
     await vi.advanceTimersByTimeAsync(2_000);
     await flushPromises();
-    expect(wrapper.emitted('drafted')).toEqual([[SUITE]]);
     expect(wrapper.text()).toContain('Drafted 1 task in 1 m 30 s (2 attempts)');
     expect(wrapper.text()).toContain('1/1 reference answers pass');
+    // The draft is previewed, not pushed into the editor until applied.
+    expect(wrapper.emitted('drafted')).toBeUndefined();
+    expect(wrapper.get('pre').text()).toContain('"double-booked"');
+
+    await applyButton(wrapper).trigger('click');
+    expect(wrapper.emitted('drafted')).toEqual([[SUITE]]);
+    expect(wrapper.get('[role="status"]').text()).toBe('Applied to the editor');
+  });
+
+  it('summarises what the draft changes in the editor', async () => {
+    const revised: SuiteInput = {
+      ...SUITE,
+      tasks: [
+        { ...TASK, prompt: 'Find every conflict.' },
+        { ...TASK, key: 'no-shows', title: 'No-shows' },
+      ],
+    };
+    api.start.mockResolvedValue(draft({ status: 'ready', suite: revised as SuiteDraft['suite'] }));
+    const wrapper = mount(SuiteAssistant, { props: { current: SUITE, revising: true } });
+    await wrapper.get('textarea').setValue(DESCRIPTION);
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.text()).toContain(
+      'Compared with the editor, this draft adds no-shows, changes double-booked.',
+    );
   });
 
   it('offers to revise the draft it just produced', async () => {
@@ -88,6 +116,7 @@ describe('SuiteAssistant', () => {
     await wrapper.get('textarea').setValue(DESCRIPTION);
     await wrapper.get('form').trigger('submit');
     await flushPromises();
+    await applyButton(wrapper).trigger('click');
     const revise = wrapper.get<HTMLInputElement>('input[type="checkbox"]');
     expect(revise.element.checked).toBe(true);
 

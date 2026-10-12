@@ -6,10 +6,12 @@ import {
   type SuiteInput,
 } from '@higheval/shared';
 import { PhChatCenteredText, PhCheck, PhCircleNotch, PhWarning } from '@phosphor-icons/vue';
-import { computed, onMounted, onScopeDispose, ref, shallowRef, watch } from 'vue';
+import { computed, onMounted, onScopeDispose, ref, shallowRef } from 'vue';
 import { api } from '@/api/endpoints';
 import { useFormErrors } from '@/composables/useFormErrors';
 import { formatDuration } from '@/lib/format';
+import { suiteChanges } from '@/lib/suite-changes';
+import CodeBlock from './CodeBlock.vue';
 import FormAlert from './FormAlert.vue';
 import FormField from './FormField.vue';
 
@@ -66,20 +68,46 @@ async function refresh(id: string): Promise<void> {
   if (draft.value.status === 'running') poll = setTimeout(() => void refresh(id), POLL_MS);
 }
 
-/** Whether a draft has been loaded, after which it can be revised in turn. */
+/** Whether a draft has been applied, after which it can be revised in turn. */
 const drafted = ref(false);
+/** The draft last applied to the editor, so its button turns into a confirmation. */
+const appliedId = ref<string | null>(null);
 
-// Hand a usable draft to the editor once, when it finishes; follow-ups then revise it.
-watch(
-  () => draft.value?.status,
-  (status) => {
-    if (status === 'running' || !draft.value?.suite) return;
-    emit('drafted', draft.value.suite);
-    drafted.value = true;
-    revise.value = true;
-    description.value = '';
-  },
+const draftJson = computed(() =>
+  draft.value?.suite ? JSON.stringify(draft.value.suite, null, 2) : '',
 );
+
+/** What applying the draft would change, compared with the editor as it is now. */
+const changeSummary = computed(() => {
+  const suite = draft.value?.suite;
+  if (!suite) return '';
+  if (!props.current) return "Replaces the editor's content, which isn't a valid suite right now.";
+  const changes = suiteChanges(props.current, suite);
+  const parts = [
+    changes.added.length ? `adds ${changes.added.join(', ')}` : '',
+    changes.changed.length ? `changes ${changes.changed.join(', ')}` : '',
+    changes.removed.length ? `removes ${changes.removed.join(', ')}` : '',
+    changes.detailsChanged ? 'updates the name or description' : '',
+  ].filter(Boolean);
+  if (parts.length === 0) return 'Identical to the suite in the editor.';
+  const kept = changes.unchanged ? `; ${String(changes.unchanged)} unchanged` : '';
+  return `Compared with the editor, this draft ${parts.join(', ')}${kept}.`;
+});
+
+/** A finished draft waiting to be applied takes the primary action from the form. */
+const awaitingApply = computed(
+  () => draft.value?.status === 'ready' && appliedId.value !== draft.value.id,
+);
+
+/** Hands the draft to the editor; follow-up requests then revise it. */
+function apply(): void {
+  if (!draft.value?.suite) return;
+  emit('drafted', draft.value.suite);
+  appliedId.value = draft.value.id;
+  drafted.value = true;
+  revise.value = true;
+  description.value = '';
+}
 
 async function start(): Promise<void> {
   clear();
@@ -123,8 +151,8 @@ async function cancel(): Promise<void> {
     <p class="muted assistant__intro">
       Describe what the suite should test. HighEval AI, a Hermes agent, writes the tasks, fixture
       files and scorers, computes expected values with a script, and HighEval checks the result
-      against the suite schema and the agent's own reference answers. The draft opens in the editor
-      below; nothing is saved until you save it.
+      against the suite schema and the agent's own reference answers. You review the draft here,
+      then apply it to the editor below or copy it; nothing is saved until you save it.
     </p>
 
     <form class="assistant__form" novalidate @submit.prevent="start">
@@ -157,7 +185,13 @@ async function cancel(): Promise<void> {
       </label>
       <FormAlert :message="formError" />
       <div class="assistant__actions">
-        <button v-if="!running" type="submit" class="btn btn--primary" :disabled="busy">
+        <button
+          v-if="!running"
+          type="submit"
+          class="btn"
+          :class="{ 'btn--primary': !awaitingApply }"
+          :disabled="busy"
+        >
           {{ busy ? 'Starting…' : revise ? 'Revise suite' : 'Draft suite' }}
         </button>
         <button v-else type="button" class="btn" @click="cancel">Stop</button>
@@ -187,9 +221,20 @@ async function cancel(): Promise<void> {
             <code>{{ check.taskKey }}</code> {{ check.problems.join(' ') }}
           </li>
         </ul>
+        <p class="assistant__note">{{ changeSummary }}</p>
+        <CodeBlock :code="draftJson" label="Draft suite" :collapsed-lines="16" />
+        <div class="assistant__actions">
+          <p v-if="appliedId === draft.id" class="assistant__line is-ok" role="status">
+            <PhCheck aria-hidden="true" />
+            Applied to the editor
+          </p>
+          <button v-else type="button" class="btn btn--primary" @click="apply">
+            Apply to editor
+          </button>
+        </div>
         <p class="muted assistant__note">
-          Loaded into the editor. Check the expected values yourself before saving: a self-check
-          proves the scorers agree with the agent's answers, not that the answers are right.
+          Check the expected values yourself before saving: a self-check proves the scorers agree
+          with the agent's answers, not that the answers are right.
         </p>
       </template>
       <p v-else-if="draft.status === 'failed'" class="assistant__line is-error" role="alert">

@@ -126,13 +126,13 @@ describe('SuiteAssistantService', () => {
     expect(first?.config.skills.map((skill) => skill.name)).toEqual(['suite-authoring']);
     expect(first?.config.toolsets).toEqual(['file', 'terminal']);
     expect(first?.providerSort).toBe('throughput');
-    expect(first?.fixtures.map((fixture) => fixture.path)).toEqual([
-      'request.md',
-      'suite.schema.json',
-      'example-suite.json',
-    ]);
-    const problems = second?.fixtures.find((fixture) => fixture.path === 'problems.md');
-    expect(problems?.content).toContain('suite.json tasks: Add at least one');
+    // Inputs travel in the prompt, so the agent spends no tool calls reading them.
+    expect(first?.fixtures).toEqual([]);
+    expect(first?.prompt).toContain('One task that checks the agent says hello.');
+    expect(first?.prompt).toContain('## Suite JSON Schema');
+    expect(first?.prompt).not.toContain('## Current suite');
+    expect(second?.prompt).toContain('## Your previous attempt');
+    expect(second?.prompt).toContain('- suite.json tasks: Add at least one');
   });
 
   it('gives a revision the current suite to work from', async () => {
@@ -148,9 +148,8 @@ describe('SuiteAssistantService', () => {
     });
     await settled(assistant, started.id);
     expect(started.revision).toBe(true);
-    expect(executor.requests[0]?.fixtures.map((fixture) => fixture.path)).toContain(
-      'current-suite.json',
-    );
+    expect(executor.requests[0]?.prompt).toContain('## Current suite');
+    expect(executor.requests[0]?.prompt).toContain('"key": "say-hello"');
   });
 
   it('fails with the last problems when no attempt produces a valid suite', async () => {
