@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, X } from '@lucide/vue';
+import { PhCheck, PhX } from '@phosphor-icons/vue';
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { api } from '@/api/endpoints';
@@ -103,7 +103,7 @@ const modelMismatch = computed(() => {
                 class="scores__mark"
                 :class="score.passed ? 'scores__mark--pass' : 'scores__mark--fail'"
               >
-                <component :is="score.passed ? Check : X" aria-hidden="true" />
+                <component :is="score.passed ? PhCheck : PhX" aria-hidden="true" />
                 <span class="visually-hidden">{{ score.passed ? 'Passed' : 'Failed' }}</span>
               </span>
               <div class="scores__body">

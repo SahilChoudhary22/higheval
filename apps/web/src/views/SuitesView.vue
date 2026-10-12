@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ListChecks } from '@lucide/vue';
+import { PhListChecks } from '@phosphor-icons/vue';
 import type { SuiteSummary } from '@higheval/shared';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -46,7 +46,7 @@ function deleteSuite(suite: SuiteSummary): void {
     <SkeletonRows v-else-if="!suites.data.value" />
     <EmptyState
       v-else-if="visible.length === 0"
-      :icon="ListChecks"
+      :icon="PhListChecks"
       title="No suites yet."
       detail="A suite is the fixed set of tasks both configs are measured on. Each task defines its own scorers."
     >

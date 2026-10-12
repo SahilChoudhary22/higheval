@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SlidersHorizontal } from '@lucide/vue';
+import { PhSlidersHorizontal } from '@phosphor-icons/vue';
 import type { AgentConfig } from '@higheval/shared';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -53,7 +53,7 @@ function deleteConfig(config: AgentConfig): void {
     <SkeletonRows v-else-if="!configs.data.value" />
     <EmptyState
       v-else-if="visible.length === 0"
-      :icon="SlidersHorizontal"
+      :icon="PhSlidersHorizontal"
       title="No configs yet."
       detail="An experiment compares two configs, so you need at least two."
     >

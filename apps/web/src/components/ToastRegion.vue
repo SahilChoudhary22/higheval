@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TriangleAlert, X } from '@lucide/vue';
+import { PhWarning, PhX } from '@phosphor-icons/vue';
 import { useToasts } from '@/composables/useToasts';
 
 const { toasts, dismiss } = useToasts();
@@ -14,7 +14,7 @@ const { toasts, dismiss } = useToasts();
         class="toast"
         :role="toast.tone === 'error' ? 'alert' : 'status'"
       >
-        <TriangleAlert v-if="toast.tone === 'error'" class="toast__icon" aria-hidden="true" />
+        <PhWarning v-if="toast.tone === 'error'" class="toast__icon" aria-hidden="true" />
         <p class="toast__message">{{ toast.message }}</p>
         <button
           v-if="toast.action"
@@ -25,7 +25,7 @@ const { toasts, dismiss } = useToasts();
           {{ toast.action.label }}
         </button>
         <button type="button" class="toast__close" aria-label="Dismiss" @click="dismiss(toast.id)">
-          <X aria-hidden="true" />
+          <PhX aria-hidden="true" />
         </button>
       </div>
     </TransitionGroup>

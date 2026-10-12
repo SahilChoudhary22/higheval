@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookOpen } from '@lucide/vue';
+import { PhBookOpen } from '@phosphor-icons/vue';
 import type { Skill } from '@higheval/shared';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -52,7 +52,7 @@ function deleteSkill(skill: Skill): void {
     <SkeletonRows v-else-if="!skills.data.value" />
     <EmptyState
       v-else-if="visible.length === 0"
-      :icon="BookOpen"
+      :icon="PhBookOpen"
       title="No skills yet."
       detail="Skills are markdown instructions an agent config can load. Compare a config with and without one to measure its effect."
     >

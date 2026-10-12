@@ -1,5 +1,16 @@
 <script setup lang="ts">
-import { Check, CircleDashed, Menu, TriangleAlert, X } from '@lucide/vue';
+import {
+  PhBookOpen,
+  PhCheck,
+  PhCircleDashed,
+  PhFlask,
+  PhList,
+  PhListChecks,
+  PhSlidersHorizontal,
+  PhSquaresFour,
+  PhWarning,
+  PhX,
+} from '@phosphor-icons/vue';
 import { computed, ref, watch, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { api } from '@/api/endpoints';
@@ -7,11 +18,11 @@ import { useResource } from '@/composables/useResource';
 import ToastRegion from './ToastRegion.vue';
 
 const NAV = [
-  { to: '/', label: 'Overview', exact: true },
-  { to: '/experiments', label: 'Experiments' },
-  { to: '/suites', label: 'Suites' },
-  { to: '/configs', label: 'Configs' },
-  { to: '/skills', label: 'Skills' },
+  { to: '/', label: 'Overview', icon: PhSquaresFour, exact: true },
+  { to: '/experiments', label: 'Experiments', icon: PhFlask },
+  { to: '/suites', label: 'Suites', icon: PhListChecks },
+  { to: '/configs', label: 'Configs', icon: PhSlidersHorizontal },
+  { to: '/skills', label: 'Skills', icon: PhBookOpen },
 ];
 
 const route = useRoute();
@@ -55,9 +66,9 @@ const checks = computed(() => {
   ] satisfies { label: string; state: CheckState; detail: string }[];
 });
 const ICON: Record<CheckState, Component> = {
-  ok: Check,
-  bad: TriangleAlert,
-  unknown: CircleDashed,
+  ok: PhCheck,
+  bad: PhWarning,
+  unknown: PhCircleDashed,
 };
 </script>
 
@@ -72,7 +83,7 @@ const ICON: Record<CheckState, Component> = {
         aria-controls="primary-nav"
         @click="menuOpen = !menuOpen"
       >
-        <component :is="menuOpen ? X : Menu" aria-hidden="true" />
+        <component :is="menuOpen ? PhX : PhList" aria-hidden="true" />
         Menu
       </button>
     </header>
@@ -88,6 +99,7 @@ const ICON: Record<CheckState, Component> = {
               :class="{ 'nav__link--active': isActive(item) }"
               :aria-current="isActive(item) ? 'page' : undefined"
             >
+              <component :is="item.icon" class="nav__icon" aria-hidden="true" />
               {{ item.label }}
             </RouterLink>
           </li>
@@ -181,19 +193,14 @@ const ICON: Record<CheckState, Component> = {
   text-decoration: none;
 }
 
-.nav__link::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  background: transparent;
+.nav__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
 }
 
 .nav__link--active {
   color: var(--color-accent);
-}
-
-.nav__link--active::before {
-  background: var(--color-accent);
 }
 
 @media (hover: hover) {
