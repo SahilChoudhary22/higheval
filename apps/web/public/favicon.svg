@@ -1,1 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#0d151c"/><path d="M7 22h18M16 8v14M10 13h12" stroke="#73b0ee" stroke-width="2.5" fill="none"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="120 120 272 272">
+  <title>HighEval</title>
+  <style>
+    svg { --ink: #0d151c; --accent: #004d91; }
+    @media (prefers-color-scheme: dark) {
+      svg { --ink: #e4e8ed; --accent: #73b0ee; }
+    }
+    .ink { fill: var(--ink); }
+    .interval { fill: none; stroke: var(--accent); stroke-width: 10; }
+    .estimate { fill: var(--accent); }
+    .reference { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 10 13; opacity: 0.48; }
+  </style>
+  <path class="reference" d="M256 128V384"/>
+  <path class="ink" d="M137 128 L193 164 L193 215 L173 235 L173 277 L193 297 L193 348 L137 384 Z"/>
+  <path class="ink" d="M375 128 L319 164 L319 215 L339 235 L339 277 L319 297 L319 348 L375 384 Z"/>
+  <path class="interval" d="M174 256 H338 M174 241 V271 M338 241 V271"/>
+  <rect class="estimate" x="273" y="244" width="22" height="24"/>
+</svg>
