@@ -9,7 +9,7 @@ import {
   PhList,
   PhListChecks,
   PhSignOut,
-  PhSlidersHorizontal,
+  PhRobot,
   PhSquaresFour,
   PhWarning,
   PhX,
@@ -25,7 +25,7 @@ import ToastRegion from './ToastRegion.vue';
 const NAV = [
   { to: '/', label: 'Overview', icon: PhSquaresFour, exact: true },
   // In the order you use them: build the agents, write the test, run it.
-  { to: '/agents', label: 'Agents', icon: PhSlidersHorizontal },
+  { to: '/agents', label: 'Agents', icon: PhRobot },
   { to: '/skills', label: 'Skills', icon: PhBookOpen },
   { to: '/suites', label: 'Suites', icon: PhListChecks },
   { to: '/experiments', label: 'Experiments', icon: PhFlask },
