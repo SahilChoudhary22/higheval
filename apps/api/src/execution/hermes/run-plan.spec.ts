@@ -36,6 +36,15 @@ describe('buildRunPlan', () => {
     });
   });
 
+  it('routes OpenRouter to the cheapest provider unless asked for throughput', () => {
+    expect(hermesConfig(buildRunPlan(base, paths))).toMatchObject({
+      provider_routing: { sort: 'price' },
+    });
+    expect(hermesConfig(buildRunPlan(base, paths, 'throughput'))).toMatchObject({
+      provider_routing: { sort: 'throughput' },
+    });
+  });
+
   it('pins isolation settings off', () => {
     const config = hermesConfig(buildRunPlan(base, paths));
     expect(config).toMatchObject({

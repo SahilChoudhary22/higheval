@@ -184,6 +184,8 @@ export class SuiteAssistantService implements OnModuleDestroy {
           fixtures: fixtures(input, previous),
           config: snapshot,
           runDir: join(this.draftDir(draft.id), `attempt-${String(attempt)}`),
+          // Drafting is interactive, so it takes the fastest provider rather than the cheapest.
+          providerSort: 'throughput',
         },
         {
           signal: controller.signal,
