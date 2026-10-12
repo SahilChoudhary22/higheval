@@ -280,7 +280,7 @@ const fenced = (language: string, text: string): string =>
 function prompt(input: SuiteDraftData, previous: PreviousAttempt | null): string {
   return [
     'You are writing an evaluation suite for HighEval. Follow the suite-authoring skill.',
-    'Everything you need is in this message; there are no input files to read.',
+    'Everything you need is in this message; the working directory starts empty, so there is nothing to look up.',
     '',
     input.suite ? '## Change the user wants' : '## What the user wants the suite to test',
     fenced('text', input.description),
@@ -316,6 +316,7 @@ function prompt(input: SuiteDraftData, previous: PreviousAttempt | null): string
     '1. suite.json: the suite, valid against the schema above.',
     '2. reference.json: for every task key, what a perfect agent would leave behind, as {"<task key>": {"files": {"<path>": "<file content>"}, "output": "<final reply>"}}.',
     '',
-    'Calculate expected values with a script in the terminal. When both files are written, reply with one line: DONE.',
+    'Calculate expected values with a script in the terminal. Do not validate suite.json against the schema yourself or install packages for it: HighEval validates both files and sends back any problems.',
+    'When both files are written, reply with one line: DONE.',
   ].join('\n');
 }

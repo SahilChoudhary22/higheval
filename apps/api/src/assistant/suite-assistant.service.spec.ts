@@ -131,6 +131,8 @@ describe('SuiteAssistantService', () => {
     expect(first?.prompt).toContain('One task that checks the agent says hello.');
     expect(first?.prompt).toContain('## Suite JSON Schema');
     expect(first?.prompt).not.toContain('## Current suite');
+    // HighEval validates the files, so the agent should not spend tool calls doing it too.
+    expect(first?.prompt).toContain('Do not validate suite.json against the schema yourself');
     expect(second?.prompt).toContain('## Your previous attempt');
     expect(second?.prompt).toContain('- suite.json tasks: Add at least one');
   });
