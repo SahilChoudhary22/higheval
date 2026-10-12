@@ -62,3 +62,37 @@ describe('jsonMatches', () => {
     expect(jsonMatches(undefined, null, {})).toBe(false);
   });
 });
+
+describe('extractJson prefers the final answer', () => {
+  it('takes the last fenced block when a draft precedes the answer', () => {
+    const text = 'Draft:\n```json\n{"total": 1}\n```\nCorrected:\n```json\n{"total": 2}\n```';
+    expect(extractJson(text)).toEqual({ ok: true, value: { total: 2 } });
+  });
+
+  it('takes the last balanced span, so a bracketed citation does not win', () => {
+    expect(extractJson('Per clause [1], the decision is {"decision": "deny"}.')).toEqual({
+      ok: true,
+      value: { decision: 'deny' },
+    });
+  });
+});
+
+describe('jsonMatches edge cases', () => {
+  it('accepts plain decimal strings but not hex or exponent notation', () => {
+    expect(jsonMatches(' 5800.50 ', 5800.5, {})).toBe(true);
+    expect(jsonMatches('0x10', 16, {})).toBe(false);
+    expect(jsonMatches('1e3', 1000, {})).toBe(false);
+  });
+
+  it('matches unordered arrays with tolerance where greedy pairing would fail', () => {
+    // Greedy pairs expected 1.1 with actual 1.0 and then cannot place 1.0 against 1.2.
+    expect(jsonMatches([1.0, 1.2], [1.1, 1.0], { unordered: true, tolerance: 0.1 })).toBe(true);
+    expect(jsonMatches([1.0, 1.5], [1.1, 1.0], { unordered: true, tolerance: 0.1 })).toBe(false);
+  });
+
+  it('rejects extra keys at every level when exact is set', () => {
+    expect(jsonMatches({ a: 1, extra: 2 }, { a: 1 }, { exact: true })).toBe(false);
+    expect(jsonMatches({ a: { b: 1, c: 2 } }, { a: { b: 1 } }, { exact: true })).toBe(false);
+    expect(jsonMatches({ a: { b: 1 } }, { a: { b: 1 } }, { exact: true })).toBe(true);
+  });
+});

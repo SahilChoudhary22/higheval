@@ -220,3 +220,23 @@ describe('required scorers', () => {
     expect(result.results[0]).toMatchObject({ required: true, passed: false });
   });
 });
+
+describe('regex safety', () => {
+  it('rejects nested quantifiers that can backtrack exponentially', () => {
+    expect(regex('(a+)+$', '').success).toBe(false);
+    expect(regex('(?:x*y)*', '').success).toBe(false);
+    expect(regex('((ab)*c)+', '').success).toBe(false);
+  });
+
+  it('allows ordinary patterns, including quantified groups without inner repetition', () => {
+    for (const pattern of [
+      '^(?![\\s\\S]*\\btomorrow\\b)',
+      '(?:14:30|2:30)',
+      '(ab)+',
+      '[(a+)]+',
+      '\\(a+\\)+',
+    ]) {
+      expect({ pattern, ok: regex(pattern, '').success }).toEqual({ pattern, ok: true });
+    }
+  });
+});

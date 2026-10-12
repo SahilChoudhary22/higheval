@@ -20,6 +20,7 @@ export function describeScorer(spec: ScorerSpec): { kind: string; on: string; ch
       const extras = [
         spec.tolerance === undefined ? null : `±${String(spec.tolerance)}`,
         spec.unordered ? 'any order' : null,
+        spec.exact ? 'exact keys' : null,
       ].filter(Boolean);
       return {
         kind: 'JSON field',

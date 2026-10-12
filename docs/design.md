@@ -155,7 +155,7 @@ Scorers are typed and declarative:
 - `tool_called`, with min/max bounds
 - `llm_judge`, a pinned judge model rating the reply against a rubric
 
-They can target the final reply or any file in the workspace. JSON is extracted leniently from replies (whole text, then a fenced block, then the first balanced object), so tasks measure correctness rather than formatting habits.
+They can target the final reply or any file in the workspace. JSON is extracted leniently from replies (whole text, then fenced blocks, then balanced objects, preferring the last of each so a final answer beats an earlier draft or example), so tasks measure correctness rather than formatting habits. Expected objects can require `exact` keys, unordered arrays use a proper matching rather than greedy pairing, numeric strings must be plain decimals, and regex patterns with nested quantifiers (a ReDoS risk) are rejected when a suite is saved.
 
 Every result carries a reason ("Field `overdue_total` = 5800.5 (±0.01)"), which is what makes the run inspector useful.
 

@@ -28,6 +28,9 @@ export interface ScoringOptions {
   signal?: AbortSignal;
 }
 
+/** Longest text a regex scorer scans; agent replies are far shorter. */
+const MAX_REGEX_INPUT = 200_000;
+
 type Outcome = Pick<ScoreResult, 'passed' | 'score' | 'reason'> & { details?: JudgeDetails };
 type DeterministicScorer = Exclude<ScorerSpec, { type: 'llm_judge' }>;
 type JudgeScorer = Extract<ScorerSpec, { type: 'llm_judge' }>;
@@ -145,7 +148,8 @@ function evaluate(spec: DeterministicScorer, context: ScoringContext): Outcome {
     case 'regex': {
       const text = resolveTarget(spec.target, context);
       if (text === null) return fail(`${describeTarget(spec.target)} is missing`);
-      const match = new RegExp(spec.pattern, spec.flags).exec(text);
+      // Bounded input as a second line of defence against slow patterns.
+      const match = new RegExp(spec.pattern, spec.flags).exec(text.slice(0, MAX_REGEX_INPUT));
       return match
         ? pass(`Matched /${spec.pattern}/ with ${preview(match[0])}`)
         : fail(`${describeTarget(spec.target)} does not match /${spec.pattern}/`);
@@ -169,6 +173,7 @@ function evaluate(spec: DeterministicScorer, context: ScoringContext): Outcome {
       const matches = jsonMatches(lookup.value, spec.expected, {
         tolerance: spec.tolerance,
         unordered: spec.unordered,
+        exact: spec.exact,
       });
       const tolerance = spec.tolerance === undefined ? '' : ` (±${String(spec.tolerance)})`;
       return matches
