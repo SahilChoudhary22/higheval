@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { loginInputSchema } from '@higheval/shared';
+import { loginInputSchema, type Verdict } from '@higheval/shared';
 import { PhEye, PhEyeSlash, PhSignIn } from '@phosphor-icons/vue';
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -7,8 +7,10 @@ import { api } from '@/api/endpoints';
 import FormAlert from '@/components/FormAlert.vue';
 import FormField from '@/components/FormField.vue';
 import LogoMark from '@/components/LogoMark.vue';
+import StatusTag from '@/components/StatusTag.vue';
 import { useFormErrors } from '@/composables/useFormErrors';
 import { useSession } from '@/composables/useSession';
+import { VERDICT } from '@/lib/labels';
 
 const route = useRoute();
 const router = useRouter();
@@ -47,54 +49,53 @@ async function signIn(): Promise<void> {
   }
 }
 
-/** Real results from docs/experiments/capabilities.md, drawn as the verdict chart draws them. */
-const RESULTS = [
-  { label: 'Knowledge skill', low: 1, high: 1, estimate: 1 },
-  { label: 'Procedure skill', low: 0.675, high: 0.8, estimate: 0.738 },
-  { label: 'Seeded memory', low: 1, high: 1, estimate: 1 },
-  { label: 'Tools removed', low: -1, high: -0.813, estimate: -0.938 },
+/**
+ * Real verdicts from the experiments in docs/experiments, one of each kind, so
+ * the first screen shows that HighEval also says "inconclusive" when it should.
+ */
+const VERDICTS: { change: string; verdict: Verdict; evidence: string }[] = [
+  {
+    change: 'Gave the agent a skill with the pricing rules',
+    verdict: 'candidate_better',
+    evidence: 'Better on 8 of 8 tasks',
+  },
+  {
+    change: 'Took away its file tools',
+    verdict: 'candidate_worse',
+    evidence: 'Worse on 8 of 8 tasks',
+  },
+  {
+    change: 'Switched to a newer model',
+    verdict: 'inconclusive',
+    evidence: 'Only 3 of 16 tasks differed',
+  },
 ];
-/** Maps a difference in [-1, 1] to the chart's x coordinate. */
-const x = (value: number): number => 120 + ((value + 1) / 2) * 260;
 </script>
 
 <template>
   <div class="login">
-    <section class="login__brand" aria-hidden="true">
+    <section class="login__brand" aria-labelledby="brand-question">
       <div class="brand__mark">
         <LogoMark class="brand__logo" />
         <span class="brand__name">HighEval</span>
       </div>
-      <p class="brand__lede">Did the agent get better, worse, or stay the same?</p>
-      <p class="brand__sub">A/B evaluations for Hermes Agent, with evidence.</p>
-      <svg class="brand__chart" viewBox="0 0 400 190">
-        <line class="chart__zero" :x1="x(0)" :x2="x(0)" y1="8" y2="160" />
-        <g v-for="(result, index) in RESULTS" :key="result.label">
-          <text class="chart__label" x="0" :y="30 + index * 38">{{ result.label }}</text>
-          <line
-            class="chart__interval"
-            :class="result.estimate > 0 ? 'is-better' : 'is-worse'"
-            :x1="x(result.low) - (result.low === result.high ? 4 : 0)"
-            :x2="x(result.high) + (result.low === result.high ? 4 : 0)"
-            :y1="26 + index * 38"
-            :y2="26 + index * 38"
-          />
-          <rect
-            class="chart__estimate"
-            :class="result.estimate > 0 ? 'is-better' : 'is-worse'"
-            :x="x(result.estimate) - 5"
-            :y="21 + index * 38"
-            width="10"
-            height="10"
-          />
-        </g>
-        <text class="chart__axis" :x="x(-1)" y="182" text-anchor="middle">−1</text>
-        <text class="chart__axis" :x="x(0)" y="182" text-anchor="middle">0</text>
-        <text class="chart__axis" :x="x(1)" y="182" text-anchor="middle">+1</text>
-      </svg>
-      <p class="brand__caption">
-        95% intervals from four real experiments: one setting changed, one free model.
+      <p id="brand-question" class="brand__question">
+        Did the agent get better, worse, or stay the same?
       </p>
+      <p class="brand__lede">
+        HighEval runs the same tasks under two Hermes Agent setups and only names a winner when the
+        evidence holds.
+      </p>
+      <div class="ledger">
+        <p class="ledger__title">Verdicts from experiments run in this app</p>
+        <ul class="ledger__rows">
+          <li v-for="row in VERDICTS" :key="row.change" class="ledger__row">
+            <span class="ledger__change">{{ row.change }}</span>
+            <StatusTag class="ledger__tag" :spec="VERDICT[row.verdict]" />
+            <span class="ledger__evidence">{{ row.evidence }}</span>
+          </li>
+        </ul>
+      </div>
     </section>
 
     <main class="login__panel">
@@ -172,12 +173,10 @@ const x = (value: number): number => 120 + ((value + 1) / 2) * 260;
   display: none;
   flex-direction: column;
   justify-content: center;
-  gap: var(--space-md);
-  padding: var(--space-3xl) clamp(var(--space-xl), 6vw, 6rem);
+  padding: var(--space-3xl) clamp(var(--space-xl), 7vw, 7rem) var(--space-3xl)
+    clamp(var(--space-xl), 9vw, 9rem);
   border-right: 1px solid var(--color-rule);
-  background:
-    radial-gradient(circle at 15% 10%, var(--color-accent-tint), transparent 55%),
-    var(--color-paper-2);
+  background: var(--color-paper-2);
 }
 
 @media (width >= 56rem) {
@@ -194,8 +193,8 @@ const x = (value: number): number => 120 + ((value + 1) / 2) * 260;
 }
 
 .brand__logo {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
 }
 
 .brand__name {
@@ -205,65 +204,64 @@ const x = (value: number): number => 120 + ((value + 1) / 2) * 260;
   color: var(--color-ink);
 }
 
-.brand__lede {
-  max-width: 24ch;
-  margin: var(--space-lg) 0 0;
+.brand__question {
+  max-width: 18ch;
+  margin: var(--space-2xl) 0 var(--space-sm);
   font-family: var(--font-outlier);
-  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-size: clamp(2rem, 3.4vw, 2.875rem);
   font-weight: 600;
-  line-height: 1.15;
+  line-height: 1.08;
+  text-wrap: balance;
   color: var(--color-ink);
 }
 
-.brand__sub {
+.brand__lede {
+  max-width: 40ch;
   margin: 0;
   color: var(--color-ink-2);
+  text-wrap: pretty;
 }
 
-.brand__chart {
-  width: 100%;
-  max-width: 30rem;
-  margin-top: var(--space-xl);
-  overflow: visible;
+.ledger {
+  max-width: 34rem;
+  margin-top: var(--space-2xl);
 }
 
-.chart__zero {
-  stroke: var(--color-rule-strong);
-  stroke-dasharray: 4 5;
-}
-
-.chart__label,
-.chart__axis {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  fill: var(--color-muted);
-}
-
-.chart__interval {
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
-.chart__interval.is-better {
-  stroke: var(--color-better);
-}
-
-.chart__interval.is-worse {
-  stroke: var(--color-worse);
-}
-
-.chart__estimate.is-better {
-  fill: var(--color-better);
-}
-
-.chart__estimate.is-worse {
-  fill: var(--color-worse);
-}
-
-.brand__caption {
-  max-width: 34ch;
-  margin: 0;
+.ledger__title {
+  margin: 0 0 var(--space-xs);
   font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.ledger__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-ink);
+}
+
+/* Change and verdict on one line, the evidence beneath: read left to right like the app's tables. */
+.ledger__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3xs) var(--space-md);
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.ledger__change {
+  color: var(--color-ink);
+}
+
+.ledger__tag {
+  justify-self: end;
+}
+
+.ledger__evidence {
+  grid-column: 1 / -1;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
   color: var(--color-muted);
 }
 

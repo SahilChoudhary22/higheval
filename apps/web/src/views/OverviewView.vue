@@ -21,24 +21,28 @@ const skills = useResource(() => api.skills.list());
 const health = useHealth();
 
 const recent = computed(() => experiments.data.value?.slice(0, 6) ?? []);
-const library = computed(() => [
+/** The three steps of using HighEval, in order, with what exists for each so far. */
+const steps = computed(() => [
   {
-    label: 'Suites',
-    to: '/suites',
-    count: suites.data.value?.length,
-    detail: 'tasks and how each is scored',
+    title: 'Configure the agents',
+    detail:
+      'Choose a model, then the tools, skills and memory it gets. An experiment compares two configurations.',
+    links: [
+      { to: '/configs', label: 'Configs', count: configs.data.value?.length },
+      { to: '/skills', label: 'Skills', count: skills.data.value?.length },
+    ],
   },
   {
-    label: 'Configs',
-    to: '/configs',
-    count: configs.data.value?.length,
-    detail: 'model, skills, memory, tools',
+    title: 'Write the test',
+    detail:
+      'A suite is a set of tasks, each with the checks that score it. Write one, or have HighEval AI draft it.',
+    links: [{ to: '/suites', label: 'Suites', count: suites.data.value?.length }],
   },
   {
-    label: 'Skills',
-    to: '/skills',
-    count: skills.data.value?.length,
-    detail: 'instructions a config can load',
+    title: 'Run an experiment',
+    detail:
+      'Both configurations take the same suite. HighEval says which did better, and how sure it can be.',
+    links: [{ to: '/experiments/new', label: 'Launch experiment', count: undefined }],
   },
 ]);
 const blockers = computed(() => {
@@ -67,6 +71,25 @@ const blockers = computed(() => {
       <RouterLink to="/experiments/new" class="btn btn--primary">Launch experiment</RouterLink>
     </template>
   </PageHeader>
+
+  <section class="how" aria-labelledby="how-heading">
+    <h2 id="how-heading" class="visually-hidden">How it works</h2>
+    <ol class="steps">
+      <li v-for="(step, index) in steps" :key="step.title" class="step">
+        <span class="step__number" aria-hidden="true">{{ index + 1 }}</span>
+        <h3 class="step__title">{{ step.title }}</h3>
+        <p class="muted step__detail">{{ step.detail }}</p>
+        <p class="step__links">
+          <RouterLink v-for="link in step.links" :key="link.to" :to="link.to"
+            >{{ link.label
+            }}<span v-if="link.count !== undefined" class="muted">
+              ({{ link.count }})</span
+            ></RouterLink
+          >
+        </p>
+      </li>
+    </ol>
+  </section>
 
   <div class="overview">
     <section class="section" aria-labelledby="recent-heading">
@@ -112,19 +135,6 @@ const blockers = computed(() => {
         >
       </section>
 
-      <section class="section" aria-labelledby="library-heading">
-        <h2 id="library-heading" class="section__head">Library</h2>
-        <dl class="library">
-          <div v-for="item in library" :key="item.label" class="library__row">
-            <dt>
-              <RouterLink :to="item.to">{{ item.label }}</RouterLink>
-              <span class="muted library__detail">{{ item.detail }}</span>
-            </dt>
-            <dd>{{ item.count ?? '—' }}</dd>
-          </div>
-        </dl>
-      </section>
-
       <section class="section" aria-labelledby="method-heading">
         <h2 id="method-heading" class="section__head">How results are judged</h2>
         <p class="muted method">
@@ -167,34 +177,69 @@ const blockers = computed(() => {
   gap: var(--space-xs);
 }
 
-.library {
-  margin: 0;
+.how {
+  margin-top: var(--space-xl);
 }
 
-.library__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-md);
-  padding: var(--space-xs) 0;
-  border-bottom: 1px solid var(--color-rule);
-}
-
-.library__row dt {
+/* Genuinely ordered steps, so they are numbered; hairline rules instead of cards. */
+.steps {
   display: grid;
-  font-weight: 600;
-}
-
-.library__detail {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-body);
-}
-
-.library__row dd {
+  gap: var(--space-lg);
   margin: 0;
-  font-size: var(--text-lg);
+  padding: 0;
+  list-style: none;
+}
+
+@media (width >= 48rem) {
+  .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .step + .step {
+    padding-left: var(--space-lg);
+    border-left: 1px solid var(--color-rule);
+  }
+
+  .step {
+    padding-right: var(--space-lg);
+  }
+}
+
+.step {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-ink);
+}
+
+.step__number {
+  font-family: var(--font-outlier);
+  font-size: var(--text-xl);
   font-weight: 600;
+  line-height: 1;
+  color: var(--color-accent);
   font-variant-numeric: tabular-nums;
+}
+
+.step__title {
+  margin: var(--space-2xs) 0 0;
+  font-size: var(--text-base);
+}
+
+.step__detail {
+  margin: 0;
+  font-size: var(--text-sm);
+  text-wrap: pretty;
+}
+
+.step__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin: var(--space-2xs) 0 0;
+  font-size: var(--text-sm);
 }
 
 .method {
