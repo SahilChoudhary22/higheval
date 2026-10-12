@@ -15,7 +15,7 @@ import {
   type ExecutionRequest,
 } from '../agent-executor.js';
 import { CatalogCache } from './catalog-cache.js';
-import { hermesCommand, loadHermesRuntime } from './hermes-runtime.js';
+import { HERMES_NOT_INSTALLED, hermesCommand, loadHermesRuntime } from './hermes-runtime.js';
 import { HermesStreamParser, type HermesResult } from './hermes-stream-parser.js';
 import { runProcess } from './process.js';
 import { classifyHermesExit } from './run-classification.js';
@@ -54,9 +54,7 @@ export class HermesExecutor extends AgentExecutor {
     const apiKey = this.config.get('OPENROUTER_API_KEY', { infer: true });
     if (!runtime || !apiKey) {
       return setupError(
-        !runtime
-          ? 'Hermes is not installed. Run `pnpm setup:hermes`.'
-          : 'OPENROUTER_API_KEY is not set. Add it to .env.',
+        !runtime ? HERMES_NOT_INSTALLED : 'OPENROUTER_API_KEY is not set. Add it to .env.',
         elapsed(),
       );
     }
