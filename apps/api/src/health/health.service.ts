@@ -25,6 +25,7 @@ export class HealthService {
       uptimeSeconds: Math.round(process.uptime()),
       checks: { configuredProviders, hermesVersion: hermes?.version ?? null },
       maxConcurrentRuns: this.config.get('MAX_CONCURRENT_RUNS', { infer: true }),
+      providerKeysEditable: !this.config.get('PROVIDER_KEYS_READ_ONLY', { infer: true }),
     };
   }
 }

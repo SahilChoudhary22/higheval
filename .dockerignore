@@ -1,0 +1,21 @@
+# Rebuilt or installed inside the image
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+.hermes-runtime
+
+# Local state and secrets never go into an image
+data
+.env
+.env.*
+!.env.example
+
+# Not needed to build
+.git
+.github
+.notes
+.claude
+.husky
+.eslintcache
+**/.DS_Store

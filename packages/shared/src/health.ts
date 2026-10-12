@@ -14,6 +14,8 @@ export const healthResponseSchema = z.object({
   }),
   /** Agent runs executed in parallel; used by the UI to estimate durations. */
   maxConcurrentRuns: z.int().positive(),
+  /** False on deployments that manage provider keys centrally (PROVIDER_KEYS_READ_ONLY). */
+  providerKeysEditable: z.boolean(),
 });
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>;

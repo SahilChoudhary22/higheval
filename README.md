@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/experiment-results.png" alt="An experiment's verdict: the confidence interval for candidate minus baseline, the decision rule's inputs, and per-configuration results" width="880" />
+  <img src="docs/images/experiment-results.png" alt="A conclusive verdict: adding a skill made the candidate better on all 8 tasks, with the confidence interval, permutation test and per-configuration results" width="880" />
 </p>
 
 HighEval runs the same task suite under two Hermes configurations, scores every run, and reports the paired difference with a 95% confidence interval and a verdict from a rule fixed before the data. It never calls a difference real when the evidence can't support it, and every run can be opened to see exactly why it passed or failed.
@@ -44,8 +44,8 @@ HighEval runs the same task suite under two Hermes configurations, scores every 
 - **Typed API.** Every endpoint is described by an OpenAPI 3.1 document generated from the same Zod schemas that validate it.
 
 <p align="center">
-  <img src="docs/images/run-inspector.png" alt="The run inspector: three failing scorers, the agent's final reply with the correct dates, and run metadata" width="880" />
-  <br /><sub>A failed run, opened in the inspector. The agent computed the right dates but never wrote the file.</sub>
+  <img src="docs/images/run-inspector.png" alt="The run inspector: six passing scorers with their reasons, the agent's final reply, and run metadata" width="880" />
+  <br /><sub>One run opened in the inspector: every check passed, each with the evidence it matched.</sub>
 </p>
 
 ## Quick start
@@ -190,7 +190,10 @@ Every setting is optional and validated at startup; the app refuses to boot on a
 | ---------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `OPENROUTER_API_KEY`                     | —                                                       | OpenRouter key, used by the sample configurations, the LLM judge and the suite assistant          |
 | `<PROVIDER>_API_KEY`                     | —                                                       | Keys for other providers: `OPENAI`, `ANTHROPIC`, `GEMINI`, `DEEPSEEK`, `XAI`, `NVIDIA`            |
-| `HOST` / `PORT`                          | `127.0.0.1` / `3000`                                    | Bind address. Keep it local unless the app sits behind an authenticating proxy                    |
+| `HOST` / `PORT`                          | `127.0.0.1` / `3000`                                    | Bind address. Any address other than loopback requires `AUTH_USERNAME` and `AUTH_PASSWORD`        |
+| `AUTH_USERNAME` / `AUTH_PASSWORD`        | —                                                       | Require sign-in for the UI and API (hosted deployments)                                           |
+| `SESSION_SECRET`                         | random per start                                        | Signs session cookies; set it (32+ characters) so sign-ins survive restarts                       |
+| `PROVIDER_KEYS_READ_ONLY`                | `false`                                                 | Make Settings test-only, so visitors to a hosted demo cannot change keys                          |
 | `ALLOWED_HOSTS`                          | —                                                       | Extra hostnames the API answers to (for example a tunnel's public name); other hosts are rejected |
 | `DATA_DIR`                               | `./data`                                                | SQLite database and per-run artifacts                                                             |
 | `MAX_CONCURRENT_RUNS`                    | `4`                                                     | Parallel agent runs across all experiments                                                        |
@@ -201,6 +204,23 @@ Every setting is optional and validated at startup; the app refuses to boot on a
 | `SEED_SAMPLES`                           | `true`                                                  | Seed the sample definitions into an empty database                                                |
 | `HERMES_MANIFEST`                        | `.hermes-runtime/manifest.json`                         | Where the Hermes setup script records the installed runtime                                       |
 | `LOG_FORMAT`                             | `pretty`                                                | `json` for structured logs                                                                        |
+
+## Hosting
+
+The repository includes a Docker image and a Compose file for running HighEval on a server:
+
+```bash
+cp .env.example .env    # set OPENROUTER_API_KEY, AUTH_USERNAME, AUTH_PASSWORD, SESSION_SECRET and ALLOWED_HOSTS
+docker compose up -d --build
+```
+
+Then point a tunnel (for example Cloudflare Tunnel or Tailscale Funnel) or an HTTPS reverse proxy at `http://127.0.0.1:3000`, and add its public hostname to `ALLOWED_HOSTS`.
+
+What protects a hosted instance:
+
+- **Agents are confined to the container.** Their tools can run commands, so the container runs as an unprivileged user with no Linux capabilities, and the host never sees its files.
+- **Every page and API route needs a login.** Login is required whenever the app listens beyond loopback; it uses signed, HttpOnly session cookies and limits failed attempts.
+- **Keys can be locked.** `PROVIDER_KEYS_READ_ONLY=true` stops visitors changing the provider keys you configured.
 
 ## Development
 

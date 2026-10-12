@@ -89,7 +89,7 @@ Workloads are I/O-bound on the model provider. A modest machine (2 vCPU, 2 GB RA
 ## 3. Hosting
 
 - **Local (default):** no cost beyond the machine you already have. Everything runs from `pnpm start` in one process, with no database server or queue to operate.
-- **Always-on demo:** any small Linux VM or single-board computer with Node.js 22 and ~3 GB free disk (≈ $5–10 / month on common VPS providers, $0 on hardware you own). Put authentication in front before exposing it: anyone who can launch experiments can spend your provider quota.
+- **Always-on demo:** any small Linux VM or single-board computer with Docker and ~4 GB free disk, using the included `compose.yaml` (≈ $5–10 / month on common VPS providers, $0 on hardware you own). Put authentication in front before exposing it: anyone who can launch experiments can spend your provider quota.
 
 ## 4. People time
 

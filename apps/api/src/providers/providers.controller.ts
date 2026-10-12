@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   providerIdSchema,
   providerKeyInputSchema,
@@ -10,6 +21,7 @@ import {
 } from '@higheval/shared';
 import { z } from 'zod';
 import { validationError } from '../common/validation-error.js';
+import type { Env } from '../config/env.schema.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { ApiDoc } from '../openapi/api-doc.decorator.js';
 import { ProviderCredentials } from './provider-credentials.service.js';
@@ -20,7 +32,17 @@ export class ProvidersController {
   constructor(
     private readonly credentials: ProviderCredentials,
     private readonly tester: ProviderKeyTester,
+    private readonly config: ConfigService<Env, true>,
   ) {}
+
+  /** Hosted demos manage keys centrally, so visitors cannot change or remove them. */
+  private assertEditable(): void {
+    if (this.config.get('PROVIDER_KEYS_READ_ONLY', { infer: true })) {
+      throw new ForbiddenException(
+        'Provider keys are managed by the administrator on this deployment',
+      );
+    }
+  }
 
   @Get()
   @ApiDoc({
@@ -37,7 +59,7 @@ export class ProvidersController {
   @ApiDoc({
     summary: 'Verify and save a provider key',
     description:
-      'The key is checked with the provider first. A rejected key is not saved (400); one that cannot be verified is saved and reported as unverified.',
+      'The key is checked with the provider first. A rejected key is not saved (400); one that cannot be verified is saved and reported as unverified. Refused (403) when PROVIDER_KEYS_READ_ONLY is set.',
     body: providerKeyInputSchema,
     response: providerTestResultSchema,
     params: { id: 'Provider ID' },
@@ -47,6 +69,7 @@ export class ProvidersController {
     @Body(new ZodValidationPipe(providerKeyInputSchema))
     input: z.output<typeof providerKeyInputSchema>,
   ): Promise<ProviderTestResult> {
+    this.assertEditable();
     const result = await this.tester.test(id, input.apiKey);
     // A rejected key is not saved; an unverifiable one is (the provider may just be unreachable).
     if (result.status === 'rejected') {
@@ -60,10 +83,12 @@ export class ProvidersController {
   @HttpCode(204)
   @ApiDoc({
     summary: 'Remove a saved provider key',
-    description: 'A key from .env, if any, applies again.',
+    description:
+      'A key from .env, if any, applies again. Refused (403) when PROVIDER_KEYS_READ_ONLY is set.',
     params: { id: 'Provider ID' },
   })
   remove(@Param('id', new ZodValidationPipe(providerIdSchema)) id: ProviderId): void {
+    this.assertEditable();
     this.credentials.remove(id);
   }
 

@@ -32,9 +32,18 @@ async function call<T>(
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
+  // A session that expired (or a deployment that now requires sign-in) sends the user to log in.
+  if (response.status === 401 && !path.startsWith('/auth/')) redirectToLogin();
   if (!response.ok) throw await toApiError(method, path, response);
   if (response.status === 204) return schema.parse(undefined);
   return schema.parse(await response.json());
+}
+
+function redirectToLogin(): void {
+  const here = `${window.location.pathname}${window.location.search}`;
+  if (window.location.pathname !== '/login') {
+    window.location.assign(`/login?next=${encodeURIComponent(here)}`);
+  }
 }
 
 async function toApiError(method: Method, path: string, response: Response): Promise<ApiError> {

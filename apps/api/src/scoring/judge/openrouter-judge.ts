@@ -62,6 +62,8 @@ export class OpenRouterJudge extends Judge {
       temperature: 0,
       max_tokens: MAX_OUTPUT_TOKENS,
       usage: { include: true },
+      // Cheapest provider for the model, as for agent runs.
+      provider: { sort: 'price' },
       messages: buildJudgeMessages(request),
     });
 

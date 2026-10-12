@@ -4,6 +4,7 @@ import {
   comparisonSchema,
   experimentSchema,
   healthResponseSchema,
+  sessionSchema,
   providerStatusSchema,
   providerTestResultSchema,
   runDetailSchema,
@@ -14,6 +15,7 @@ import {
   suiteSummarySchema,
   type AgentConfigInput,
   type ExperimentInput,
+  type LoginInput,
   type ProviderId,
   type ProviderKeyInput,
   type SkillInput,
@@ -26,6 +28,12 @@ import { deleteResource, getJson, postJson, putJson } from './client';
 /** Typed API surface. Every response is validated against the shared contract. */
 export const api = {
   health: () => getJson('/health', healthResponseSchema),
+
+  auth: {
+    session: () => getJson('/auth/session', sessionSchema),
+    login: (input: LoginInput) => postJson('/auth/login', input, z.undefined()),
+    logout: () => postJson('/auth/logout', {}, z.undefined()),
+  },
 
   providers: {
     list: () => getJson('/providers', z.array(providerStatusSchema)),

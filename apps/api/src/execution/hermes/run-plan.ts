@@ -46,6 +46,10 @@ export function buildRunPlan(
     model: { provider: config.model.provider, default: config.model.model },
     fallback_providers: [],
     openrouter: { response_cache: false },
+    // OpenRouter serves most models through several providers at different
+    // prices. Always taking the cheapest makes runs reproducible and cheap;
+    // other providers ignore this setting.
+    provider_routing: { sort: 'price' },
     // Used when --toolsets is omitted, which is how "no tools" is expressed.
     platform_toolsets: { cli: toolsets },
     timezone: 'UTC',

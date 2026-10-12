@@ -8,14 +8,16 @@ import {
   PhGearSix,
   PhList,
   PhListChecks,
+  PhSignOut,
   PhSlidersHorizontal,
   PhSquaresFour,
   PhWarning,
   PhX,
 } from '@phosphor-icons/vue';
 import { computed, ref, watch, type Component } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { useHealth } from '@/composables/useHealth';
+import { useSession } from '@/composables/useSession';
 import LogoMark from './LogoMark.vue';
 import ThemeSwitch from './ThemeSwitch.vue';
 import ToastRegion from './ToastRegion.vue';
@@ -30,6 +32,13 @@ const NAV = [
 ];
 
 const route = useRoute();
+const router = useRouter();
+const { session, signOut } = useSession();
+
+async function leave(): Promise<void> {
+  await signOut();
+  await router.push('/login');
+}
 const menuOpen = ref(false);
 watch(
   () => route.fullPath,
@@ -138,6 +147,15 @@ const ICON: Record<CheckState, Component> = {
           <PhBracketsCurly aria-hidden="true" />
           API reference<span class="visually-hidden"> (opens in a new tab)</span>
         </a>
+        <button
+          v-if="session?.authRequired && session.authenticated"
+          type="button"
+          class="api-link sign-out"
+          @click="leave"
+        >
+          <PhSignOut aria-hidden="true" />
+          Sign out<span v-if="session.username" class="muted">&nbsp;({{ session.username }})</span>
+        </button>
         <ThemeSwitch class="rail-footer__theme" />
       </div>
     </aside>
@@ -310,6 +328,16 @@ const ICON: Record<CheckState, Component> = {
   .api-link:hover {
     color: var(--color-ink);
   }
+}
+
+.sign-out {
+  margin-top: calc(-1 * var(--space-xs));
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
 }
 
 .health__link {
