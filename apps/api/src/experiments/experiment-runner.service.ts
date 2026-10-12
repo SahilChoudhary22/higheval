@@ -5,7 +5,12 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { AgentEvent, ConfigSnapshot, RunErrorKind, Task } from '@higheval/shared';
+import {
+  configSnapshotSchema,
+  type AgentEvent,
+  type RunErrorKind,
+  type Task,
+} from '@higheval/shared';
 import { and, asc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { nowIso } from '../common/ids.js';
 import type { Env } from '../config/env.schema.js';
@@ -226,8 +231,10 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
     task: Task,
     signal: AbortSignal,
   ): Promise<{ outcome: ExecutionOutcome; toolCalls: { tool: string }[] }> {
-    const config: ConfigSnapshot =
-      run.arm === 'baseline' ? experiment.baseline : experiment.candidate;
+    // Parsed so snapshots stored before newer agent settings existed get those settings' defaults.
+    const config = configSnapshotSchema.parse(
+      run.arm === 'baseline' ? experiment.baseline : experiment.candidate,
+    );
 
     // A retry starts from a clean slate; the attempt count records that it happened.
     this.db.delete(runEvents).where(eq(runEvents.runId, run.id)).run();

@@ -17,13 +17,27 @@ export const skillSchema = skillInputSchema.extend({
 });
 export type Skill = z.infer<typeof skillSchema>;
 
+const memoryEntriesSchema = z.array(z.string().trim().min(1).max(2_000)).max(50);
+
+/**
+ * Hermes' built-in memory: two files of `§`-separated entries, loaded into the
+ * system prompt once at the start of each run. Runs never write back, so both
+ * agents in an experiment start from exactly what is configured here.
+ */
 export const memorySettingsSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('disabled') }),
-  /** Memory is enabled and pre-populated with these entries for every run. */
-  z.object({
-    mode: z.literal('seeded'),
-    entries: z.array(z.string().min(1).max(2_000)).min(1).max(50),
-  }),
+  z
+    .object({
+      mode: z.literal('seeded'),
+      /** The agent's own notes (`memories/MEMORY.md`). */
+      entries: memoryEntriesSchema,
+      /** What the agent knows about its user (`memories/USER.md`). Absent on older agents. */
+      userProfile: memoryEntriesSchema.default([]),
+    })
+    .refine((memory) => memory.entries.length + memory.userProfile.length > 0, {
+      message: 'Add at least one memory entry or user-profile entry',
+      path: ['entries'],
+    }),
 ]);
 export type MemorySettings = z.infer<typeof memorySettingsSchema>;
 
@@ -92,6 +106,13 @@ export type ResolvedBundledSkills = z.infer<typeof resolvedBundledSkillsSchema>;
  * list and open the skills in its home on demand; runs with built-in skills
  * always get it, since an undiscoverable skill would be an unrecorded no-op.
  */
+/**
+ * Size limit for an agent's SOUL.md and AGENTS.md. Hermes truncates context
+ * files only above 20,000 characters, so these are never cut.
+ */
+export const AGENT_FILE_MAX_CHARS = 20_000;
+const agentFileSchema = z.string().trim().min(1).max(AGENT_FILE_MAX_CHARS).nullable();
+
 export const toolsetSchema = z.enum(['file', 'terminal', 'todo', 'skills']);
 export type Toolset = z.infer<typeof toolsetSchema>;
 
@@ -106,6 +127,10 @@ export const agentConfigInputSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'Skills must be unique')
     .default([]),
   memory: memorySettingsSchema.default({ mode: 'disabled' }),
+  /** The agent's identity (Hermes' `SOUL.md`); null uses Hermes' built-in persona. */
+  soul: agentFileSchema.default(null),
+  /** Standing instructions (`AGENTS.md` in the run's working directory); null for none. */
+  instructions: agentFileSchema.default(null),
   bundledSkills: bundledSkillsSchema.default({ mode: 'none' }),
   /** Hermes toolsets the agent may use. Empty means no tools. */
   toolsets: z

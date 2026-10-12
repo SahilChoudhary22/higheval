@@ -87,6 +87,10 @@ export const agentConfigs = sqliteTable('agent_configs', {
   model: text('model').notNull(),
   skillIds: text('skill_ids', { mode: 'json' }).$type<string[]>().notNull(),
   memory: text('memory', { mode: 'json' }).$type<MemorySettings>().notNull(),
+  /** SOUL.md; null uses Hermes' built-in persona. */
+  soul: text('soul'),
+  /** AGENTS.md for the run's working directory; null for none. */
+  instructions: text('instructions'),
   toolsets: text('toolsets', { mode: 'json' }).$type<Toolset[]>().notNull(),
   bundledSkills: text('bundled_skills', { mode: 'json' })
     .$type<BundledSkills>()

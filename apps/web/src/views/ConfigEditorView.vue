@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PhFolderOpen } from '@phosphor-icons/vue';
 import {
   agentConfigInputSchema,
   PROVIDER_IDS,
@@ -18,6 +19,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import SkeletonRows from '@/components/SkeletonRows.vue';
 import { useFormErrors } from '@/composables/useFormErrors';
 import { useResource } from '@/composables/useResource';
+import { formatEntries, importAgentFiles, isAgentFile, parseEntries } from '@/lib/agent-files';
 import { groupByCategory, platformLabel } from '@/lib/bundled-skills';
 
 const props = defineProps<{ id?: string }>();
@@ -70,8 +72,12 @@ interface ConfigForm {
   skillIds: string[];
   bundledMode: BundledSkills['mode'];
   bundledNames: string[];
+  soulMode: 'default' | 'custom';
+  soul: string;
+  instructions: string;
   memoryMode: 'disabled' | 'seeded';
   memoryEntries: string;
+  userProfile: string;
   maxTurns: number;
   timeoutSeconds: number;
 }
@@ -85,8 +91,12 @@ const form = reactive<ConfigForm>({
   skillIds: [],
   bundledMode: 'none',
   bundledNames: [],
+  soulMode: 'default',
+  soul: '',
+  instructions: '',
   memoryMode: 'disabled',
   memoryEntries: '',
+  userProfile: '',
   maxTurns: 12,
   timeoutSeconds: 240,
 });
@@ -110,8 +120,13 @@ watch(
         bundledMode: config.bundledSkills.mode,
         bundledNames:
           config.bundledSkills.mode === 'selected' ? [...config.bundledSkills.names] : [],
+        soulMode: config.soul === null ? 'default' : 'custom',
+        soul: config.soul ?? '',
+        instructions: config.instructions ?? '',
         memoryMode: config.memory.mode,
-        memoryEntries: config.memory.mode === 'seeded' ? config.memory.entries.join('\n') : '',
+        memoryEntries: config.memory.mode === 'seeded' ? formatEntries(config.memory.entries) : '',
+        userProfile:
+          config.memory.mode === 'seeded' ? formatEntries(config.memory.userProfile) : '',
         maxTurns: config.maxTurns,
         timeoutSeconds: config.timeoutSeconds,
       });
@@ -157,12 +172,53 @@ const bundledHelp = computed((): string => {
   return `${String(count)} selected. Copied into every run and listed in its skills index; the agent opens them on demand with the skills tools. OS-limited skills do not load on other systems.`;
 });
 
-const entries = computed(() =>
-  form.memoryEntries
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean),
-);
+const entries = computed(() => parseEntries(form.memoryEntries));
+const profileEntries = computed(() => parseEntries(form.userProfile));
+
+const importSummary = ref<string | null>(null);
+const folderInput = ref<HTMLInputElement | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+
+/** Largest file read during import; agent files are small, so anything bigger is not one. */
+const MAX_IMPORT_BYTES = 512 * 1024;
+
+/** Fills persona, instructions and memory from a Hermes home or OpenClaw workspace, read locally. */
+async function importFiles(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const picked = [...(input.files ?? [])].filter((file) => {
+    const path = file.webkitRelativePath || file.name;
+    return isAgentFile(path) && file.size <= MAX_IMPORT_BYTES;
+  });
+  input.value = '';
+  const imported = importAgentFiles(
+    await Promise.all(
+      picked.map(async (file) => ({
+        path: file.webkitRelativePath || file.name,
+        content: await file.text(),
+      })),
+    ),
+  );
+  if (imported.used.length === 0) {
+    importSummary.value =
+      'No agent files found. Pick a Hermes home (~/.hermes) or an OpenClaw workspace.';
+    return;
+  }
+  if (imported.soul) Object.assign(form, { soulMode: 'custom', soul: imported.soul });
+  if (imported.instructions) form.instructions = imported.instructions;
+  if (imported.memory.length > 0 || imported.userProfile.length > 0) {
+    Object.assign(form, {
+      memoryMode: 'seeded',
+      memoryEntries: formatEntries(imported.memory),
+      userProfile: formatEntries(imported.userProfile),
+    });
+  }
+  importSummary.value =
+    `Imported ${imported.used.join(', ')}.` +
+    (imported.unused.length > 0
+      ? ` Not used by Hermes, so left out: ${imported.unused.join(', ')}.`
+      : '') +
+    ' Review the fields below before saving.';
+}
 
 async function save(): Promise<void> {
   clear();
@@ -175,8 +231,10 @@ async function save(): Promise<void> {
     bundledSkills: bundledSkills.value,
     memory:
       form.memoryMode === 'seeded'
-        ? { mode: 'seeded', entries: entries.value }
+        ? { mode: 'seeded', entries: entries.value, userProfile: profileEntries.value }
         : { mode: 'disabled' },
+    soul: form.soulMode === 'custom' ? form.soul.trim() || null : null,
+    instructions: form.instructions.trim() || null,
     maxTurns: form.maxTurns,
     timeoutSeconds: form.timeoutSeconds,
   };
@@ -416,34 +474,146 @@ async function save(): Promise<void> {
       </p>
     </fieldset>
 
-    <fieldset class="group">
-      <legend class="field__label">Memory</legend>
-      <label class="checkbox">
-        <input v-model="form.memoryMode" type="radio" value="disabled" />
-        <span>Disabled — every run starts with no memory</span>
-      </label>
-      <label class="checkbox">
-        <input v-model="form.memoryMode" type="radio" value="seeded" />
-        <span>Seeded — every run starts with these entries</span>
-      </label>
-      <textarea
-        v-if="form.memoryMode === 'seeded'"
-        v-model="form.memoryEntries"
-        class="textarea"
-        placeholder="One fact per line"
-        :aria-invalid="Boolean(errorFor('memory'))"
-        aria-label="Memory entries"
-        aria-describedby="memory-help"
-      />
-      <p id="memory-help" class="field__help" :class="{ 'field__help--error': errorFor('memory') }">
-        {{
-          errorFor('memory') ??
-          (form.memoryMode === 'seeded'
-            ? `${entries.length} entries. Runs never write back, so arms stay comparable.`
-            : '')
-        }}
+    <section class="agent-files" aria-labelledby="agent-files-heading">
+      <div class="agent-files__head">
+        <h2 id="agent-files-heading" class="agent-files__title">Agent files</h2>
+        <div class="agent-files__import">
+          <button type="button" class="btn btn--compact" @click="folderInput?.click()">
+            <PhFolderOpen aria-hidden="true" />
+            Import a folder
+          </button>
+          <button type="button" class="btn btn--quiet btn--compact" @click="fileInput?.click()">
+            Import files
+          </button>
+          <input
+            ref="folderInput"
+            class="visually-hidden"
+            type="file"
+            webkitdirectory
+            tabindex="-1"
+            aria-hidden="true"
+            @change="importFiles"
+          />
+          <input
+            ref="fileInput"
+            class="visually-hidden"
+            type="file"
+            accept=".md"
+            multiple
+            tabindex="-1"
+            aria-hidden="true"
+            @change="importFiles"
+          />
+        </div>
+      </div>
+      <p class="muted agent-files__intro">
+        The files Hermes builds an agent's character from. Import them from a Hermes home
+        (<code>~/.hermes</code>) or an OpenClaw workspace: they're read in your browser, and only
+        <code>SOUL.md</code>, <code>AGENTS.md</code>, <code>MEMORY.md</code>, <code>USER.md</code>
+        and OpenClaw's daily notes are used.
       </p>
-    </fieldset>
+      <p v-if="importSummary" class="field__help agent-files__summary" role="status">
+        {{ importSummary }}
+      </p>
+
+      <fieldset
+        class="group"
+        tabindex="-1"
+        aria-describedby="soul-help"
+        :aria-invalid="Boolean(errorFor('soul'))"
+      >
+        <legend class="field__label">Persona (<code>SOUL.md</code>)</legend>
+        <label class="checkbox">
+          <input v-model="form.soulMode" type="radio" value="default" />
+          <span>Hermes' built-in persona</span>
+        </label>
+        <label class="checkbox">
+          <input v-model="form.soulMode" type="radio" value="custom" />
+          <span>Custom — who the agent is, and how it works and speaks</span>
+        </label>
+        <textarea
+          v-if="form.soulMode === 'custom'"
+          v-model="form.soul"
+          class="textarea textarea--code"
+          rows="6"
+          placeholder="You are the account coordinator at Lakeshore Digital. You are precise, brief and never invent facts."
+          aria-label="Persona (SOUL.md)"
+          aria-describedby="soul-help"
+          :aria-invalid="Boolean(errorFor('soul'))"
+        />
+        <p id="soul-help" class="field__help" :class="{ 'field__help--error': errorFor('soul') }">
+          {{
+            errorFor('soul') ??
+            'The first thing in the system prompt. Written to SOUL.md in the run’s Hermes home.'
+          }}
+        </p>
+      </fieldset>
+
+      <FormField
+        id="instructions"
+        v-slot="field"
+        label="Instructions (AGENTS.md)"
+        :error="errorFor('instructions')"
+        help="Optional standing instructions. Written to AGENTS.md in the working directory, where Hermes loads it as project instructions."
+      >
+        <textarea
+          id="instructions"
+          v-model="form.instructions"
+          class="textarea textarea--code"
+          rows="5"
+          placeholder="Always state which policy rule you applied. Round money to cents."
+          :aria-invalid="field.invalid"
+          :aria-describedby="field.describedby"
+        />
+      </FormField>
+
+      <fieldset class="group">
+        <legend class="field__label">Memory</legend>
+        <label class="checkbox">
+          <input v-model="form.memoryMode" type="radio" value="disabled" />
+          <span>Disabled — every run starts with no memory</span>
+        </label>
+        <label class="checkbox">
+          <input v-model="form.memoryMode" type="radio" value="seeded" />
+          <span>Seeded — every run starts with these memories</span>
+        </label>
+        <template v-if="form.memoryMode === 'seeded'">
+          <label class="field__label memory__label" for="memory-entries"
+            >Agent notes (<code>MEMORY.md</code>)</label
+          >
+          <textarea
+            id="memory-entries"
+            v-model="form.memoryEntries"
+            class="textarea"
+            placeholder="One fact per line"
+            :aria-invalid="Boolean(errorFor('memory'))"
+            aria-describedby="memory-help"
+          />
+          <label class="field__label memory__label" for="user-profile"
+            >User profile (<code>USER.md</code>)</label
+          >
+          <textarea
+            id="user-profile"
+            v-model="form.userProfile"
+            class="textarea"
+            placeholder="Who the agent works for, one fact per line"
+            aria-describedby="memory-help"
+          />
+        </template>
+        <p
+          id="memory-help"
+          class="field__help"
+          :class="{ 'field__help--error': errorFor('memory') }"
+        >
+          {{
+            errorFor('memory') ??
+            (form.memoryMode === 'seeded'
+              ? `${entries.length} notes, ${profileEntries.length} profile entries. One per line, or separate multi-line entries with a line holding only §, as Hermes does. Runs never write back, so both agents start the same way.`
+              : '')
+          }}
+        </p>
+      </fieldset>
+    </section>
 
     <div class="form__pair">
       <FormField
@@ -587,6 +757,42 @@ async function save(): Promise<void> {
   .form__pair {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
+}
+
+.agent-files {
+  display: grid;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-ink);
+}
+
+.agent-files__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.agent-files__title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.agent-files__import {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.agent-files__intro,
+.agent-files__summary {
+  max-width: var(--prose-max);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.memory__label {
+  margin-top: var(--space-xs);
 }
 
 .form__actions {

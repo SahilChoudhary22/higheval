@@ -29,6 +29,13 @@
       "when": 1791805328591,
       "tag": "0003_provider_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791818702528,
+      "tag": "0004_agent_files",
+      "breakpoints": true
     }
   ]
 }

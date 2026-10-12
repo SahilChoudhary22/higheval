@@ -31,6 +31,8 @@ const baseConfig: ConfigSnapshot = {
   model: { provider: 'openrouter', model: MODEL },
   skills: [],
   memory: { mode: 'disabled' },
+  soul: null,
+  instructions: null,
   toolsets: ['file'],
   maxTurns: 8,
   timeoutSeconds: 180,
@@ -138,12 +140,31 @@ describe.skipIf(!ready)('HermesExecutor (live)', () => {
     ).not.toContain('ZEBRA-7731');
   });
 
+  it('gives the agent its persona, user profile and AGENTS.md, and only its own', async () => {
+    const { runDir } = await run('Reply with OK.', {
+      toolsets: [],
+      soul: 'You are Quillon, the ledger keeper of Lakeshore Digital.',
+      instructions: 'House rule SAFFRON-12: always cite the rule number you apply.',
+      memory: { mode: 'seeded', entries: [], userProfile: ['The user is Priya, who prefers SMS.'] },
+    });
+    const prompt = systemPrompt(runDir);
+    expect(prompt).toContain('You are Quillon, the ledger keeper of Lakeshore Digital.');
+    expect(prompt).toContain('SAFFRON-12');
+    expect(prompt).toContain('The user is Priya, who prefers SMS.');
+    // Hermes' built-in persona is replaced, not added to.
+    expect(prompt).not.toContain('You are Hermes Agent, built by Nous Research');
+  });
+
   it('injects seeded memory only when memory is configured', async () => {
     const prompt =
       'What is the account code for Northwind Traders? Reply with just the code, or UNKNOWN if you do not know it.';
     const seeded = await run(prompt, {
       toolsets: [],
-      memory: { mode: 'seeded', entries: ['Northwind Traders account code is NW-5521.'] },
+      memory: {
+        mode: 'seeded',
+        entries: ['Northwind Traders account code is NW-5521.'],
+        userProfile: [],
+      },
     });
     const disabled = await run(prompt, { toolsets: [] });
     expect(seeded.outcome.kind === 'completed' && seeded.outcome.finalOutput).toContain('NW-5521');

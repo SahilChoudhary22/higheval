@@ -95,6 +95,18 @@ Expected answers live only in scorer definitions in the database, never in the f
 
 **What this does not cover.** Hermes' `file` and `terminal` tools accept absolute paths and run as the user who started HighEval, so an agent _could_ deliberately read outside its workspace: other runs' workspaces, or the SQLite database holding the scorers. No run in the reported experiments did so (the inspector records every tool call and path), but it is a threat to validity for untrusted agents. The fix is to run Hermes in a container; see [limitations.md](limitations.md).
 
+### Agent files
+
+Hermes builds an agent's character from a few files, and each is an agent setting in HighEval:
+
+- `SOUL.md` in the Hermes home is the agent's identity and the first thing in its system prompt. Without one, Hermes writes its built-in persona.
+- `memories/MEMORY.md` and `memories/USER.md` hold the agent's notes and what it knows about its user, as `§`-separated entries loaded once at the start of a session.
+- `AGENTS.md` in the working directory holds standing instructions, which Hermes loads as project context.
+
+Each run gets exactly the agent's files, and their contents are part of the snapshot hash. A live test checks that a custom persona replaces Hermes' own and that the instructions and user profile reach the system prompt. A task fixture named like a project-instruction file (`AGENTS.md`, `.hermes.md`, `CLAUDE.md`, `.cursorrules`) would hide the agent's `AGENTS.md`, so such a launch is refused. Memory is seeded, never written: runs do not expose Hermes' `memory` or `session_search` tools and background review is off, so both agents start every run from the same state.
+
+The editor imports these files from a Hermes home (`~/.hermes`) or an OpenClaw workspace, read in the browser. It follows Hermes' own OpenClaw importer: dated daily notes are merged into memory, and OpenClaw-only files (`IDENTITY.md`, `TOOLS.md`, `HEARTBEAT.md`, `BOOTSTRAP.md`) are listed but not used. Hermes keeps no dated memory itself; what it learns over time goes into the skills it writes, which is a natural next dimension (train an agent, freeze what it learned, test it).
+
 ### 3. Failures are classified, not averaged away
 
 Runs end in one of two classes, and the distinction drives the statistics:

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { asc, count, desc, eq } from 'drizzle-orm';
 import {
+  configSnapshotSchema,
   PROVIDERS,
   type AgentConfig,
   type Comparison,
@@ -21,7 +22,9 @@ import { ConfigService } from '@nestjs/config';
 import type { Env } from '../config/env.schema.js';
 import type { z } from 'zod';
 import { newId, nowIso } from '../common/ids.js';
+import { validationError } from '../common/validation-error.js';
 import { ConfigsService } from '../configs/configs.service.js';
+import { PROJECT_CONTEXT_FILES } from '../execution/hermes/run-plan.js';
 import { InjectDb } from '../database/database.module.js';
 import { ProviderCredentials } from '../providers/provider-credentials.service.js';
 import type { Db } from '../database/database.js';
@@ -56,6 +59,10 @@ export class ExperimentsService {
     const baseline = this.configs.snapshot(input.baselineConfigId);
     const candidate = this.configs.snapshot(input.candidateConfigId);
     assertIndependentJudges(suite.tasks, [baseline.model.model, candidate.model.model]);
+    assertNoInstructionClash(suite.tasks, {
+      baselineConfigId: baseline,
+      candidateConfigId: candidate,
+    });
     this.assertKeys(suite.tasks, { baselineConfigId: baseline, candidateConfigId: candidate });
     const seed = randomInt(1, 2 ** 31 - 1);
     const id = newId();
@@ -187,8 +194,14 @@ export class ExperimentsService {
   }
 
   private toExperiment(row: ExperimentRow): Experiment {
-    const { tasks: _tasks, ...rest } = row;
-    return { ...rest, progress: this.progress(row.id) };
+    const { tasks: _tasks, baseline, candidate, ...rest } = row;
+    return {
+      ...rest,
+      // Parsed so snapshots stored before newer agent settings existed carry their defaults.
+      baseline: configSnapshotSchema.parse(baseline),
+      candidate: configSnapshotSchema.parse(candidate),
+      progress: this.progress(row.id),
+    };
   }
 
   private progress(experimentId: string): RunProgress {
@@ -231,6 +244,30 @@ function shuffle<T>(items: readonly T[], random: () => number): T[] {
 
 const missingKey = (provider: keyof typeof PROVIDERS): string =>
   `No ${PROVIDERS[provider].name} API key. Add one in Settings or set ${PROVIDERS[provider].keyEnvVar} in .env.`;
+
+/**
+ * An agent's AGENTS.md goes into the working directory, where Hermes loads the
+ * first project-instruction file it finds. A task fixture with one of those
+ * names would silently replace or hide it, so such launches are refused.
+ */
+function assertNoInstructionClash(
+  tasks: readonly Task[],
+  agents: Record<'baselineConfigId' | 'candidateConfigId', Pick<AgentConfig, 'instructions'>>,
+): void {
+  const clashing = tasks.flatMap((task) =>
+    task.fixtures
+      .filter((fixture) => (PROJECT_CONTEXT_FILES as readonly string[]).includes(fixture.path))
+      .map((fixture) => `${task.key}/${fixture.path}`),
+  );
+  if (clashing.length === 0) return;
+  const issues = Object.entries(agents)
+    .filter(([, agent]) => agent.instructions !== null)
+    .map(([path]) => ({
+      path,
+      message: `This agent has its own AGENTS.md, but the suite provides project instructions too (${clashing.slice(0, 3).join(', ')}). Remove one of them.`,
+    }));
+  if (issues.length > 0) throw validationError(issues);
+}
 
 /**
  * An LLM judge grading its own output is biased toward it, so a judge model
