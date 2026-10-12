@@ -3,7 +3,12 @@ import { ConfigModule } from '@nestjs/config';
 import { resolve } from 'node:path';
 import { validateEnv } from './config/env.schema.js';
 import { REPO_ROOT } from './config/paths.js';
+import { ConfigsModule } from './configs/configs.module.js';
+import { DatabaseModule } from './database/database.module.js';
+import { ExperimentsModule } from './experiments/experiments.module.js';
 import { HealthModule } from './health/health.module.js';
+import { SkillsModule } from './skills/skills.module.js';
+import { SuitesModule } from './suites/suites.module.js';
 
 @Module({
   imports: [
@@ -13,7 +18,12 @@ import { HealthModule } from './health/health.module.js';
       envFilePath: resolve(REPO_ROOT, '.env'),
       validate: validateEnv,
     }),
+    DatabaseModule,
     HealthModule,
+    SkillsModule,
+    SuitesModule,
+    ConfigsModule,
+    ExperimentsModule,
   ],
 })
 export class AppModule {}
