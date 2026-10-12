@@ -114,7 +114,7 @@ function loadDraft(suite: SuiteInput): void {
   source.value = JSON.stringify(suite, null, 2);
   show({
     tone: 'info',
-    message: 'Hermes’ draft is in the editor.',
+    message: 'The HighEval AI draft is in the editor.',
     action: { label: 'Undo', run: () => (source.value = previous) },
   });
 }

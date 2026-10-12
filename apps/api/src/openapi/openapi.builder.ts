@@ -35,7 +35,8 @@ const TAG_DESCRIPTIONS: Record<string, string> = {
   Providers: 'Model provider API keys. Keys are write-only; only a hint is returned.',
   Runs: 'Individual agent runs, for inspection.',
   Skills: 'Instruction skills a configuration can preload.',
-  'Suite drafts': 'Hermes drafts or revises a suite from a plain-language description.',
+  'Suite drafts':
+    'HighEval AI, a Hermes agent, drafts or revises a suite from a plain-language description.',
   Suites: 'Task suites and their scorers.',
 };
 
