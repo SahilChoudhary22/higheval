@@ -65,6 +65,7 @@ export async function scoreTask(
       type: spec.type,
       label: spec.label ?? defaultLabel(spec),
       weight: spec.weight,
+      required: spec.required,
       ...outcome,
       details: details ?? null,
     });
@@ -75,7 +76,13 @@ export async function scoreTask(
       ? 0
       : results.reduce((sum, result) => sum + result.score * result.weight, 0) / totalWeight;
   const rounded = round(score);
-  return { results, score: rounded, passed: rounded >= passThreshold, judgeUsage };
+  const requirementsMet = results.every((result) => !result.required || result.passed);
+  return {
+    results,
+    score: rounded,
+    passed: requirementsMet && rounded >= passThreshold,
+    judgeUsage,
+  };
 }
 
 /** Rounds away floating-point noise so a perfect score compares equal to 1. */

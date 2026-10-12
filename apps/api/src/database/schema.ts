@@ -181,6 +181,7 @@ export const runScores = sqliteTable(
     passed: integer('passed', { mode: 'boolean' }).notNull(),
     score: real('score').notNull(),
     reason: text('reason').notNull(),
+    required: integer('required', { mode: 'boolean' }).notNull().default(false),
     /** Per-criterion evidence for LLM-judge scorers; null for deterministic ones. */
     details: text('details', { mode: 'json' }).$type<JudgeDetails>(),
   },

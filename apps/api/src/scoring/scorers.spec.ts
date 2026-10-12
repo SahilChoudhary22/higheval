@@ -204,3 +204,19 @@ describe('scoreTask with an LLM judge', () => {
     await expect(scoreTask([judgeSpec], context(), 1)).rejects.toThrow('no judge is configured');
   });
 });
+
+describe('required scorers', () => {
+  it('fail the task when a hard requirement fails, whatever the weighted score', async () => {
+    const result = await scoreTask(
+      specs(
+        { type: 'contains', target: { kind: 'final_output' }, value: 'absent', required: true },
+        { type: 'contains', target: { kind: 'final_output' }, value: 'Done', weight: 9 },
+      ),
+      context(),
+      0.5,
+    );
+    expect(result.score).toBe(0.9);
+    expect(result.passed).toBe(false);
+    expect(result.results[0]).toMatchObject({ required: true, passed: false });
+  });
+});

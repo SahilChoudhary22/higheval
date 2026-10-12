@@ -38,6 +38,11 @@ const scorerBase = {
   label: z.string().min(1).max(120).optional(),
   /** Relative weight in the task score. */
   weight: z.number().positive().max(100).default(1),
+  /**
+   * A hard requirement: if it fails, the task fails regardless of its weighted
+   * score, so quality points elsewhere cannot buy back a broken rule.
+   */
+  required: z.boolean().default(false),
 };
 
 export const scorerSpecSchema = z.discriminatedUnion('type', [
@@ -166,6 +171,8 @@ export const scoreResultSchema = z.object({
   /** In [0, 1]. Binary scorers emit 0 or 1; judges emit the mean normalized rating. */
   score: z.number().min(0).max(1),
   reason: z.string(),
+  /** Whether this scorer was a hard requirement (see `required` on scorer specs). */
+  required: z.boolean().default(false),
   /** Extra evidence for scorers that have it (currently LLM judges). */
   details: judgeDetailsSchema.nullable().default(null),
 });

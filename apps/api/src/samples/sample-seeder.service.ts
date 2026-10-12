@@ -6,6 +6,7 @@ import { ConfigsService } from '../configs/configs.service.js';
 import { SkillsService } from '../skills/skills.service.js';
 import { SuitesService } from '../suites/suites.service.js';
 import { AGENCY_OPS_SUITE } from './agency-ops-suite.js';
+import { CUSTOMER_CONVERSATIONS_SUITE } from './customer-conversations-suite.js';
 import { QUICK_CHECK_SUITE } from './quick-check-suite.js';
 import {
   DATA_TASK_CHECKLIST_SKILL,
@@ -32,6 +33,7 @@ export class SampleSeeder implements OnApplicationBootstrap {
   onApplicationBootstrap(): void {
     if (!this.config.get('SEED_SAMPLES', { infer: true }) || this.suites.list().length > 0) return;
     this.suites.create(suiteInputSchema.parse(AGENCY_OPS_SUITE));
+    this.suites.create(suiteInputSchema.parse(CUSTOMER_CONVERSATIONS_SUITE));
     // Created last so it is listed first and preselected when launching.
     this.suites.create(suiteInputSchema.parse(QUICK_CHECK_SUITE));
     const skill = this.skills.create(skillInputSchema.parse(DATA_TASK_CHECKLIST_SKILL));
