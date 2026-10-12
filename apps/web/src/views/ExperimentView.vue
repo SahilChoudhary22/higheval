@@ -132,6 +132,22 @@ async function cancel(): Promise<void> {
   }
 }
 
+const errored = computed(() => experiment.data.value?.progress.errored ?? 0);
+
+async function retryErrored(): Promise<void> {
+  const count = errored.value;
+  try {
+    await api.experiments.retryErrored(props.id);
+    await experiment.refresh();
+    show({
+      message: `Retrying ${String(count)} errored ${count === 1 ? 'run' : 'runs'}.`,
+      tone: 'info',
+    });
+  } catch (error) {
+    show({ message: `Couldn't retry the errored runs. ${String(error)}`, tone: 'error' });
+  }
+}
+
 async function remove(): Promise<void> {
   try {
     await api.experiments.remove(props.id);
@@ -188,7 +204,12 @@ async function remove(): Promise<void> {
         <button v-if="active" type="button" class="btn btn--danger" @click="cancel">
           Cancel experiment
         </button>
-        <button v-else type="button" class="btn btn--danger" @click="remove">Delete</button>
+        <template v-else>
+          <button v-if="errored > 0" type="button" class="btn" @click="retryErrored">
+            Retry {{ errored }} errored {{ errored === 1 ? 'run' : 'runs' }}
+          </button>
+          <button type="button" class="btn btn--danger" @click="remove">Delete</button>
+        </template>
       </template>
     </PageHeader>
 

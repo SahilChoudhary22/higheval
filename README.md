@@ -199,8 +199,8 @@ Every setting is optional and validated at startup; the app refuses to boot on a
 | `ALLOWED_HOSTS`                          | —                                                       | Extra hostnames the API answers to (for example a tunnel's public name); other hosts are rejected |
 | `DATA_DIR`                               | `./data`                                                | SQLite database and per-run artifacts                                                             |
 | `MAX_CONCURRENT_RUNS`                    | `4`                                                     | Parallel agent runs across all experiments                                                        |
-| `MAX_RUN_ATTEMPTS`                       | `3`                                                     | Attempts for retryable failures (rate limits, restarts)                                           |
-| `RETRY_BASE_DELAY_MS`                    | `15000`                                                 | First retry delay for runs; doubles each attempt                                                  |
+| `MAX_RUN_ATTEMPTS`                       | `5`                                                     | Attempts for retryable failures (rate limits, restarts)                                           |
+| `RETRY_BASE_DELAY_MS`                    | `15000`                                                 | First retry delay for runs; doubles each attempt, and rate limits wait 4× as long                 |
 | `JUDGE_RETRY_BASE_DELAY_MS`              | `2000`                                                  | First retry delay for rate-limited judge calls; doubles each attempt                              |
 | `ASSISTANT_PROVIDER` / `ASSISTANT_MODEL` | `openrouter` / `nvidia/nemotron-3-super-120b-a12b:free` | Model the suite assistant drafts with                                                             |
 | `SEED_SAMPLES`                           | `true`                                                  | Seed the sample definitions into an empty database                                                |

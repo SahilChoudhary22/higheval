@@ -29,8 +29,8 @@ export const envSchema = z.object({
   /** Agent runs executed in parallel across all experiments. Free-tier providers rate-limit aggressively. */
   MAX_CONCURRENT_RUNS: z.coerce.number().int().min(1).max(16).default(4),
   /** Attempts per run when the failure is retryable infrastructure (e.g. HTTP 429). */
-  MAX_RUN_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(3),
-  /** Base delay before retrying a retryable failure; doubles each attempt. */
+  MAX_RUN_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(5),
+  /** Base delay before retrying a retryable failure; doubles each attempt, and rate limits wait 4× as long. */
   RETRY_BASE_DELAY_MS: z.coerce.number().int().min(0).default(15_000),
   /** Seed the sample suite, skill and configurations into an empty database. */
   SEED_SAMPLES: z

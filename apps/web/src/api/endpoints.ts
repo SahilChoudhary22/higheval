@@ -83,6 +83,8 @@ export const api = {
     get: (id: string) => getJson(`/experiments/${id}`, experimentSchema),
     create: (input: ExperimentInput) => postJson('/experiments', input, experimentSchema),
     cancel: (id: string) => postJson(`/experiments/${id}/cancel`, {}, experimentSchema),
+    retryErrored: (id: string) =>
+      postJson(`/experiments/${id}/retry-errored`, {}, experimentSchema),
     remove: (id: string) => deleteResource(`/experiments/${id}`),
     runs: (id: string) => getJson(`/experiments/${id}/runs`, z.array(runSummarySchema)),
     comparison: (id: string) => getJson(`/experiments/${id}/comparison`, comparisonSchema),
