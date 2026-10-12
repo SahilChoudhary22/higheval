@@ -79,7 +79,7 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
         '- timeline_days is at most 90',
         '- role is a decision maker: Owner, Director, Partner, VP or CEO',
         '- employees is at least 5',
-        'Write qualified.json as {"qualified": [lead ids, ascending]}. Reply with how many leads qualified.',
+        'Write qualified.json as {"qualified": [lead ids, ascending]}. Then reply with a line of the form "Qualified: <count>".',
       ].join('\n'),
       fixtures: [
         {
@@ -156,7 +156,13 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
           expected: ['L-101', 'L-104', 'L-106'],
           weight: 3,
         },
-        { type: 'regex', target: finalOutput, pattern: '\\b(3|three)\\b', flags: 'i' },
+        {
+          type: 'regex',
+          target: finalOutput,
+          pattern: 'qualified:\\s*3\\b',
+          flags: 'i',
+          label: 'Reply states "Qualified: 3"',
+        },
       ],
     },
     {
@@ -457,11 +463,12 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
           tolerance: 0.005,
         },
         {
+          // Exactly 7875 / 4200 = 1.875, so both 1.87 and 1.88 are correct 2-decimal roundings.
           type: 'json_field',
           target: finalOutput,
           path: 'overall_roi',
-          expected: 1.88,
-          tolerance: 0.005,
+          expected: 1.875,
+          tolerance: 0.0051,
           weight: 2,
         },
       ],
