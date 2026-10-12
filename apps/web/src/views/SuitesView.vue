@@ -49,7 +49,7 @@ function deleteSuite(suite: SuiteSummary): void {
       v-else-if="visible.length === 0"
       :icon="PhListChecks"
       title="No suites yet."
-      detail="A suite is the fixed set of tasks both configs are measured on. Each task defines its own scorers."
+      detail="A suite is the fixed set of tasks both agents are measured on. Each task defines its own scorers."
     >
       <RouterLink to="/suites/new#draft" class="btn">Draft with HighEval AI</RouterLink>
       <RouterLink to="/suites/new" class="btn btn--primary">New suite</RouterLink>

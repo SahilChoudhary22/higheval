@@ -41,7 +41,7 @@ const form = reactive({
   practicalMargin: 0.05,
 });
 
-// Sensible defaults once definitions load: first suite, first two configs.
+// Sensible defaults once definitions load: first suite, first two agents.
 watch([suites.data, configs.data], ([suiteList, configList]) => {
   if (suiteList?.[0] && !form.suiteId) form.suiteId = suiteList[0].id;
   if (configList && configList.length >= 2 && !form.baselineConfigId) {
@@ -65,8 +65,8 @@ const duration = computed(() =>
 );
 const disabledReason = computed(() => {
   if (!form.suiteId) return 'Choose a suite.';
-  if (!form.baselineConfigId || !form.candidateConfigId) return 'Choose two configs.';
-  if (form.baselineConfigId === form.candidateConfigId) return 'Choose two different configs.';
+  if (!form.baselineConfigId || !form.candidateConfigId) return 'Choose two agents.';
+  if (form.baselineConfigId === form.candidateConfigId) return 'Choose two different agents.';
   return null;
 });
 
@@ -98,7 +98,7 @@ async function submit(): Promise<void> {
 
   <ErrorNotice
     v-if="suites.error.value || configs.error.value"
-    title="Couldn't load suites and configs."
+    title="Couldn't load suites and agents."
     :error="(suites.error.value ?? configs.error.value)!"
     @retry="() => (suites.refresh(), configs.refresh())"
   />
@@ -109,7 +109,7 @@ async function submit(): Promise<void> {
       v-slot="field"
       label="Suite"
       :error="errorFor('suiteId')"
-      help="Every task in the suite runs under both configs."
+      help="Every task in the suite runs with both agents."
     >
       <select
         id="suite"
@@ -129,7 +129,7 @@ async function submit(): Promise<void> {
       <FormField
         id="baseline"
         v-slot="field"
-        label="Baseline config"
+        label="Baseline agent"
         :error="errorFor('baselineConfigId')"
         help="What you run today."
       >
@@ -140,7 +140,7 @@ async function submit(): Promise<void> {
           :aria-invalid="field.invalid"
           :aria-describedby="field.describedby"
         >
-          <option value="" disabled>Choose a config</option>
+          <option value="" disabled>Choose an agent</option>
           <option v-for="item in configs.data.value" :key="item.id" :value="item.id">
             {{ item.name }}
           </option>
@@ -149,7 +149,7 @@ async function submit(): Promise<void> {
       <FormField
         id="candidate"
         v-slot="field"
-        label="Candidate config"
+        label="Candidate agent"
         :error="errorFor('candidateConfigId')"
         help="The change you are evaluating."
       >
@@ -160,7 +160,7 @@ async function submit(): Promise<void> {
           :aria-invalid="field.invalid"
           :aria-describedby="field.describedby"
         >
-          <option value="" disabled>Choose a config</option>
+          <option value="" disabled>Choose an agent</option>
           <option v-for="item in configs.data.value" :key="item.id" :value="item.id">
             {{ item.name }}
           </option>
@@ -214,7 +214,7 @@ async function submit(): Promise<void> {
       v-slot="field"
       label="Name"
       :error="errorFor('name')"
-      help="Optional. Defaults to the two config names."
+      help="Optional. Defaults to the two agent names."
     >
       <input
         id="name"

@@ -24,11 +24,11 @@ const recent = computed(() => experiments.data.value?.slice(0, 6) ?? []);
 /** The three steps of using HighEval, in order, with what exists for each so far. */
 const steps = computed(() => [
   {
-    title: 'Configure the agents',
+    title: 'Build the agents',
     detail:
-      'Choose a model, then the tools, skills and memory it gets. An experiment compares two configurations.',
+      'Each agent is a model plus the tools, skills and memory it gets. An experiment compares two agents.',
     links: [
-      { to: '/configs', label: 'Configs', count: configs.data.value?.length },
+      { to: '/agents', label: 'Agents', count: configs.data.value?.length },
       { to: '/skills', label: 'Skills', count: skills.data.value?.length },
     ],
   },
@@ -41,7 +41,7 @@ const steps = computed(() => [
   {
     title: 'Run an experiment',
     detail:
-      'Both configurations take the same suite. HighEval says which did better, and how sure it can be.',
+      'Both agents take the same suite. HighEval says which did better, and how sure it can be.',
     links: [{ to: '/experiments/new', label: 'Launch experiment', count: undefined }],
   },
 ]);
@@ -62,10 +62,7 @@ const blockers = computed(() => {
 <template>
   <PageHeader title="Overview">
     <template #meta>
-      <span
-        >Compare two agent configurations on the same tasks and see whether the difference is
-        real.</span
-      >
+      <span>Compare two agents on the same tasks and see whether the difference is real.</span>
     </template>
     <template #actions>
       <RouterLink to="/experiments/new" class="btn btn--primary">Launch experiment</RouterLink>
@@ -110,7 +107,7 @@ const blockers = computed(() => {
         v-else-if="recent.length === 0"
         :icon="PhFlask"
         title="No experiments yet."
-        detail="An experiment runs every task in a suite under two configs and tells you which scores higher, and how sure you can be."
+        detail="An experiment runs every task in a suite with two agents and tells you which scores higher, and how sure you can be."
       >
         <RouterLink to="/experiments/new" class="btn btn--primary">Launch experiment</RouterLink>
       </EmptyState>

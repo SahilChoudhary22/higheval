@@ -33,7 +33,7 @@ const experiments = useResource(() => api.experiments.list(), {
       v-else-if="experiments.data.value.length === 0"
       :icon="PhFlask"
       title="No experiments yet."
-      detail="An experiment runs every task in a suite under two configs and tells you which scores higher, and how sure you can be."
+      detail="An experiment runs every task in a suite with two agents and tells you which scores higher, and how sure you can be."
     >
       <RouterLink to="/experiments/new" class="btn btn--primary">Launch experiment</RouterLink>
     </EmptyState>

@@ -35,9 +35,7 @@ function deleteSkill(skill: Skill): void {
 
 <template>
   <PageHeader title="Skills">
-    <template #meta
-      ><span>Markdown instructions a config can preload into the agent.</span></template
-    >
+    <template #meta><span>Markdown instructions an agent can preload.</span></template>
     <template #actions>
       <RouterLink to="/skills/new" class="btn btn--primary">New skill</RouterLink>
     </template>
@@ -54,7 +52,7 @@ function deleteSkill(skill: Skill): void {
       v-else-if="visible.length === 0"
       :icon="PhBookOpen"
       title="No skills yet."
-      detail="Skills are markdown instructions an agent config can load. Compare a config with and without one to measure its effect."
+      detail="Skills are markdown instructions an agent can load. Compare an agent with and without one to measure its effect."
     >
       <RouterLink to="/skills/new" class="btn btn--primary">New skill</RouterLink>
     </EmptyState>
@@ -76,16 +74,14 @@ function deleteSkill(skill: Skill): void {
               }}</RouterLink>
               <span class="sub muted">{{ skill.description }}</span>
             </td>
-            <td class="num">
-              {{ usedBy(skill) }} {{ usedBy(skill) === 1 ? 'config' : 'configs' }}
-            </td>
+            <td class="num">{{ usedBy(skill) }} {{ usedBy(skill) === 1 ? 'agent' : 'agents' }}</td>
             <td class="num">{{ formatRelative(skill.updatedAt) }}</td>
             <td class="num actions">
               <button
                 type="button"
                 class="btn btn--quiet btn--compact btn--danger"
                 :disabled="usedBy(skill) > 0"
-                :title="usedBy(skill) > 0 ? 'Remove it from every config first' : undefined"
+                :title="usedBy(skill) > 0 ? 'Remove it from every agent first' : undefined"
                 @click="deleteSkill(skill)"
               >
                 Delete

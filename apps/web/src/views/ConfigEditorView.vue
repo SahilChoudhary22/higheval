@@ -188,7 +188,7 @@ async function save(): Promise<void> {
   try {
     if (props.id) await api.configs.update(props.id, input);
     else await api.configs.create(input);
-    await router.push('/configs');
+    await router.push('/agents');
   } catch (error) {
     fromError(error);
     await focusFirstInvalid(formEl.value);
@@ -200,8 +200,8 @@ async function save(): Promise<void> {
 
 <template>
   <PageHeader
-    :title="id ? 'Edit config' : 'New config'"
-    :crumbs="[{ label: 'Configs', to: '/configs' }, { label: id ? 'Edit' : 'New' }]"
+    :title="id ? 'Edit agent' : 'New agent'"
+    :crumbs="[{ label: 'Agents', to: '/agents' }, { label: id ? 'Edit' : 'New' }]"
   >
     <template #meta>
       <span>Changes apply to future experiments. Launched experiments keep a hashed snapshot.</span>
@@ -237,7 +237,7 @@ async function save(): Promise<void> {
       </template>
       <template #help>
         <template v-if="!providerReady">
-          No {{ providerInfo.name }} key yet. Experiments with this config can't launch until you
+          No {{ providerInfo.name }} key yet. Experiments with this agent can't launch until you
           <RouterLink to="/settings">add one in Settings</RouterLink>.
         </template>
         <template v-else>Runs use this provider's key from Settings or .env.</template>
@@ -489,7 +489,7 @@ async function save(): Promise<void> {
         id="description"
         v-model="form.description"
         class="textarea"
-        placeholder="What changes in this config, and why"
+        placeholder="What makes this agent different, and why"
         :aria-invalid="field.invalid"
         :aria-describedby="field.describedby"
       />
@@ -498,9 +498,9 @@ async function save(): Promise<void> {
     <FormAlert :message="formError" :details="unclaimed(FIELDS)" />
     <div class="form__actions">
       <button type="submit" class="btn btn--primary" :disabled="saving">
-        {{ saving ? 'Saving…' : id ? 'Save config' : 'Create config' }}
+        {{ saving ? 'Saving…' : id ? 'Save agent' : 'Create agent' }}
       </button>
-      <RouterLink to="/configs" class="btn btn--quiet">Cancel</RouterLink>
+      <RouterLink to="/agents" class="btn btn--quiet">Cancel</RouterLink>
     </div>
   </form>
 </template>

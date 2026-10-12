@@ -60,20 +60,20 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Edit suite' },
   },
   {
-    path: '/configs',
+    path: '/agents',
     component: () => import('@/views/ConfigsView.vue'),
-    meta: { title: 'Configs' },
+    meta: { title: 'Agents' },
   },
   {
-    path: '/configs/new',
+    path: '/agents/new',
     component: () => import('@/views/ConfigEditorView.vue'),
-    meta: { title: 'New config' },
+    meta: { title: 'New agent' },
   },
   {
-    path: '/configs/:id/edit',
+    path: '/agents/:id/edit',
     component: () => import('@/views/ConfigEditorView.vue'),
     props: true,
-    meta: { title: 'Edit config' },
+    meta: { title: 'Edit agent' },
   },
   { path: '/skills', component: () => import('@/views/SkillsView.vue'), meta: { title: 'Skills' } },
   {
@@ -91,6 +91,11 @@ const routes: RouteRecordRaw[] = [
     path: '/settings',
     component: () => import('@/views/SettingsView.vue'),
     meta: { title: 'Settings' },
+  },
+  // Agents were called "configs" before; keep old links working.
+  {
+    path: '/configs/:rest(.*)*',
+    redirect: (to) => ['/agents', ...[to.params.rest ?? []].flat()].join('/'),
   },
   {
     path: '/:pathMatch(.*)*',

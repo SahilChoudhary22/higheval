@@ -20,7 +20,7 @@ async function refresh(): Promise<void> {
 <template>
   <PageHeader title="Settings">
     <template #meta>
-      <span>API keys for the model providers your configs run on.</span>
+      <span>API keys for the model providers your agents run on.</span>
     </template>
   </PageHeader>
 

@@ -245,7 +245,7 @@ function assertIndependentJudges(tasks: readonly Task[], modelsUnderTest: readon
           issues: [
             {
               path: 'candidateConfigId',
-              message: `Task "${task.key}" is judged by ${scorer.judge.model}, which is also a model under test. Choose a different judge or configuration.`,
+              message: `Task "${task.key}" is judged by ${scorer.judge.model}, which is also a model under test. Choose a different judge or agent.`,
             },
           ],
         });
