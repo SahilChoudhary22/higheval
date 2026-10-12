@@ -11,6 +11,7 @@ Figures marked **measured** come from the experiments in [experiments/](experime
 | A 96-run experiment on a frontier-priced model ($2 / $10 per M tokens) | **≈ $3** (estimate)                                                        |
 | Infrastructure                                                         | **$0 extra** locally; ≈ $5–10 / month for an always-on small VM, if wanted |
 | Wall-clock time per experiment                                         | ~22 min for 96 runs at concurrency 3 (measured)                            |
+| Drafting a suite with Hermes (free endpoint)                           | **$0**; 16–23 requests and 1.5–5 min per draft (measured)                  |
 
 ## 1. Model inference
 
@@ -60,6 +61,17 @@ Two takeaways. First, a cheaper per-token model is not cheaper per task if it ne
 
 In a real judged run on the Customer conversations suite (6 runs, both arms), the judge (`cohere/north-mini-code:free`) used **one request per judged run** and about **1,250 tokens per verdict**, including its hidden reasoning. The agent's own runs on those single-reply tasks used one model call and about 3,900 tokens each, so judging adds roughly a third to the token bill and doubles the request count for conversational tasks. Cost was $0 on the free endpoint. At a frontier judge's list price ($2 / $10 per million tokens) a verdict like that would cost roughly $0.005. Judge requests, tokens and cost are reported per arm, separately from the agent's.
 
+### Suite assistant (measured)
+
+Two real drafts with the default assistant model (`nvidia/nemotron-3-super-120b-a12b:free`):
+
+| Draft                       | Attempts | Model requests | Tokens (of which cached) | Wall-clock |
+| --------------------------- | -------: | -------------: | -----------------------: | ---------: |
+| 3 tasks (dental front desk) |        2 |             23 |              439k (334k) |   4 m 53 s |
+| 2 tasks (gym billing)       |        1 |             16 |              307k (254k) |   1 m 26 s |
+
+A draft is one or more full agent runs with file and terminal tools, so it costs about as much as five to ten experiment runs. Most tokens are the schema, example and skill re-read on each turn, which prompt caching absorbs. At Claude Sonnet 5.5's list prices the larger draft would cost about $0.40. Writing the same suite by hand takes 30–60 minutes (see People time).
+
 ## 2. Compute and storage (measured on an Apple-silicon Mac)
 
 | Resource                         | Usage                                                                                                                                                                            |
@@ -84,5 +96,6 @@ Workloads are I/O-bound on the model provider. A modest machine (2 vCPU, 2 GB RA
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | First start, including Hermes install        | ~2 minutes                                                                                                                              |
 | Writing a new task with fixtures and scorers | 10–20 minutes. Computing expected answers by script and adding a reference solution is the slow, important part                         |
+| Drafting a suite with Hermes, then reviewing | 2–5 minutes of waiting plus 5–10 minutes checking expected values per few tasks                                                         |
 | A 96-run experiment                          | ~22 minutes of wall-clock time at concurrency 3 on free endpoints (under a minute for a Quick check); no attention needed while it runs |
 | Reviewing an experiment                      | 5–15 minutes, mostly in the run inspector on discordant tasks                                                                           |
