@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+coverage/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local runtime data (SQLite, per-run Hermes homes and workdirs)
+data/
+.hermes-runtime/
+
+# Private working notes (never part of the submission)
+.notes/
+*Handoff*.md
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+
+# Tool caches
+.eslintcache
