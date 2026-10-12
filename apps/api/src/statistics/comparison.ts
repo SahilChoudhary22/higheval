@@ -26,6 +26,9 @@ export interface ComparisonRun {
   tokens: TokenUsage | null;
   apiCalls: number | null;
   costUsd: number | null;
+  judgeRequests: number;
+  judgeTokens: number;
+  judgeCostUsd: number | null;
 }
 
 export interface ComparisonInput {
@@ -129,6 +132,7 @@ function summarizeArm(
   const durations = scored.flatMap((run) => (run.durationMs === null ? [] : [run.durationMs]));
   const tokenTotals = runs.flatMap((run) => (run.tokens === null ? [] : [run.tokens.total]));
   const costs = runs.flatMap((run) => (run.costUsd === null ? [] : [run.costUsd]));
+  const judgeCosts = runs.flatMap((run) => (run.judgeCostUsd === null ? [] : [run.judgeCostUsd]));
   return {
     configName: snapshot.name,
     model: snapshot.model.model,
@@ -144,5 +148,8 @@ function summarizeArm(
     totalTokens: tokenTotals.reduce((sum, total) => sum + total, 0),
     totalApiCalls: runs.reduce((sum, run) => sum + (run.apiCalls ?? 0), 0),
     totalCostUsd: costs.length > 0 ? costs.reduce((sum, cost) => sum + cost, 0) : null,
+    judgeRequests: runs.reduce((sum, run) => sum + run.judgeRequests, 0),
+    judgeTokens: runs.reduce((sum, run) => sum + run.judgeTokens, 0),
+    judgeCostUsd: judgeCosts.length > 0 ? judgeCosts.reduce((sum, cost) => sum + cost, 0) : null,
   };
 }

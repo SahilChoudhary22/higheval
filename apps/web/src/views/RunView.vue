@@ -6,6 +6,7 @@ import { api } from '@/api/endpoints';
 import CodeBlock from '@/components/CodeBlock.vue';
 import ErrorNotice from '@/components/ErrorNotice.vue';
 import EventTimeline from '@/components/EventTimeline.vue';
+import JudgeDetails from '@/components/JudgeDetails.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SkeletonRows from '@/components/SkeletonRows.vue';
 import StatusTag from '@/components/StatusTag.vue';
@@ -107,8 +108,12 @@ const modelMismatch = computed(() => {
                 <span class="visually-hidden">{{ score.passed ? 'Passed' : 'Failed' }}</span>
               </span>
               <div class="scores__body">
-                <p class="scores__label">{{ score.label }}</p>
+                <p class="scores__label">
+                  {{ score.label }}
+                  <span v-if="score.required" class="label scores__required">required</span>
+                </p>
                 <p class="muted wrap-anywhere">{{ score.reason }}</p>
+                <JudgeDetails v-if="score.details" :details="score.details" />
               </div>
               <span class="label scores__weight">weight {{ score.weight }}</span>
             </li>
@@ -274,6 +279,13 @@ const modelMismatch = computed(() => {
 
 .scores__label {
   font-weight: 600;
+}
+
+.scores__required {
+  margin-left: var(--space-xs);
+  padding: 0 var(--space-2xs);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: var(--radius-tag);
 }
 
 .scores__weight {

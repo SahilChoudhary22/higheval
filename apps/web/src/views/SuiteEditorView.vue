@@ -175,7 +175,17 @@ async function save(): Promise<void> {
           <code>tool_called</code> — <code>tool</code> was used between <code>min</code> and
           <code>max</code> times
         </li>
+        <li>
+          <code>llm_judge</code> — a pinned <code>judge</code> model rates the target from 1 to 5 on
+          each of <code>criteria</code> (<code>key</code>, <code>description</code>) using the
+          <code>rubric</code>; passes at <code>passThreshold</code> (default 0.7). The judge must
+          not be either model under test.
+        </li>
       </ul>
+      <p class="muted">
+        Any scorer can set <code>"required": true</code>: if it fails, the task fails regardless of
+        its weighted score. Use it for hard rules, and judges for quality.
+      </p>
       <p class="muted">
         Targets are <code>{"kind": "final_output"}</code> or
         <code>{"kind": "file", "path": "…"}</code>. Expected values live only here, never in

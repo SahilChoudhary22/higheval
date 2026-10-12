@@ -35,6 +35,8 @@ export const envSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((value) => value === 'true'),
+  /** First retry delay for LLM-judge calls that hit a rate limit; doubles each attempt. */
+  JUDGE_RETRY_BASE_DELAY_MS: z.coerce.number().int().min(0).default(2_000),
   /** Optional at boot so the UI can start and explain what is missing. */
   OPENROUTER_API_KEY: z.string().min(1).optional(),
 });

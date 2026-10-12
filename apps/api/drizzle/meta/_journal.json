@@ -15,6 +15,13 @@
       "when": 1791803811655,
       "tag": "0001_bundled_skills",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791805206606,
+      "tag": "0002_judge_scoring",
+      "breakpoints": true
     }
   ]
 }

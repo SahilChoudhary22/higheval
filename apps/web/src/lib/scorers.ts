@@ -29,6 +29,12 @@ export function describeScorer(spec: ScorerSpec): { kind: string; on: string; ch
     }
     case 'file_exists':
       return { kind: 'File exists', on: spec.path, check: 'created by the agent' };
+    case 'llm_judge':
+      return {
+        kind: 'LLM judge',
+        on: target(spec.target),
+        check: `${spec.criteria.map((criterion) => criterion.key).join(', ')} · ${spec.judge.model} · pass ≥ ${spec.passThreshold.toFixed(2)}`,
+      };
     case 'tool_called':
       return {
         kind: 'Tool used',

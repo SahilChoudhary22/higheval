@@ -31,6 +31,9 @@ function run(arm: 'baseline' | 'candidate', taskId: string, score: number): Comp
     tokens: null,
     apiCalls: 2,
     costUsd: 0,
+    judgeRequests: 0,
+    judgeTokens: 0,
+    judgeCostUsd: null,
   };
 }
 

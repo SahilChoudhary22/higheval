@@ -4,7 +4,7 @@
 
 **Did the agent get better, worse, or stay the same?** HighEval answers that with evidence. It runs the same task suite under two [Hermes Agent](https://github.com/NousResearch/hermes-agent) configurations (different model, skills, memory or tools), scores every run with deterministic checks, and reports the paired difference with a confidence interval and an explicit verdict. Every individual run can be opened to see why it passed or failed.
 
-- **Define tasks and scoring:** suites of tasks with fixture files and typed scorers (JSON fields with tolerances, regexes, files created, tools used), each producing a readable reason.
+- **Define tasks and scoring:** suites of tasks with fixture files and typed scorers (JSON fields with tolerances, regexes, files created, tools used, and a pinned LLM judge for conversational quality), each producing a readable reason. Hard requirements can be marked `required`, so quality points can't buy back a broken rule.
 - **Define configurations:** model, skills, Hermes' built-in skills (off by default), memory (off or seeded) and toolsets, snapshotted and hashed at launch.
 - **Run them:** each run in its own fresh Hermes environment (configuration, skills, memory and workspace), with retries, cancellation, hard timeouts and restart recovery.
 - **Compare with confidence:** paired per-task differences, a 95% bootstrap interval, a permutation test and a verdict rule fixed before data.
@@ -28,7 +28,7 @@ That one command:
 
 Add your key to `.env` (`OPENROUTER_API_KEY=…`) and run `pnpm start` again. The UI shows what's missing until then.
 
-On first start the database is seeded with two sample suites, a skill and three configurations, so you can launch an experiment immediately.
+On first start the database is seeded with three sample suites, a skill and three configurations, so you can launch an experiment immediately.
 
 ### Try it in about a minute
 
@@ -59,6 +59,8 @@ Seeded configurations:
 | Nemotron 3.5 Lightning · file tools + checklist skill | Skill-change candidate |
 
 None of them use Hermes' 58 built-in skills. A configuration can opt into all of them or a selection; the choice is recorded and hashed like any other setting ([design decision 2](docs/design.md#2-every-run-starts-from-a-clean-separate-environment-and-the-separation-is-tested)).
+
+[`Customer conversations`](apps/api/src/samples/customer-conversations-suite.ts) has three synthetic customer messages (a late refund, a pricing question, an SMS reschedule). Hard requirements (states the refund window, quotes no prices, fits one SMS) are `required` deterministic checks; empathy, accuracy to policy and a clear next step are rated by a pinned LLM judge from a different model family than the configurations under test.
 
 ## Results
 
@@ -110,18 +112,19 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enf
 
 All settings are optional except the provider key. They are validated at startup, and the app refuses to boot on invalid values.
 
-| Variable              | Default                         | Purpose                                                                                    |
-| --------------------- | ------------------------------- | ------------------------------------------------------------------------------------------ |
-| `OPENROUTER_API_KEY`  | —                               | Provider key used by Hermes                                                                |
-| `HOST` / `PORT`       | `127.0.0.1` / `3000`            | Bind address. Keep it local unless behind an authenticating proxy                          |
-| `DATA_DIR`            | `./data`                        | SQLite database and per-run artifacts                                                      |
-| `MAX_CONCURRENT_RUNS` | `4`                             | Parallel agent runs across all experiments                                                 |
-| `MAX_RUN_ATTEMPTS`    | `3`                             | Attempts for retryable failures (rate limits, restarts)                                    |
-| `RETRY_BASE_DELAY_MS` | `15000`                         | First retry delay; doubles each attempt                                                    |
-| `SEED_SAMPLES`        | `true`                          | Seed the sample suites into an empty database                                              |
-| `ALLOWED_HOSTS`       | —                               | Extra hostnames the API answers to (e.g. a tunnel's public name); other hosts are rejected |
-| `HERMES_MANIFEST`     | `.hermes-runtime/manifest.json` | Where `setup-hermes` records the installed runtime                                         |
-| `LOG_FORMAT`          | `pretty`                        | `json` for structured logs                                                                 |
+| Variable                    | Default                         | Purpose                                                                                    |
+| --------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------ |
+| `OPENROUTER_API_KEY`        | —                               | Provider key used by Hermes                                                                |
+| `HOST` / `PORT`             | `127.0.0.1` / `3000`            | Bind address. Keep it local unless behind an authenticating proxy                          |
+| `DATA_DIR`                  | `./data`                        | SQLite database and per-run artifacts                                                      |
+| `MAX_CONCURRENT_RUNS`       | `4`                             | Parallel agent runs across all experiments                                                 |
+| `MAX_RUN_ATTEMPTS`          | `3`                             | Attempts for retryable failures (rate limits, restarts)                                    |
+| `RETRY_BASE_DELAY_MS`       | `15000`                         | First retry delay; doubles each attempt                                                    |
+| `JUDGE_RETRY_BASE_DELAY_MS` | `2000`                          | First retry delay for LLM-judge calls that hit a rate limit; doubles each attempt          |
+| `SEED_SAMPLES`              | `true`                          | Seed the sample suites into an empty database                                              |
+| `ALLOWED_HOSTS`             | —                               | Extra hostnames the API answers to (e.g. a tunnel's public name); other hosts are rejected |
+| `HERMES_MANIFEST`           | `.hermes-runtime/manifest.json` | Where `setup-hermes` records the installed runtime                                         |
+| `LOG_FORMAT`                | `pretty`                        | `json` for structured logs                                                                 |
 
 ## License
 

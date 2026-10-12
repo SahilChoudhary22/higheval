@@ -143,7 +143,7 @@ There is no external queue. All execution state lives in SQLite:
 
 This was exercised in practice: restarting the API mid-experiment recovered the in-flight runs, with no orphaned Hermes processes. The trade-off is single-node execution, which is fine for a local tool and noted in the limitations.
 
-### 7. Deterministic scorers first
+### 7. Deterministic checks gate; a pinned LLM judge rates quality
 
 Scorers are typed and declarative:
 
@@ -153,10 +153,21 @@ Scorers are typed and declarative:
 - `json_field`, with numeric tolerance and order-insensitive arrays
 - `file_exists`
 - `tool_called`, with min/max bounds
+- `llm_judge`, a pinned judge model rating the reply against a rubric
 
 They can target the final reply or any file in the workspace. JSON is extracted leniently from replies (whole text, then a fenced block, then the first balanced object), so tasks measure correctness rather than formatting habits.
 
-Every result carries a reason ("Field `overdue_total` = 5800.5 (±0.01)"), which is what makes the run inspector useful. LLM-as-judge scoring was deliberately left out (see limitations): it adds cost, variance and a second model whose drift would contaminate the comparison.
+Every result carries a reason ("Field `overdue_total` = 5800.5 (±0.01)"), which is what makes the run inspector useful.
+
+**Conversational replies need both kinds of scoring.** Hard requirements of a reply (states the refund window, quotes no prices, fits in one SMS) are deterministic checks marked `required`: if one fails, the task fails whatever its weighted score, so quality points cannot buy back a broken rule. Quality (empathy, accuracy to policy, a clear next step) is rated by an `llm_judge` scorer:
+
+- **Pinned and recorded.** The judge model, rubric and criteria live inside the scorer, so they are part of the suite hash; changing any of them changes the experiment's fingerprint.
+- **Independent.** Launch is refused if the judge is one of the models under test, to avoid a model grading its own output. The sample suite's judge (Cohere North Mini) is also from a different model family than the two NVIDIA Nemotron configurations it grades.
+- **Deterministic settings and a structured verdict.** Temperature 0, a 1–5 rating per criterion with a one-sentence reason, parsed strictly (every criterion exactly once). The response is fenced and the judge is told to treat it as data, a basic prompt-injection guard.
+- **Failures are not zeros.** An unusable verdict is retried once; after that, or on persistent rate limits, the run is recorded as a `scoring` error and excluded from the comparison rather than scored 0.
+- **Costed separately.** Judge requests, tokens and cost are stored per run and reported per arm, apart from the agent's own usage.
+
+Two things are deliberately not built yet; they are the next steps, described in [Evaluating conversational agents](#evaluating-conversational-agents) below: **pairwise judging** (show the judge both arms' replies in both orders, which is more sensitive than absolute ratings and cancels position bias), and **calibration against human labels** (until then, judge ratings are an assumption, not a measurement).
 
 ### 8. One validated contract across the stack
 
@@ -175,6 +186,15 @@ The UI follows a "lab ledger" direction derived from the [Hallmark](https://gith
 - outcome colours that remain distinguishable without red/green (teal = better, rust = worse, crimson reserved for system errors)
 
 The verdict is a sentence first; the interval chart and numbers support it. Every value is a design token in `apps/web/src/styles/tokens.css`, with a dark mode.
+
+## Evaluating conversational agents
+
+Most customer-facing agents are conversational, so "is reply B better than reply A?" matters as much as "is the answer correct?". The current design handles single-turn replies with required deterministic checks plus a rubric judge (decision 7). The roadmap, in order of value:
+
+1. **Pairwise judging.** For each task and repetition, show the judge the baseline and candidate replies to the same input as "A" and "B" in random order, then swap and judge again. Agreement across both orders yields win, loss or tie per task, which drops straight into the existing paired statistics (sign-flip test, bootstrap interval). Disagreement between orders counts as a tie and is reported as the judge's position-consistency rate.
+2. **Calibration.** Label 30–50 replies by hand, measure agreement with the judge (e.g. Cohen's κ per criterion), and only trust criteria where agreement is high. Re-check whenever the judge model or rubric changes, which already changes the suite hash.
+3. **Multi-turn scripted conversations.** Add `turns` to a task and continue the same Hermes session for each scripted user turn (`hermes chat --resume <session>` in the run's home), scoring the transcript as a whole.
+4. **Judge variance.** Re-judge a sample of replies to estimate how much of a score difference is the judge's own noise.
 
 ## Data model
 

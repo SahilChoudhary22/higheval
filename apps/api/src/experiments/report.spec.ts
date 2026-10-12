@@ -28,6 +28,9 @@ const arm = (name: string, model: string) => ({
   totalTokens: 18_000,
   totalApiCalls: 6,
   totalCostUsd: 0,
+  judgeRequests: 0,
+  judgeTokens: 0,
+  judgeCostUsd: null,
 });
 
 const experiment: Experiment = {
@@ -102,6 +105,9 @@ const runs: RunSummary[] = (['baseline', 'candidate'] as const).map((side) => ({
   toolCalls: 2,
   apiCalls: 3,
   costUsd: 0,
+  judgeRequests: 0,
+  judgeTokens: 0,
+  judgeCostUsd: null,
   attempts: 1,
   startedAt: null,
   finishedAt: null,

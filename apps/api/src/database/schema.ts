@@ -13,6 +13,7 @@ import type {
   BundledSkills,
   ConfigSnapshot,
   FixtureFile,
+  JudgeDetails,
   MemorySettings,
   ScorerSpec,
   Task,
@@ -132,6 +133,10 @@ export const runs = sqliteTable(
     toolCalls: integer('tool_calls').notNull().default(0),
     apiCalls: integer('api_calls'),
     costUsd: real('cost_usd'),
+    /** LLM-judge usage for scoring this run, kept separate from the agent's. */
+    judgeRequests: integer('judge_requests').notNull().default(0),
+    judgeTokens: integer('judge_tokens').notNull().default(0),
+    judgeCostUsd: real('judge_cost_usd'),
     attempts: integer('attempts').notNull().default(0),
     /** Earliest time a retried run may start again (retry backoff). */
     notBefore: text('not_before'),
@@ -176,6 +181,9 @@ export const runScores = sqliteTable(
     passed: integer('passed', { mode: 'boolean' }).notNull(),
     score: real('score').notNull(),
     reason: text('reason').notNull(),
+    required: integer('required', { mode: 'boolean' }).notNull().default(false),
+    /** Per-criterion evidence for LLM-judge scorers; null for deterministic ones. */
+    details: text('details', { mode: 'json' }).$type<JudgeDetails>(),
   },
   (table) => [index('run_scores_run_idx').on(table.runId)],
 );

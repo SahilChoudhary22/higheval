@@ -13,6 +13,7 @@ import { InjectDb } from '../database/database.module.js';
 import type { Db } from '../database/database.js';
 import { experiments, runEvents, runs, runScores } from '../database/schema.js';
 import { AgentExecutor, type ExecutionOutcome } from '../execution/agent-executor.js';
+import { Judge } from '../scoring/judge/judge.js';
 import { scoreTask } from '../scoring/scorers.js';
 import { runAttemptDir } from './run-paths.js';
 import { Workspace } from './workspace.js';
@@ -40,6 +41,7 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
   constructor(
     @InjectDb() private readonly db: Db,
     private readonly executor: AgentExecutor,
+    private readonly judge: Judge,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -177,18 +179,38 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
         );
         return;
       }
-      const { outcome, toolCalls } = await this.runAgent(run, experiment, task);
-      if (this.stopped) return;
+      // Registered for the whole run, scoring included, so cancelling the
+      // experiment also aborts in-flight LLM-judge calls.
+      const controller = new AbortController();
+      this.active.set(run.id, { experimentId: experiment.id, controller });
       try {
-        this.persistOutcome(run, task, outcome, toolCalls);
+        const { outcome, toolCalls } = await this.runAgent(
+          run,
+          experiment,
+          task,
+          controller.signal,
+        );
+        if (this.stopped) return;
+        await this.persistOutcome(run, task, outcome, toolCalls, controller.signal);
       } catch (error) {
-        // A scorer or storage failure is a platform problem, not agent behaviour:
-        // record it so the run never stays "running" and the queue keeps moving.
+        if (this.stopped) return;
+        if (controller.signal.aborted) {
+          this.db
+            .update(runs)
+            .set({ status: 'cancelled', finishedAt: nowIso() })
+            .where(eq(runs.id, run.id))
+            .run();
+          return;
+        }
+        // A scorer, judge or storage failure is not agent behaviour: record it so
+        // the run never stays "running" and the queue keeps moving.
         this.logger.error(
           `Could not score run ${run.id}`,
           error instanceof Error ? error.stack : error,
         );
         this.markErrored(run.id, 'scoring', `Scoring failed: ${errorMessage(error)}`);
+      } finally {
+        this.active.delete(run.id);
       }
     } finally {
       if (!this.stopped) {
@@ -202,11 +224,10 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
     run: RunRow,
     experiment: ExperimentRow,
     task: Task,
+    signal: AbortSignal,
   ): Promise<{ outcome: ExecutionOutcome; toolCalls: { tool: string }[] }> {
     const config: ConfigSnapshot =
       run.arm === 'baseline' ? experiment.baseline : experiment.candidate;
-    const controller = new AbortController();
-    this.active.set(run.id, { experimentId: experiment.id, controller });
 
     // A retry starts from a clean slate; the attempt count records that it happened.
     this.db.delete(runEvents).where(eq(runEvents.runId, run.id)).run();
@@ -235,7 +256,7 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
           config,
           runDir: runAttemptDir(this.config.get('DATA_DIR', { infer: true }), run.id, run.attempts),
         },
-        { signal: controller.signal, onEvent },
+        { signal, onEvent },
       );
       return { outcome, toolCalls };
     } catch (error) {
@@ -256,8 +277,6 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
           costUsd: null,
         },
       };
-    } finally {
-      this.active.delete(run.id);
     }
   }
 
@@ -269,12 +288,13 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
       .run();
   }
 
-  private persistOutcome(
+  private async persistOutcome(
     run: RunRow,
     task: Task,
     outcome: ExecutionOutcome,
     toolCalls: readonly { tool: string }[],
-  ): void {
+    signal: AbortSignal,
+  ): Promise<void> {
     const common = {
       durationMs: Math.round(outcome.durationMs),
       exitCode: outcome.exitCode,
@@ -290,14 +310,18 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
 
     if (outcome.kind === 'completed') {
       const workspace = new Workspace(outcome.workspaceDir);
-      const result = scoreTask(
+      // Scores (including any network-bound LLM judges) are computed before the
+      // transaction: never hold a SQLite write lock across a provider call.
+      const result = await scoreTask(
         task.scorers,
         {
+          taskPrompt: task.prompt,
           finalOutput: outcome.finalOutput,
           readFile: (path) => workspace.readFile(path),
           toolCalls,
         },
         task.passThreshold,
+        { judge: this.judge, signal },
       );
       this.db.transaction((tx) => {
         tx.delete(runScores).where(eq(runScores.runId, run.id)).run();
@@ -314,6 +338,9 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
             finalOutput: outcome.finalOutput,
             score: result.score,
             passed: result.passed,
+            judgeRequests: result.judgeUsage.requests,
+            judgeTokens: result.judgeUsage.tokens,
+            judgeCostUsd: result.judgeUsage.costUsd,
           })
           .where(eq(runs.id, run.id))
           .run();

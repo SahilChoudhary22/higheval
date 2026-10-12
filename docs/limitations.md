@@ -28,7 +28,10 @@ Grouped by area. Each item says what the limit is, why it exists, and what would
 ## Product scope
 
 - **Two arms per experiment.** A/B comparisons only. Comparing N configurations would need multiplicity-aware statistics.
-- **Deterministic scorers only.** There is no LLM-as-judge for subjective quality. It was left out deliberately (cost, variance, and judge drift contaminating the comparison), but it limits the platform to tasks with checkable answers.
+- **The LLM judge is uncalibrated.** Judge ratings have not been compared with human labels, so they are an informed assumption rather than a measurement. In the sample runs the judge (a small, fast free model) rated most replies 5/5, which suggests leniency; required deterministic checks still gate hard failures. The two kinds of scorer also check each other: in the first real run, a required check failed a reply the judge rated 4.5/5, and the run inspector showed the check itself was wrong (it rejected a non-breaking hyphen in "5‑7"), so it was fixed. Deterministic checks need tests against real model output, not just hand-written examples. A stronger judge and calibration are the next steps (see `docs/design.md`).
+- **Absolute ratings, not pairwise.** The judge rates each reply on its own 1–5 scale. Pairwise A/B judging in both orders would be more sensitive and cancel position bias, but is not built yet.
+- **Single-turn conversations only.** Tasks are one message and one reply; multi-turn scripted conversations are designed but not implemented.
+- **Judges add requests.** Each judged run costs one more request (two if the first verdict is unusable), on top of the agent's own.
 - **Configuration dimensions.** Model, skills, Hermes built-in skills (none, all or selected), memory (disabled or seeded), toolsets, max turns and timeout are configurable. Reasoning effort, system-prompt overrides and provider routing preferences are pinned, not configurable.
 - **OpenRouter only.** Other providers Hermes supports (including subscription-based ones) are not wired up.
 - **Single user, no authentication.** The API binds to `127.0.0.1` by default and rejects foreign `Host` headers and cross-site state-changing requests, which blocks drive-by attacks from web pages. There is still no login: exposing it publicly would let anyone spend your provider quota.
