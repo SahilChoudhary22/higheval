@@ -1,6 +1,6 @@
 # HighEval design
 
-HighEval answers one question with evidence: **after changing an agent's model, skills, memory or tools, did it get better, worse, or stay the same?** It runs the same task suite under two [Hermes Agent](https://github.com/NousResearch/hermes-agent) configurations, scores every run deterministically, and reports a paired comparison with an uncertainty interval and a pre-registered decision rule.
+HighEval answers one question with evidence: **after changing an agent's model, skills, memory or tools, did it get better, worse, or stay the same?** It runs the same task suite under two [Hermes Agent](https://github.com/NousResearch/hermes-agent) configurations, scores every run with deterministic checks (and a pinned LLM judge where a task needs one), and reports a paired comparison with an uncertainty interval and a pre-registered decision rule.
 
 This document covers the architecture, the main decisions and the alternatives considered. Known limits are in [limitations.md](limitations.md) and running costs in [costs.md](costs.md).
 
@@ -12,8 +12,9 @@ flowchart LR
     W[Vue 3 SPA]
   end
   subgraph API["NestJS API (single process)"]
-    C[Controllers<br/>Zod-validated]
+    C[Controllers<br/>Zod-validated · OpenAPI]
     S[Suites · Configs · Skills]
+    A[Suite assistant]
     X[Experiments service]
     R[Experiment runner<br/>durable queue]
     SC[Scoring]
@@ -24,12 +25,13 @@ flowchart LR
   DB[(SQLite<br/>Drizzle)]
   FS[/data/runs/&lt;run&gt;/attempt-n<br/>home · work · stdout · stderr/]
   HM[Hermes CLI<br/>pinned commit, own venv]
-  OR[(OpenRouter)]
+  OR[(Model provider<br/>OpenRouter, OpenAI, …)]
 
   W -- JSON over /api --> C
-  C --> S & X
+  C --> S & X & A
   X --> R
   R --> E
+  A --> E
   E -.implements.-> H
   H -- spawn per run --> HM
   HM --> OR
@@ -39,11 +41,11 @@ flowchart LR
   S & X & R --> DB
 ```
 
-| Package           | Responsibility                                                                                                                                                                                                        |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/shared` | Zod schemas for every request and response. The API validates input with them; the web app validates every response with them. One source of truth for the contract.                                                  |
-| `apps/api`        | NestJS modules: `suites`, `skills`, `configs`, `experiments` (service, runner, run inspection), `execution` (executor interface + Hermes implementation), `scoring`, `statistics`, `samples` (seed data), `database`. |
-| `apps/web`        | Vue 3 SPA: overview, experiment launch and detail, run inspector, suite/config/skill editors.                                                                                                                         |
+| Package           | Responsibility                                                                                                                                                                                                                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/shared` | Zod schemas for every request and response. The API validates input with them; the web app validates every response with them. One source of truth for the contract.                                                                                                                                     |
+| `apps/api`        | NestJS modules: `suites`, `skills`, `configs`, `experiments` (service, runner, run inspection), `execution` (executor interface + Hermes implementation), `scoring` (scorers + LLM judge), `statistics`, `assistant` (suite drafting), `providers` (keys), `openapi`, `samples` (seed data), `database`. |
+| `apps/web`        | Vue 3 SPA: overview, experiment launch and detail, run inspector, suite/config/skill editors with the suite assistant, provider settings.                                                                                                                                                                |
 
 ### Request lifecycle of an experiment
 
@@ -176,6 +178,7 @@ Zod schemas in `packages/shared` define every payload.
 - The API validates bodies with a `ZodValidationPipe` and returns field-level issues.
 - The web client parses every response with the same schemas, so drift between backend and frontend fails loudly instead of rendering `undefined`.
 - Environment variables are validated at boot, and the app refuses to start on invalid configuration.
+- The OpenAPI 3.1 document (`/api/openapi.json`, browsable at `/api/docs`) is generated from the same schemas. Each route names its request and response schemas with `@ApiDoc`, and the document is assembled at startup by discovering the running controllers, so it cannot describe a route that does not exist or miss one that does; a test fails if any route is undocumented. Shared contracts become named components, with input and output forms merged where they are identical. A hand-written spec or `@nestjs/swagger` DTO classes were the alternatives; both duplicate the Zod contract and drift from it.
 
 ### 9. Interface
 
@@ -186,6 +189,19 @@ The UI follows a "lab ledger" direction derived from the [Hallmark](https://gith
 - outcome colours that remain distinguishable without red/green (teal = better, rust = worse, crimson reserved for system errors)
 
 The verdict is a sentence first; the interval chart and numbers support it. Every value is a design token in `apps/web/src/styles/tokens.css`, with a dark mode.
+
+### 10. Hermes drafts suites; HighEval checks them
+
+Writing a suite by hand means learning the scorer schema, inventing realistic data and computing every expected value. The suite assistant (`POST /api/suite-drafts`, "Draft with Hermes" in the suite editor) hands that to Hermes itself, through the same `AgentExecutor` and isolation as experiment runs:
+
+- The agent's workspace holds the user's description, the suite's JSON Schema (generated from the shared contract), two known-good tasks from the sample suites, and, when revising, the current suite. A `suite-authoring` skill explains what the schema cannot: one correct answer per task, consistent fixtures, answers never in fixtures, and expected values computed with a script. It has `file` and `terminal` tools for that.
+- It writes `suite.json` and `reference.json`, what a perfect agent would leave behind for each task. HighEval then applies the discipline the sample suites follow in CI: the suite must pass the schema, and every deterministic scorer must pass against the reference. Judge and tool-trace scorers cannot be checked statically and are skipped.
+- Problems go back to a fresh Hermes run as `problems.md` alongside the previous draft, up to three attempts.
+- The result loads into the JSON editor for review, with Undo; nothing is saved automatically. A passing self-check proves the scorers agree with the agent's answers, not that the answers are right, and the UI says so.
+
+In the two real drafts so far, the first needed a second attempt (its reference solutions left out the files its scorers read) and the second passed first time after the agent wrote and ran its own script to compute expected values. Reviewing the first draft found an ambiguous fixture row and a list compared in an unspecified order; both became rules in the authoring skill. Drafts are working state, kept in memory (the latest 20) rather than in the database.
+
+A one-shot LLM call returning JSON would be simpler, but it could not compute values or check its own work, and it would put a second agent stack beside Hermes in a project about evaluating Hermes.
 
 ## Evaluating conversational agents
 
@@ -243,6 +259,8 @@ erDiagram
 | Unit (Vitest)                    | Scorers, JSON extraction, statistics (exact p-values, degenerate and seeded cases), stream parsing across arbitrary chunk boundaries, exit classification, process control (no shell interpolation, group kill, timeout), workspace path safety, run planning                           |
 | Sample-suite reference solutions | Every task scores exactly 1 for a correct answer and rejects plausible wrong ones; no answer leaks into fixtures                                                                                                                                                                        |
 | API e2e (fake executor)          | Launch → interleaved execution → scoring → comparison → run detail through HTTP; validation errors; a scoring failure ends as an errored run; editing a config after launch leaves the experiment's snapshot unchanged; foreign-Host, cross-site and form-encoded requests are rejected |
-| Web component (fake timers)      | The experiment page keeps runs and verdict live even when they load before the experiment, and refreshes them once more on completion                                                                                                                                                   |
+| API e2e (contract and features)  | Every route appears in the OpenAPI document and all references resolve; provider keys are verified, stored write-only and refused at launch when missing; suite drafts run end to end with a scripted executor and save unchanged                                                       |
+| Assistant (scripted executor)    | A draft is retried with the problems found until its reference passes; revisions receive the current suite; failures, cancellation and missing keys are reported                                                                                                                        |
+| Web component (fake timers)      | The experiment page keeps runs and verdict live even when they load before the experiment; form fields announce their errors and focus the first invalid one; the suite assistant polls, loads the draft and switches to revision                                                       |
 | Live (`test:live`, opt-in)       | The real Hermes runtime with a real model: tool use, no-tools, skill isolation, built-in skill selection, memory isolation, no host-context leakage                                                                                                                                     |
-| CI                               | Format, lint (type-aware oxlint + ESLint for Vue), typecheck, unit + e2e tests with coverage (API: 89% of lines, thresholds enforced), build                                                                                                                                            |
+| CI                               | Format, lint (type-aware oxlint + ESLint for Vue), typecheck, unit + e2e tests with coverage (API: 92% of lines, thresholds enforced), build                                                                                                                                            |
