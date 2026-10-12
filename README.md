@@ -28,6 +28,7 @@
 
 <p align="center">
   <img src="docs/images/experiment-results.png" alt="A conclusive verdict: adding a skill made the candidate better on all 8 tasks, with the confidence interval, permutation test and per-configuration results" width="880" />
+  <br /><sub>The same model, Nemotron 3 Super, with and without one skill. Holding everything else fixed isolates the skill's effect: better on all 8 tasks.</sub>
 </p>
 
 HighEval runs the same task suite under two Hermes configurations, scores every run, and reports the paired difference with a 95% confidence interval and a verdict from a rule fixed before the data. It never calls a difference real when the evidence can't support it, and every run can be opened to see exactly why it passed or failed.
