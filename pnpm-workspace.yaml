@@ -17,3 +17,5 @@ allowBuilds:
   better-sqlite3: true
   # Its install script only verifies the platform binary, which pnpm installs anyway.
   esbuild: false
+  # Pulled in by swagger-ui-dist; its install script only sends usage telemetry.
+  '@scarf/scarf': false

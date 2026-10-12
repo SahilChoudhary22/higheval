@@ -128,11 +128,12 @@ const blockers = computed(() => {
       <section class="section" aria-labelledby="method-heading">
         <h2 id="method-heading" class="section__head">How results are judged</h2>
         <p class="muted method">
-          Each task is scored 0–1 by deterministic checks. Repetitions are averaged per task, then
-          the candidate − baseline differences are resampled to get a 95% interval. The candidate is
-          called better or worse only when that interval excludes zero and an exact permutation test
-          agrees, and equivalent only when the interval fits inside the practical margin with enough
-          tasks to rule out hidden differences.
+          Each task is scored 0–1 by deterministic checks and, where a task calls for it, a pinned
+          LLM judge. Repetitions are averaged per task, then the candidate − baseline differences
+          are resampled to get a 95% interval. The candidate is called better or worse only when
+          that interval excludes zero and an exact permutation test agrees, and equivalent only when
+          the interval fits inside the practical margin with enough tasks to rule out hidden
+          differences.
         </p>
       </section>
     </aside>

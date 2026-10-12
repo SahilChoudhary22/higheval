@@ -12,7 +12,7 @@ export const scorerTargetSchema = z.discriminatedUnion('kind', [
 ]);
 export type ScorerTarget = z.infer<typeof scorerTargetSchema>;
 
-const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+export const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
   z.union([
     z.string(),
     z.number(),

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   PhBookOpen,
+  PhBracketsCurly,
   PhCheck,
   PhCircleDashed,
   PhFlask,
@@ -131,6 +132,10 @@ const ICON: Record<CheckState, Component> = {
           </dd>
         </div>
       </dl>
+      <a class="api-link" href="/api/docs" target="_blank" rel="noopener">
+        <PhBracketsCurly aria-hidden="true" />
+        API reference<span class="visually-hidden"> (opens in a new tab)</span>
+      </a>
     </aside>
 
     <main class="shell__main">
@@ -268,6 +273,27 @@ const ICON: Record<CheckState, Component> = {
   width: 0.875rem;
   height: 0.875rem;
   flex: none;
+}
+
+.api-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-top: calc(-1 * var(--space-md));
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.api-link svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+@media (hover: hover) {
+  .api-link:hover {
+    color: var(--color-ink);
+  }
 }
 
 .health__link {

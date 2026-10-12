@@ -1,8 +1,16 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { createRequire } from 'node:module';
+import { dirname } from 'node:path';
 import { createRequestGuard, LOOPBACK_HOSTS } from './common/request-guard.js';
 import type { Env } from './config/env.schema.js';
+import { DOCS_ASSETS_PATH } from './openapi/openapi.controller.js';
+
+/** Swagger UI's prebuilt assets, served locally so the docs work offline. */
+const SWAGGER_UI_DIR = dirname(
+  createRequire(import.meta.url).resolve('swagger-ui-dist/package.json'),
+);
 
 /** Largest accepted JSON body: comfortably above a large suite with fixtures. */
 export const JSON_BODY_LIMIT = '10mb';
@@ -22,6 +30,7 @@ export function configureApp(app: NestExpressApplication): void {
 
   app.use(createRequestGuard(allowedHosts));
   app.useBodyParser('json', { limit: JSON_BODY_LIMIT });
+  app.useStaticAssets(SWAGGER_UI_DIR, { prefix: DOCS_ASSETS_PATH, index: false });
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();
 

@@ -9,6 +9,7 @@ import { ConfigsModule } from './configs/configs.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { ExperimentsModule } from './experiments/experiments.module.js';
 import { HealthModule } from './health/health.module.js';
+import { OpenApiModule } from './openapi/openapi.module.js';
 import { ProvidersModule } from './providers/providers.module.js';
 import { SamplesModule } from './samples/samples.module.js';
 import { SkillsModule } from './skills/skills.module.js';
@@ -37,6 +38,7 @@ function webApp(): DynamicModule[] {
     DatabaseModule,
     ProvidersModule,
     HealthModule,
+    OpenApiModule,
     SkillsModule,
     SuitesModule,
     ConfigsModule,
