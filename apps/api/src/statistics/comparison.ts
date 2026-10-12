@@ -74,10 +74,12 @@ export function buildComparison(input: ComparisonInput): Comparison {
           seed: input.seed,
         })
       : null;
+  const pValue = differences.length > 0 ? signFlipPValue(differences, { seed: input.seed }) : null;
   const { verdict, reason } = decideVerdict({
     pairedTasks: differences.length,
     meanDifference,
     interval,
+    pValue,
     practicalMargin: input.practicalMargin,
     level: CONFIDENCE_LEVEL,
   });
@@ -98,7 +100,7 @@ export function buildComparison(input: ComparisonInput): Comparison {
       method: 'paired_bootstrap_percentile',
       resamples: BOOTSTRAP_RESAMPLES,
     },
-    pValue: differences.length > 0 ? signFlipPValue(differences, { seed: input.seed }) : null,
+    pValue,
     wins: differences.filter((difference) => difference > TIE_EPSILON).length,
     losses: differences.filter((difference) => difference < -TIE_EPSILON).length,
     ties: differences.filter((difference) => Math.abs(difference) <= TIE_EPSILON).length,

@@ -74,7 +74,8 @@ describe('buildComparison', () => {
     expect(comparison.totalTasks).toBe(6);
     expect(comparison.candidate.erroredRuns).toBe(1);
     expect(comparison.tasks[0]?.difference).toBeNull();
-    expect(comparison.verdict).toBe('practically_equivalent');
+    // Five tied tasks are far too few to claim equivalence (60 needed at ±0.05).
+    expect(comparison.verdict).toBe('inconclusive');
     expect(comparison.ties).toBe(5);
   });
 
