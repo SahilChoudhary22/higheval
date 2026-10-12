@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { validateEnv } from './config/env.schema.js';
 import { REPO_ROOT } from './config/paths.js';
+import { AssistantModule } from './assistant/assistant.module.js';
 import { ConfigsModule } from './configs/configs.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { ExperimentsModule } from './experiments/experiments.module.js';
@@ -37,6 +38,7 @@ function webApp(): DynamicModule[] {
     }),
     DatabaseModule,
     ProvidersModule,
+    AssistantModule,
     HealthModule,
     OpenApiModule,
     SkillsModule,

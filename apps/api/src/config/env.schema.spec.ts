@@ -17,12 +17,18 @@ describe('validateEnv', () => {
       RETRY_BASE_DELAY_MS: 15_000,
       SEED_SAMPLES: true,
       JUDGE_RETRY_BASE_DELAY_MS: 2_000,
+      ASSISTANT_PROVIDER: 'openrouter',
+      ASSISTANT_MODEL: 'nvidia/nemotron-3-super-120b-a12b:free',
     });
   });
 
   it('treats blank values as unset', () => {
     expect(validateEnv({ OPENROUTER_API_KEY: '', PORT: '' })).toMatchObject({ PORT: 3000 });
     expect(validateEnv({ OPENROUTER_API_KEY: '' }).OPENROUTER_API_KEY).toBeUndefined();
+  });
+
+  it('rejects an assistant model that is a router alias', () => {
+    expect(() => validateEnv({ ASSISTANT_MODEL: 'openrouter/auto' })).toThrow(/ASSISTANT_MODEL/);
   });
 
   it('parses allowed hosts as a lower-cased list', () => {

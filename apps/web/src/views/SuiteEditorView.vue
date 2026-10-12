@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { friendlyError, suiteInputSchema, type Suite, type SuiteInput } from '@higheval/shared';
 import { computed, ref, watch } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { api } from '@/api/endpoints';
 import PageHeader from '@/components/PageHeader.vue';
+import SuiteAssistant from '@/components/SuiteAssistant.vue';
 import SkeletonRows from '@/components/SkeletonRows.vue';
 import { useFormErrors } from '@/composables/useFormErrors';
+import { useToasts } from '@/composables/useToasts';
 
 const props = defineProps<{ id?: string }>();
 const router = useRouter();
+const route = useRoute();
 const { errors, formError, fromError, focusFirstInvalid, clear } = useFormErrors();
 const formEl = ref<HTMLFormElement | null>(null);
+const { show } = useToasts();
 
 const TEMPLATE: SuiteInput = {
   name: 'New suite',
@@ -104,6 +108,17 @@ const serverIssues = computed(() =>
 );
 const issues = computed(() => (parsed.value.ok ? serverIssues.value : parsed.value.issues));
 
+/** Replaces the editor's contents with a draft, keeping the old text one Undo away. */
+function loadDraft(suite: SuiteInput): void {
+  const previous = source.value;
+  source.value = JSON.stringify(suite, null, 2);
+  show({
+    tone: 'info',
+    message: 'Hermes’ draft is in the editor.',
+    action: { label: 'Undo', run: () => (source.value = previous) },
+  });
+}
+
 async function save(): Promise<void> {
   clear();
   if (!parsed.value.ok) return;
@@ -131,6 +146,14 @@ async function save(): Promise<void> {
       <span>Edit as JSON. Experiments already launched keep their own snapshot of the tasks.</span>
     </template>
   </PageHeader>
+
+  <SuiteAssistant
+    v-if="!loading"
+    :current="parsed.ok ? parsed.value : undefined"
+    :revising="Boolean(id)"
+    :focus="route.hash === '#draft'"
+    @drafted="loadDraft"
+  />
 
   <SkeletonRows v-if="loading" :rows="8" />
   <form v-else ref="formEl" class="editor" novalidate @submit.prevent="save">
