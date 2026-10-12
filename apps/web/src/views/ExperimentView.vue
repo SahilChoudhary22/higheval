@@ -21,6 +21,7 @@ import {
   formatScore,
 } from '@/lib/format';
 import { EXPERIMENT_STATUS, RUN_STATUS, shortId } from '@/lib/labels';
+import { estimateRemainingMs, formatApproxDuration } from '@/lib/timing';
 
 const props = defineProps<{ id: string }>();
 const router = useRouter();
@@ -42,6 +43,13 @@ const runs = useResource(() => api.experiments.runs(props.id), {
 const comparison = useResource(() => api.experiments.comparison(props.id), {
   source: () => props.id,
   pollMs: () => (active.value ? POLL_MS : null),
+});
+
+const remaining = computed(() => {
+  const data = experiment.data.value;
+  if (!data || !active.value) return null;
+  const ms = estimateRemainingMs(data.progress, data.startedAt);
+  return ms === null ? 'Estimating time left…' : `${formatApproxDuration(ms)} left`;
 });
 
 const hasScores = computed(() => (experiment.data.value?.progress.scored ?? 0) > 0);
@@ -136,7 +144,7 @@ async function remove(): Promise<void> {
     <section class="section" aria-labelledby="progress-heading">
       <div class="section__head">
         <h2 id="progress-heading">Progress</h2>
-        <span v-if="active" class="muted">Updates every few seconds</span>
+        <span v-if="remaining" class="muted" aria-live="polite">{{ remaining }}</span>
       </div>
       <RunProgress :progress="experiment.data.value.progress" />
     </section>

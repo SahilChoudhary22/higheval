@@ -26,11 +26,19 @@ That one command:
 
 Add your key to `.env` (`OPENROUTER_API_KEY=…`) and run `pnpm start` again. The UI shows what's missing until then.
 
-On first start the database is seeded with a sample suite, a skill and three configurations, so you can launch an experiment immediately: **Launch experiment → choose the two configs → Launch**.
+On first start the database is seeded with two sample suites, a skill and three configurations, so you can launch an experiment immediately.
+
+### Try it in about a minute
+
+**Launch experiment** → suite **Quick check** (preselected) → set **Repetitions** to 1 → **Launch experiment**. The 10 runs finish in about a minute on free models (41 s measured), with a verdict, per-task results and an inspectable timeline for every run.
+
+### How long a full experiment takes
+
+Almost all of the time goes to waiting on the model: each run makes 3–5 model calls, and free OpenRouter endpoints take about 10 s per call. A run therefore averages 30–50 s, and an experiment takes roughly _runs × 40 s ÷ concurrency_. The 96-run model-change experiment took 22 minutes at concurrency 3. The launch form shows this estimate before you start, and a running experiment shows time remaining. To go faster, raise `MAX_CONCURRENT_RUNS` within the provider's rate limits, or use paid endpoints, which have far higher rate limits than the free tier.
 
 ## The sample task set
 
-[`Agency operations`](apps/api/src/samples/agency-ops-suite.ts) has 16 synthetic back-office tasks for a marketing agency:
+[`Agency operations`](apps/api/src/samples/agency-ops-suite.ts) has 16 synthetic back-office tasks for a marketing agency ([`Quick check`](apps/api/src/samples/quick-check-suite.ts) is a fast five-task subset):
 
 - billing: receivables, payment reminders, commission
 - CRM hygiene: lead qualification, duplicate contacts, contact extraction
@@ -103,7 +111,7 @@ All settings are optional except the provider key. They are validated at startup
 | `OPENROUTER_API_KEY`  | —                    | Provider key used by Hermes                                       |
 | `HOST` / `PORT`       | `127.0.0.1` / `3000` | Bind address. Keep it local unless behind an authenticating proxy |
 | `DATA_DIR`            | `./data`             | SQLite database and per-run artifacts                             |
-| `MAX_CONCURRENT_RUNS` | `2`                  | Parallel agent runs across all experiments                        |
+| `MAX_CONCURRENT_RUNS` | `4`                  | Parallel agent runs across all experiments                        |
 | `MAX_RUN_ATTEMPTS`    | `3`                  | Attempts for retryable failures (rate limits, restarts)           |
 | `RETRY_BASE_DELAY_MS` | `15000`              | First retry delay; doubles each attempt                           |
 | `SEED_SAMPLES`        | `true`               | Seed the sample suite into an empty database                      |

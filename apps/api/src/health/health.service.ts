@@ -17,6 +17,7 @@ export class HealthService {
       version: APP_VERSION,
       uptimeSeconds: Math.round(process.uptime()),
       checks: { providerKey, hermesVersion: hermes?.version ?? null },
+      maxConcurrentRuns: this.config.get('MAX_CONCURRENT_RUNS', { infer: true }),
     };
   }
 }

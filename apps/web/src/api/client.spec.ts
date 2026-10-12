@@ -15,6 +15,7 @@ const HEALTHY = {
   version: '0.1.0',
   uptimeSeconds: 3,
   checks: { providerKey: true, hermesVersion: 'Hermes 1.0' },
+  maxConcurrentRuns: 4,
 };
 
 describe('getJson', () => {

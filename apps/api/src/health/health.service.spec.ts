@@ -36,7 +36,11 @@ describe('HealthService', () => {
   });
 
   it('reports ok when the provider key and Hermes are both available', async () => {
-    const health = await check({ OPENROUTER_API_KEY: 'k', HERMES_MANIFEST: manifest });
+    const health = await check({
+      OPENROUTER_API_KEY: 'k',
+      HERMES_MANIFEST: manifest,
+      MAX_CONCURRENT_RUNS: 4,
+    });
     expect(health).toMatchObject({
       status: 'ok',
       checks: { providerKey: true, hermesVersion: 'Hermes 1.0' },
@@ -44,7 +48,10 @@ describe('HealthService', () => {
   });
 
   it('reports degraded and says what is missing', async () => {
-    const health = await check({ HERMES_MANIFEST: join(dir, 'missing.json') });
+    const health = await check({
+      HERMES_MANIFEST: join(dir, 'missing.json'),
+      MAX_CONCURRENT_RUNS: 4,
+    });
     expect(health).toMatchObject({
       status: 'degraded',
       checks: { providerKey: false, hermesVersion: null },

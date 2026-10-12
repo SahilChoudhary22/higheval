@@ -12,7 +12,7 @@ export const envSchema = z.object({
   /** Written by scripts/setup-hermes.sh; tells the API how to launch the pinned Hermes. */
   HERMES_MANIFEST: z.string().min(1).default(resolve(REPO_ROOT, '.hermes-runtime/manifest.json')),
   /** Agent runs executed in parallel across all experiments. Free-tier providers rate-limit aggressively. */
-  MAX_CONCURRENT_RUNS: z.coerce.number().int().min(1).max(16).default(2),
+  MAX_CONCURRENT_RUNS: z.coerce.number().int().min(1).max(16).default(4),
   /** Attempts per run when the failure is retryable infrastructure (e.g. HTTP 429). */
   MAX_RUN_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(3),
   /** Base delay before retrying a retryable failure; doubles each attempt. */

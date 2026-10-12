@@ -11,7 +11,7 @@ describe('validateEnv', () => {
       LOG_FORMAT: 'pretty',
       DATA_DIR: resolve(REPO_ROOT, 'data'),
       HERMES_MANIFEST: resolve(REPO_ROOT, '.hermes-runtime/manifest.json'),
-      MAX_CONCURRENT_RUNS: 2,
+      MAX_CONCURRENT_RUNS: 4,
       MAX_RUN_ATTEMPTS: 3,
       RETRY_BASE_DELAY_MS: 15_000,
       SEED_SAMPLES: true,
