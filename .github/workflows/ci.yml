@@ -27,6 +27,7 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm --filter @higheval/api test:e2e
+      # Unit and e2e tests with coverage (the API enforces thresholds).
+      - run: pnpm --filter @higheval/api test:cov
+      - run: pnpm --filter @higheval/web test:cov
       - run: pnpm build

@@ -103,6 +103,7 @@ pnpm dev            # API on :3000 (watch), web on :5173 with /api proxied
 | Command                                 | What it does                                                                            |
 | --------------------------------------- | --------------------------------------------------------------------------------------- |
 | `pnpm check`                            | Format check, lint (type-aware), typecheck, unit tests, build                           |
+| `pnpm --filter @higheval/api test:cov`  | Unit + e2e tests with merged coverage and enforced thresholds                           |
 | `pnpm --filter @higheval/api test:e2e`  | API end-to-end through HTTP with a deterministic fake executor                          |
 | `pnpm --filter @higheval/api test:live` | Real Hermes + OpenRouter: verifies tool, skill and memory isolation (uses ~10 requests) |
 

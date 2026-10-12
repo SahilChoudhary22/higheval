@@ -8,6 +8,12 @@ export default mergeConfig(
     test: {
       environment: 'jsdom',
       include: ['src/**/*.spec.ts'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text-summary', 'lcov'],
+        include: ['src/**/*.{ts,vue}'],
+        exclude: ['src/**/*.spec.ts', 'src/main.ts'],
+      },
       exclude: [...configDefaults.exclude],
       root: fileURLToPath(new URL('./', import.meta.url)),
     },
