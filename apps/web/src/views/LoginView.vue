@@ -83,8 +83,8 @@ const VERDICTS: { change: string; verdict: Verdict; evidence: string }[] = [
         Did the agent get better, worse, or stay the same?
       </p>
       <p class="brand__lede">
-        HighEval runs the same tasks under two Hermes Agent setups and only names a winner when the
-        evidence holds.
+        Measure the impact of every agent change, and distinguish real improvements from statistical
+        noise.
       </p>
       <div class="ledger">
         <p class="ledger__title">Verdicts from experiments run in this app</p>
