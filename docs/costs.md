@@ -11,7 +11,7 @@ Figures marked **measured** come from the experiments in [experiments/](experime
 | A 96-run experiment on a frontier-priced model ($2 / $10 per M tokens) | **≈ $3** (estimate)                                                        |
 | Infrastructure                                                         | **$0 extra** locally; ≈ $5–10 / month for an always-on small VM, if wanted |
 | Wall-clock time per experiment                                         | ~22 min for 96 runs at concurrency 3 (measured)                            |
-| Drafting a suite with Hermes (free endpoint)                           | **$0**; 16–23 requests and 1.5–5 min per draft (measured)                  |
+| Drafting a suite with HighEval AI (free endpoint)                      | **$0**; 16–23 requests and 1.5–5 min per draft (measured)                  |
 
 ## 1. Model inference
 
@@ -34,11 +34,12 @@ Most input is Hermes' system prompt and tool schemas, resent on every turn; prov
 
 Both models were called through OpenRouter `:free` endpoints, so provider cost was **$0**. Hermes recorded a cost of 0 for every run. The binding constraint is the request quota: this key reports **1,000 free-model requests per day**, and accounts without purchased credits get far fewer.
 
-| Experiment                      | Runs | Model requests (measured) |
-| ------------------------------- | ---: | ------------------------: |
-| Pilot, 12 tasks × 1 rep         |   24 |                        69 |
-| Model change, 16 tasks × 3 reps |   96 |                       361 |
-| Skill change, 16 tasks × 2 reps |   64 |                       279 |
+| Experiment                                  | Runs | Model requests (measured) |
+| ------------------------------------------- | ---: | ------------------------: |
+| Pilot, 12 tasks × 1 rep                     |   24 |                        69 |
+| Each capability experiment, 8 tasks × 1 rep |   16 |                     16–21 |
+| Model change, 16 tasks × 3 reps             |   96 |                       361 |
+| Skill change, 16 tasks × 2 reps             |   64 |                       279 |
 
 Hermes retries rate-limited calls internally (up to 3 times), and HighEval retries the whole run on a 429. Both kinds of retry consume quota, so leave 20–30% headroom when planning an experiment.
 
@@ -92,10 +93,10 @@ Workloads are I/O-bound on the model provider. A modest machine (2 vCPU, 2 GB RA
 
 ## 4. People time
 
-| Activity                                     | Time                                                                                                                                    |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| First start, including Hermes install        | ~2 minutes                                                                                                                              |
-| Writing a new task with fixtures and scorers | 10–20 minutes. Computing expected answers by script and adding a reference solution is the slow, important part                         |
-| Drafting a suite with Hermes, then reviewing | 2–5 minutes of waiting plus 5–10 minutes checking expected values per few tasks                                                         |
-| A 96-run experiment                          | ~22 minutes of wall-clock time at concurrency 3 on free endpoints (under a minute for a Quick check); no attention needed while it runs |
-| Reviewing an experiment                      | 5–15 minutes, mostly in the run inspector on discordant tasks                                                                           |
+| Activity                                          | Time                                                                                                                                    |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| First start, including Hermes install             | ~2 minutes                                                                                                                              |
+| Writing a new task with fixtures and scorers      | 10–20 minutes. Computing expected answers by script and adding a reference solution is the slow, important part                         |
+| Drafting a suite with HighEval AI, then reviewing | 2–5 minutes of waiting plus 5–10 minutes checking expected values per few tasks                                                         |
+| A 96-run experiment                               | ~22 minutes of wall-clock time at concurrency 3 on free endpoints (under a minute for a Quick check); no attention needed while it runs |
+| Reviewing an experiment                           | 5–15 minutes, mostly in the run inspector on discordant tasks                                                                           |

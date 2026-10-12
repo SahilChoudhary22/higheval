@@ -1,0 +1,2096 @@
+{
+  "experiment": {
+    "id": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+    "name": "Skill: email house style on Nemotron 3 Super",
+    "suiteId": "f8de1d24-3297-4eb0-b9c4-877e49bb67d3",
+    "suiteName": "Capability: email house style",
+    "suiteHash": "aa7642e25e12f31b14508bc7e6ffa0bc711bd9291d7dd00afc6cd171a5df3879",
+    "baseline": {
+      "id": "5bad6ec3-b62e-427f-9cd4-9451d8e36570",
+      "name": "Nemotron 3 Super \u00b7 no tools",
+      "description": "No tools, skills or memory: the model can only answer from what it knows.",
+      "model": {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3-super-120b-a12b:free"
+      },
+      "skills": [],
+      "bundledSkills": {
+        "mode": "none",
+        "names": [],
+        "paths": [],
+        "contentHash": null
+      },
+      "hermesCommit": "73162b00eefde3794bed0afb53d84a19c0eed230",
+      "memory": {
+        "mode": "disabled"
+      },
+      "toolsets": [],
+      "maxTurns": 12,
+      "timeoutSeconds": 240,
+      "hash": "18bd5d1df8204507bc8044561920a84d4887b64378c35cb7de4f4467c90d6a58"
+    },
+    "candidate": {
+      "id": "ef735235-dfea-4adf-bcea-cbe7e2c8ae21",
+      "name": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "description": "Adds the lakeshore-email-style skill; nothing else changes.",
+      "model": {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3-super-120b-a12b:free"
+      },
+      "skills": [
+        {
+          "name": "lakeshore-email-style",
+          "description": "How Lakeshore Digital writes client emails: subject, greeting, dates, money and sign-off.",
+          "content": "# Lakeshore Digital email house style\n\nFollow this for every email to a client.\n\n1. First line: `Subject: [Lakeshore] <topic>`.\n2. Greeting on its own line: `Hi <first name>,` (first name only).\n3. Dates as day, three-letter month, year, with no leading zero: `3 Nov 2026`.\n4. Money as `USD` followed by the amount with thousands separators and two decimals: `USD 1,240.00`.\n5. Never use exclamation marks.\n6. Sign off on the last line with exactly: `\u2014 The Lakeshore team`"
+        }
+      ],
+      "bundledSkills": {
+        "mode": "none",
+        "names": [],
+        "paths": [],
+        "contentHash": null
+      },
+      "hermesCommit": "73162b00eefde3794bed0afb53d84a19c0eed230",
+      "memory": {
+        "mode": "disabled"
+      },
+      "toolsets": [],
+      "maxTurns": 12,
+      "timeoutSeconds": 240,
+      "hash": "c1134f12069c240da0c3888ac08879d9075a355339cb57033ed9e0e2f506f298"
+    },
+    "repetitions": 1,
+    "practicalMargin": 0.05,
+    "seed": 793251173,
+    "status": "completed",
+    "createdAt": "2026-10-12T12:56:23.118Z",
+    "startedAt": "2026-10-12T12:56:23.120Z",
+    "finishedAt": "2026-10-12T12:56:53.571Z",
+    "progress": {
+      "total": 16,
+      "queued": 0,
+      "running": 0,
+      "scored": 16,
+      "errored": 0,
+      "cancelled": 0
+    }
+  },
+  "comparison": {
+    "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+    "direction": "candidate_minus_baseline",
+    "baseline": {
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "configHash": "18bd5d1df8204507bc8044561920a84d4887b64378c35cb7de4f4467c90d6a58",
+      "runs": 8,
+      "scoredRuns": 8,
+      "erroredRuns": 0,
+      "meanScore": 0.2625,
+      "passRate": 0,
+      "meanDurationMs": 6648.625,
+      "meanTotalTokens": 1183.375,
+      "totalTokens": 9467,
+      "totalApiCalls": 8,
+      "totalCostUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null
+    },
+    "candidate": {
+      "configName": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "configHash": "c1134f12069c240da0c3888ac08879d9075a355339cb57033ed9e0e2f506f298",
+      "runs": 8,
+      "scoredRuns": 8,
+      "erroredRuns": 0,
+      "meanScore": 1,
+      "passRate": 1,
+      "meanDurationMs": 7615.875,
+      "meanTotalTokens": 1623.25,
+      "totalTokens": 12986,
+      "totalApiCalls": 8,
+      "totalCostUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null
+    },
+    "pairedTasks": 8,
+    "totalTasks": 8,
+    "repetitions": 1,
+    "meanDifference": 0.7375,
+    "confidenceInterval": {
+      "level": 0.95,
+      "lower": 0.675,
+      "upper": 0.7999999998749999,
+      "method": "paired_bootstrap_percentile",
+      "resamples": 10000
+    },
+    "pValue": 0.0078125,
+    "wins": 8,
+    "losses": 0,
+    "ties": 0,
+    "practicalMargin": 0.05,
+    "verdict": "candidate_better",
+    "verdictReason": "Mean difference +0.738 (95% CI [+0.675, +0.800], p = 0.008) over 8 tasks. The interval excludes zero and the permutation test agrees.",
+    "tasks": [
+      {
+        "taskId": "cf13bfd2-2899-456d-91b1-3931829daacc",
+        "taskKey": "style-invoice-reminder",
+        "title": "Invoice reminder",
+        "baselineMean": 0.333333333,
+        "candidateMean": 1,
+        "difference": 0.666666667,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "26ea98a3-bc0a-44a2-bf1e-ef7b22a5b683",
+        "taskKey": "style-payment-received",
+        "title": "Payment received",
+        "baselineMean": 0.166666667,
+        "candidateMean": 1,
+        "difference": 0.833333333,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "a7963e3c-1c86-4bca-be84-0c18ef7fadcf",
+        "taskKey": "style-campaign-launch",
+        "title": "Campaign launch",
+        "baselineMean": 0.166666667,
+        "candidateMean": 1,
+        "difference": 0.833333333,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "a13d2ea7-465f-4228-b905-20338ab1ffe7",
+        "taskKey": "style-meeting-confirmation",
+        "title": "Meeting confirmation",
+        "baselineMean": 0.2,
+        "candidateMean": 1,
+        "difference": 0.8,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "6ebb8ce9-df3b-4fda-9794-af7e28d6fbd5",
+        "taskKey": "style-price-change",
+        "title": "Retainer change",
+        "baselineMean": 0.333333333,
+        "candidateMean": 1,
+        "difference": 0.666666667,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "2f04bf03-4209-4076-8749-20b820748142",
+        "taskKey": "style-ad-pause",
+        "title": "Advertising pause",
+        "baselineMean": 0.4,
+        "candidateMean": 1,
+        "difference": 0.6,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "9ede8754-2eae-4201-ac4b-34578a01a816",
+        "taskKey": "style-refund",
+        "title": "Refund processed",
+        "baselineMean": 0.166666667,
+        "candidateMean": 1,
+        "difference": 0.833333333,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "738e13ea-cb6e-48d2-bb6a-9d92ea066cfe",
+        "taskKey": "style-overspend",
+        "title": "Budget alert",
+        "baselineMean": 0.333333333,
+        "candidateMean": 1,
+        "difference": 0.666666667,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      }
+    ]
+  },
+  "runs": [
+    {
+      "id": "b91408b7-94b1-4054-870f-8f9637aff34c",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "candidate",
+      "taskId": "a7963e3c-1c86-4bca-be84-0c18ef7fadcf",
+      "taskKey": "style-campaign-launch",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 8474,
+      "tokens": {
+        "input": 1282,
+        "output": 335,
+        "cacheRead": 0,
+        "total": 1617
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:23.120Z",
+      "finishedAt": "2026-10-12T12:56:31.597Z",
+      "taskTitle": "Campaign launch",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Ana Cruz at Summit Roofing: their new Google Ads campaign launches on 2026-11-16 with a monthly budget of $3500.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: [Lakeshore] New Google Ads Campaign Launch\nHi Ana,\nTheir new Google Ads campaign launches on 16 Nov 2026 with a monthly budget of USD 3,500.00.\n\u2014 The Lakeshore team",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182625_41741c\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Subject: \\[Lakeshore\\] \\S/ with \"Subject: [Lakeshore] N\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Ana,$/ with \"Hi Ana,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 3,500.00",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /USD 3,500\\.00/ with \"USD 3,500.00\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 16 Nov 2026",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /16 Nov 2026/ with \"16 Nov 2026\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[\u2014\u2013-] The Lakeshore team$/ with \"\u2014 The Lakeshore team\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: [Lakeshore] New Google Ads Campaign Launch\nHi Ana,\nTheir new Google Ads campaign launches on 16 Nov 2026 with\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:26.153Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182625_41741c"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:30.690Z",
+          "text": "Subject: [Lakeshore] New Google Ads Campaign Launch\nHi Ana,\nTheir new Google Ads campaign launches on 16 Nov 2026 with a monthly budget of USD 3,500.00.\n\u2014 The Lakeshore team"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "7448ae96-4883-4c12-830f-a126d96a2595",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "baseline",
+      "taskId": "6ebb8ce9-df3b-4fda-9794-af7e28d6fbd5",
+      "taskKey": "style-price-change",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0.333333333,
+      "passed": false,
+      "durationMs": 7603,
+      "tokens": {
+        "input": 959,
+        "output": 213,
+        "cacheRead": 0,
+        "total": 1172
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:23.123Z",
+      "finishedAt": "2026-10-12T12:56:30.728Z",
+      "taskTitle": "Retainer change",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Dana Ortiz at Cedar Law Group: their monthly retainer changes from $4200 to $4410 starting 2026-12-01.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: Update to Your Monthly Retainer Effective December 1, 2026\n\nHi Dana,\n\nI hope you\u2019re doing well. I\u2019m writing to inform you that, effective December 1, 2026, your monthly retainer with Lakeshore Digital will increase from $4,200 to $4,410.\n\nPlease let me know if you have any questions or would like to discuss this change further.\n\nThank you for your continued partnership.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital\n[Phone] | [Email]",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182625_0d26a5\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Subject: \\[Lakeshore\\] \\S/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Dana,$/ with \"Hi Dana,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 4,410.00",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /USD 4,410\\.00/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 1 Dec 2026",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /1 Dec 2026/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^[\u2014\u2013-] The Lakeshore team$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: Update to Your Monthly Retainer Effective December 1, 2026\n\nHi Dana,\n\nI hope you\u2019re doing well. I\u2019m writing t\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:26.150Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182625_0d26a5"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:29.604Z",
+          "text": "Subject: Update to Your Monthly Retainer Effective December 1, 2026\n\nHi Dana,\n\nI hope you\u2019re doing well. I\u2019m writing to inform you that, effective December 1, 2026, your monthly retainer with Lakeshore Digital will increase from $4,200 to $4,410.\n\nPlease let me know if you have any questions or would like to discuss this change further.\n\nThank you for your continued partnership.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital\n[Phone] | [Email]"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "5b5928df-6f05-4e65-8d40-c2853296a935",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "baseline",
+      "taskId": "a7963e3c-1c86-4bca-be84-0c18ef7fadcf",
+      "taskKey": "style-campaign-launch",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0.166666667,
+      "passed": false,
+      "durationMs": 8612,
+      "tokens": {
+        "input": 959,
+        "output": 293,
+        "cacheRead": 0,
+        "total": 1252
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:23.125Z",
+      "finishedAt": "2026-10-12T12:56:31.738Z",
+      "taskTitle": "Campaign launch",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Ana Cruz at Summit Roofing: their new Google Ads campaign launches on 2026-11-16 with a monthly budget of $3500.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: Launch of Your New Google Ads Campaign\n\nDear Ana Cruz,\n\nI hope you're doing well. I wanted to inform you that Summit Roofing's new Google Ads campaign is scheduled to launch on November 16, 2026, with a monthly budget of $3,500.\n\nPlease let me know if you have any questions or need further assistance.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182625_f077d3\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Subject: \\[Lakeshore\\] \\S/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Hi Ana,$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 3,500.00",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /USD 3,500\\.00/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 16 Nov 2026",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /16 Nov 2026/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^[\u2014\u2013-] The Lakeshore team$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: Launch of Your New Google Ads Campaign\n\nDear Ana Cruz,\n\nI hope you're doing well. I wanted to inform you that\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:26.149Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182625_f077d3"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:30.738Z",
+          "text": "Subject: Launch of Your New Google Ads Campaign\n\nDear Ana Cruz,\n\nI hope you're doing well. I wanted to inform you that Summit Roofing's new Google Ads campaign is scheduled to launch on November 16, 2026, with a monthly budget of $3,500.\n\nPlease let me know if you have any questions or need further assistance.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "a048959d-54f1-40f4-b490-29b129b28aaa",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "baseline",
+      "taskId": "2f04bf03-4209-4076-8749-20b820748142",
+      "taskKey": "style-ad-pause",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0.4,
+      "passed": false,
+      "durationMs": 7632,
+      "tokens": {
+        "input": 945,
+        "output": 224,
+        "cacheRead": 0,
+        "total": 1169
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:23.126Z",
+      "finishedAt": "2026-10-12T12:56:30.759Z",
+      "taskTitle": "Advertising pause",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Elena Park at Lumen Spa: confirm that all their ads will pause on 2027-08-01, as they asked.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: Confirmation of Ad Pause\n\nHi Elena,\n\nThis is to confirm that all ads for Lumen Spa will be paused on 2027-08-01, as requested.\n\nPlease let me know if you need anything else.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182625_2fc6cc\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Subject: \\[Lakeshore\\] \\S/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Elena,$/ with \"Hi Elena,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes 1 Aug 2027",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /1 Aug 2027/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^[\u2014\u2013-] The Lakeshore team$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: Confirmation of Ad Pause\n\nHi Elena,\n\nThis is to confirm that all ads for Lumen Spa will be paused on 2027-08-\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:26.150Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182625_2fc6cc"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:30.054Z",
+          "text": "Subject: Confirmation of Ad Pause\n\nHi Elena,\n\nThis is to confirm that all ads for Lumen Spa will be paused on 2027-08-01, as requested.\n\nPlease let me know if you need anything else.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "72edfd0a-73a8-46f1-9a2d-2e7cc136e85c",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "baseline",
+      "taskId": "738e13ea-cb6e-48d2-bb6a-9d92ea066cfe",
+      "taskKey": "style-overspend",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0.333333333,
+      "passed": false,
+      "durationMs": 7029,
+      "tokens": {
+        "input": 954,
+        "output": 194,
+        "cacheRead": 0,
+        "total": 1148
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:30.731Z",
+      "finishedAt": "2026-10-12T12:56:37.761Z",
+      "taskTitle": "Budget alert",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Jo Kim at Bayview Bakery: ad spend reached $3612.4 on 2026-10-28, above their monthly cap.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: Ad Spend Exceeds Monthly Cap \u2013 October 28, 2026\n\nHi Jo,\n\nI wanted to let you know that the ad spend for Bayview Bakery reached $3,612.40 on October 28, 2026, which is above the agreed monthly cap.\n\nPlease let me know how you\u2019d like to proceed\u2014whether you\u2019d like to adjust the budget, pause campaigns, or discuss any other options.\n\nBest regards,\n[Your Name]\nAccount Coordinator, Lakeshore Digital",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182632_aba379\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Subject: \\[Lakeshore\\] \\S/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Jo,$/ with \"Hi Jo,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 3,612.40",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /USD 3,612\\.40/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 28 Oct 2026",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /28 Oct 2026/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^[\u2014\u2013-] The Lakeshore team$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: Ad Spend Exceeds Monthly Cap \u2013 October 28, 2026\n\nHi Jo,\n\nI wanted to let you know that the ad spend for Bayvi\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:32.565Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182632_aba379"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:35.757Z",
+          "text": "Subject: Ad Spend Exceeds Monthly Cap \u2013 October 28, 2026\n\nHi Jo,\n\nI wanted to let you know that the ad spend for Bayview Bakery reached $3,612.40 on October 28, 2026, which is above the agreed monthly cap.\n\nPlease let me know how you\u2019d like to proceed\u2014whether you\u2019d like to adjust the budget, pause campaigns, or discuss any other options.\n\nBest regards,\n[Your Name]\nAccount Coordinator, Lakeshore Digital"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "d18f5eb7-81ae-48a5-8f23-5e07adc42402",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "candidate",
+      "taskId": "738e13ea-cb6e-48d2-bb6a-9d92ea066cfe",
+      "taskKey": "style-overspend",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 7792,
+      "tokens": {
+        "input": 1276,
+        "output": 358,
+        "cacheRead": 0,
+        "total": 1634
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:30.760Z",
+      "finishedAt": "2026-10-12T12:56:38.553Z",
+      "taskTitle": "Budget alert",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Jo Kim at Bayview Bakery: ad spend reached $3612.4 on 2026-10-28, above their monthly cap.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: [Lakeshore] Ad Spend Exceeded Monthly Cap\nHi Jo,\nAd spend reached USD 3,612.40 on 28 Oct 2026, which is above your monthly cap.\n\u2014 The Lakeshore team",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182632_1727ae\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Subject: \\[Lakeshore\\] \\S/ with \"Subject: [Lakeshore] A\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Jo,$/ with \"Hi Jo,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 3,612.40",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /USD 3,612\\.40/ with \"USD 3,612.40\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 28 Oct 2026",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /28 Oct 2026/ with \"28 Oct 2026\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[\u2014\u2013-] The Lakeshore team$/ with \"\u2014 The Lakeshore team\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: [Lakeshore] Ad Spend Exceeded Monthly Cap\nHi Jo,\nAd spend reached USD 3,612.40 on 28 Oct 2026, which is above\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:32.638Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182632_1727ae"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:36.928Z",
+          "text": "Subject: [Lakeshore] Ad Spend Exceeded Monthly Cap\nHi Jo,\nAd spend reached USD 3,612.40 on 28 Oct 2026, which is above your monthly cap.\n\u2014 The Lakeshore team"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "772b0814-42b1-45e1-bf9c-ad07cc128585",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "baseline",
+      "taskId": "26ea98a3-bc0a-44a2-bf1e-ef7b22a5b683",
+      "taskKey": "style-payment-received",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0.166666667,
+      "passed": false,
+      "durationMs": 5367,
+      "tokens": {
+        "input": 947,
+        "output": 208,
+        "cacheRead": 0,
+        "total": 1155
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:31.598Z",
+      "finishedAt": "2026-10-12T12:56:36.966Z",
+      "taskTitle": "Payment received",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Tom Reyes at Harbor Fitness: thank them for their payment of $860.5, received on 2026-10-09.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: Thank You for Your Payment\n\nDear Tom Reyes,\n\nThank you for your payment of $860.5 received on October 9, 2026. We appreciate your continued partnership.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182633_8b30c4\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Subject: \\[Lakeshore\\] \\S/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Hi Tom,$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 860.50",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /USD 860\\.50/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 9 Oct 2026",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /9 Oct 2026/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^[\u2014\u2013-] The Lakeshore team$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: Thank You for Your Payment\n\nDear Tom Reyes,\n\nThank you for your payment of $860.5 received on October 9, 2026\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:33.345Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182633_8b30c4"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:36.364Z",
+          "text": "Subject: Thank You for Your Payment\n\nDear Tom Reyes,\n\nThank you for your payment of $860.5 received on October 9, 2026. We appreciate your continued partnership.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "20f80bb9-4407-4a56-bd2e-6b73b0970494",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "candidate",
+      "taskId": "a13d2ea7-465f-4228-b905-20338ab1ffe7",
+      "taskKey": "style-meeting-confirmation",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 6470,
+      "tokens": {
+        "input": 1279,
+        "output": 326,
+        "cacheRead": 0,
+        "total": 1605
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:31.739Z",
+      "finishedAt": "2026-10-12T12:56:38.210Z",
+      "taskTitle": "Meeting confirmation",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Marcus Bell at Oakridge Realty: confirm that we will review the proposal together on 2026-11-05.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: [Lakeshore] Confirming proposal review\nHi Marcus,\nWe confirm that we will review the proposal together on 5 Nov 2026.\n\u2014 The Lakeshore team",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182633_3c4a96\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Subject: \\[Lakeshore\\] \\S/ with \"Subject: [Lakeshore] C\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Marcus,$/ with \"Hi Marcus,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes 5 Nov 2026",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /5 Nov 2026/ with \"5 Nov 2026\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[\u2014\u2013-] The Lakeshore team$/ with \"\u2014 The Lakeshore team\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: [Lakeshore] Confirming proposal review\nHi Marcus,\nWe confirm that we will review the proposal together on 5 N\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:33.463Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182633_3c4a96"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:37.500Z",
+          "text": "Subject: [Lakeshore] Confirming proposal review\nHi Marcus,\nWe confirm that we will review the proposal together on 5 Nov 2026.\n\u2014 The Lakeshore team"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "7a15ebf8-086d-4f63-9286-ef3bc2bc8217",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "candidate",
+      "taskId": "9ede8754-2eae-4201-ac4b-34578a01a816",
+      "taskKey": "style-refund",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 7073,
+      "tokens": {
+        "input": 1270,
+        "output": 369,
+        "cacheRead": 0,
+        "total": 1639
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:36.968Z",
+      "finishedAt": "2026-10-12T12:56:44.042Z",
+      "taskTitle": "Refund processed",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Sam Lee at Pinecrest Vet: their refund of $275 was processed on 2026-10-20.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: [Lakeshore] Refund Processed\nHi Sam,\nThis confirms that the refund of USD 275.00 for Pinecrest Vet was processed on 20 Oct 2026.\n\u2014 The Lakeshore team",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182638_f83315\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Subject: \\[Lakeshore\\] \\S/ with \"Subject: [Lakeshore] R\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Sam,$/ with \"Hi Sam,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 275.00",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /USD 275\\.00/ with \"USD 275.00\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 20 Oct 2026",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /20 Oct 2026/ with \"20 Oct 2026\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[\u2014\u2013-] The Lakeshore team$/ with \"\u2014 The Lakeshore team\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: [Lakeshore] Refund Processed\nHi Sam,\nThis confirms that the refund of USD 275.00 for Pinecrest Vet was proces\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:38.719Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182638_f83315"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:43.308Z",
+          "text": "Subject: [Lakeshore] Refund Processed\nHi Sam,\nThis confirms that the refund of USD 275.00 for Pinecrest Vet was processed on 20 Oct 2026.\n\u2014 The Lakeshore team"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "c5258525-7bed-4957-ab49-6b5d804fafb1",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "baseline",
+      "taskId": "9ede8754-2eae-4201-ac4b-34578a01a816",
+      "taskKey": "style-refund",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0.166666667,
+      "passed": false,
+      "durationMs": 5661,
+      "tokens": {
+        "input": 936,
+        "output": 179,
+        "cacheRead": 0,
+        "total": 1115
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:37.762Z",
+      "finishedAt": "2026-10-12T12:56:43.424Z",
+      "taskTitle": "Refund processed",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Sam Lee at Pinecrest Vet: their refund of $275 was processed on 2026-10-20.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: Refund Confirmation for Pinecrest Vet\n\nHi Sam Lee,\n\nI hope you\u2019re doing well. I wanted to let you know that the refund of $275 for Pinecrest Vet has been successfully processed today, October 20, 2026. The amount should appear in your account within the next few business days, depending on your bank\u2019s processing time.\n\nPlease feel free to reach out if you have any questions or need further assistance.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital\n[Your Contact Information]",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182639_eca06b\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Subject: \\[Lakeshore\\] \\S/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Hi Sam,$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 275.00",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /USD 275\\.00/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 20 Oct 2026",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /20 Oct 2026/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^[\u2014\u2013-] The Lakeshore team$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: Refund Confirmation for Pinecrest Vet\n\nHi Sam Lee,\n\nI hope you\u2019re doing well. I wanted to let you know that t\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:39.567Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182639_eca06b"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:42.173Z",
+          "text": "Subject: Refund Confirmation for Pinecrest Vet\n\nHi Sam Lee,\n\nI hope you\u2019re doing well. I wanted to let you know that the refund of $275 for Pinecrest Vet has been successfully processed today, October 20, 2026. The amount should appear in your account within the next few business days, depending on your bank\u2019s processing time.\n\nPlease feel free to reach out if you have any questions or need further assistance.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital\n[Your Contact Information]"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "c51ae0a9-2ebf-4927-b747-cad6e6f9d399",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "baseline",
+      "taskId": "cf13bfd2-2899-456d-91b1-3931829daacc",
+      "taskKey": "style-invoice-reminder",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0.333333333,
+      "passed": false,
+      "durationMs": 6355,
+      "tokens": {
+        "input": 943,
+        "output": 349,
+        "cacheRead": 0,
+        "total": 1292
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:38.211Z",
+      "finishedAt": "2026-10-12T12:56:44.568Z",
+      "taskTitle": "Invoice reminder",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Priya Raman at Brightline Dental: a friendly reminder that invoice INV-2042 for $1240 is due on 2026-11-03.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: Friendly Reminder: Invoice INV-2042 Due Nov 3, 2026\n\nHi Priya,\n\nJust a friendly reminder that invoice INV-2042 for $1,240 is due on November 3, 2026. Please let me know if you have any questions.\n\nThank you,\nAlex Morgan\nAccount Coordinator\nLakeshore Digital",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182639_9434d2\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Subject: \\[Lakeshore\\] \\S/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Priya,$/ with \"Hi Priya,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 1,240.00",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /USD 1,240\\.00/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 3 Nov 2026",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /3 Nov 2026/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^[\u2014\u2013-] The Lakeshore team$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: Friendly Reminder: Invoice INV-2042 Due Nov 3, 2026\n\nHi Priya,\n\nJust a friendly reminder that invoice INV-204\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:39.947Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182639_9434d2"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:43.645Z",
+          "text": "Subject: Friendly Reminder: Invoice INV-2042 Due Nov 3, 2026\n\nHi Priya,\n\nJust a friendly reminder that invoice INV-2042 for $1,240 is due on November 3, 2026. Please let me know if you have any questions.\n\nThank you,\nAlex Morgan\nAccount Coordinator\nLakeshore Digital"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "010736ba-ee42-4828-8aad-69b19a1b04a1",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "candidate",
+      "taskId": "6ebb8ce9-df3b-4fda-9794-af7e28d6fbd5",
+      "taskKey": "style-price-change",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 8528,
+      "tokens": {
+        "input": 1282,
+        "output": 526,
+        "cacheRead": 0,
+        "total": 1808
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:38.554Z",
+      "finishedAt": "2026-10-12T12:56:47.083Z",
+      "taskTitle": "Retainer change",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Dana Ortiz at Cedar Law Group: their monthly retainer changes from $4200 to $4410 starting 2026-12-01.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: [Lakeshore] Monthly Retainer Update\n\nHi Dana,\n\nAs of 1 Dec 2026, your monthly retainer will increase from USD 4,200.00 to USD 4,410.00.\n\n\u2014 The Lakeshore team",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182640_52f006\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Subject: \\[Lakeshore\\] \\S/ with \"Subject: [Lakeshore] M\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Dana,$/ with \"Hi Dana,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 4,410.00",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /USD 4,410\\.00/ with \"USD 4,410.00\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 1 Dec 2026",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /1 Dec 2026/ with \"1 Dec 2026\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[\u2014\u2013-] The Lakeshore team$/ with \"\u2014 The Lakeshore team\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: [Lakeshore] Monthly Retainer Update\n\nHi Dana,\n\nAs of 1 Dec 2026, your monthly retainer will increase from USD\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:40.237Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182640_52f006"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:46.211Z",
+          "text": "Subject: [Lakeshore] Monthly Retainer Update\n\nHi Dana,\n\nAs of 1 Dec 2026, your monthly retainer will increase from USD 4,200.00 to USD 4,410.00.\n\n\u2014 The Lakeshore team"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "129d6675-8491-4232-a03a-96486d4a1e7d",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "candidate",
+      "taskId": "2f04bf03-4209-4076-8749-20b820748142",
+      "taskKey": "style-ad-pause",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 6836,
+      "tokens": {
+        "input": 1286,
+        "output": 238,
+        "cacheRead": 0,
+        "total": 1524
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:43.427Z",
+      "finishedAt": "2026-10-12T12:56:50.265Z",
+      "taskTitle": "Advertising pause",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Elena Park at Lumen Spa: confirm that all their ads will pause on 2027-08-01, as they asked.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: [Lakeshore] Ad pause confirmation\nHi Elena,\nAll ads for Lumen Spa will pause on 1 Aug 2027 as requested.\n\u2014 The Lakeshore team",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182645_5141d4\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Subject: \\[Lakeshore\\] \\S/ with \"Subject: [Lakeshore] A\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Elena,$/ with \"Hi Elena,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes 1 Aug 2027",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /1 Aug 2027/ with \"1 Aug 2027\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[\u2014\u2013-] The Lakeshore team$/ with \"\u2014 The Lakeshore team\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: [Lakeshore] Ad pause confirmation\nHi Elena,\nAll ads for Lumen Spa will pause on 1 Aug 2027 as requested.\n\u2014 Th\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:45.109Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182645_5141d4"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:49.761Z",
+          "text": "Subject: [Lakeshore] Ad pause confirmation\nHi Elena,\nAll ads for Lumen Spa will pause on 1 Aug 2027 as requested.\n\u2014 The Lakeshore team"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "c3f7aaec-f63b-49f7-acf5-119a3570d141",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "candidate",
+      "taskId": "cf13bfd2-2899-456d-91b1-3931829daacc",
+      "taskKey": "style-invoice-reminder",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 9526,
+      "tokens": {
+        "input": 1271,
+        "output": 321,
+        "cacheRead": 0,
+        "total": 1592
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:44.043Z",
+      "finishedAt": "2026-10-12T12:56:53.570Z",
+      "taskTitle": "Invoice reminder",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Priya Raman at Brightline Dental: a friendly reminder that invoice INV-2042 for $1240 is due on 2026-11-03.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: [Lakeshore] Friendly reminder about invoice INV-2042\nHi Priya,\nThis is a friendly reminder that invoice INV-2042 for USD 1,240.00 is due on 3 Nov 2026.\n\u2014 The Lakeshore team",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182645_1af93f\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Subject: \\[Lakeshore\\] \\S/ with \"Subject: [Lakeshore] F\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Priya,$/ with \"Hi Priya,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 1,240.00",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /USD 1,240\\.00/ with \"USD 1,240.00\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 3 Nov 2026",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /3 Nov 2026/ with \"3 Nov 2026\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[\u2014\u2013-] The Lakeshore team$/ with \"\u2014 The Lakeshore team\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: [Lakeshore] Friendly reminder about invoice INV-2042\nHi Priya,\nThis is a friendly reminder that invoice INV-2\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:45.696Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182645_1af93f"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:52.865Z",
+          "text": "Subject: [Lakeshore] Friendly reminder about invoice INV-2042\nHi Priya,\nThis is a friendly reminder that invoice INV-2042 for USD 1,240.00 is due on 3 Nov 2026.\n\u2014 The Lakeshore team"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "568de96d-3b37-44a6-9d84-81c778f1f560",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "candidate",
+      "taskId": "26ea98a3-bc0a-44a2-bf1e-ef7b22a5b683",
+      "taskKey": "style-payment-received",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 6228,
+      "tokens": {
+        "input": 1288,
+        "output": 279,
+        "cacheRead": 0,
+        "total": 1567
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:44.570Z",
+      "finishedAt": "2026-10-12T12:56:50.799Z",
+      "taskTitle": "Payment received",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Tom Reyes at Harbor Fitness: thank them for their payment of $860.5, received on 2026-10-09.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + email style skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: [Lakeshore] Thank you for your payment\nHi Tom,\nThank you for your payment of USD 860.50 received on 9 Oct 2026.\n\u2014 The Lakeshore team",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182646_5c3685\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Subject: \\[Lakeshore\\] \\S/ with \"Subject: [Lakeshore] T\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^Hi Tom,$/ with \"Hi Tom,\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes USD 860.50",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /USD 860\\.50/ with \"USD 860.50\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Writes 9 Oct 2026",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /9 Oct 2026/ with \"9 Oct 2026\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[\u2014\u2013-] The Lakeshore team$/ with \"\u2014 The Lakeshore team\"",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 5,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: [Lakeshore] Thank you for your payment\nHi Tom,\nThank you for your payment of USD 860.50 received on 9 Oct 202\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:46.161Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182646_5c3685"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:50.131Z",
+          "text": "Subject: [Lakeshore] Thank you for your payment\nHi Tom,\nThank you for your payment of USD 860.50 received on 9 Oct 2026.\n\u2014 The Lakeshore team"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "916a79c8-b659-45d1-aa4b-d404f7de07e3",
+      "experimentId": "2ea1b162-274c-48f2-a9d2-d985c5121e37",
+      "arm": "baseline",
+      "taskId": "a13d2ea7-465f-4228-b905-20338ab1ffe7",
+      "taskKey": "style-meeting-confirmation",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0.2,
+      "passed": false,
+      "durationMs": 4930,
+      "tokens": {
+        "input": 943,
+        "output": 221,
+        "cacheRead": 0,
+        "total": 1164
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:56:47.084Z",
+      "finishedAt": "2026-10-12T12:56:52.016Z",
+      "taskTitle": "Meeting confirmation",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. Write the email described below. Reply with only the email.\n\nTo Marcus Bell at Oakridge Realty: confirm that we will review the proposal together on 2026-11-05.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Subject: Confirmation of Proposal Review Meeting\n\nDear Marcus Bell,\n\nI\u2019m confirming that we will review the proposal together on 2026-11-05.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182648_d6b9df\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Subject line",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Subject: \\[Lakeshore\\] \\S/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 1,
+          "type": "regex",
+          "label": "Greeting",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^Hi Marcus,$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 2,
+          "type": "regex",
+          "label": "Writes 5 Nov 2026",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /5 Nov 2026/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 3,
+          "type": "regex",
+          "label": "Sign-off",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /^[\u2014\u2013-] The Lakeshore team$/",
+          "required": false,
+          "details": null
+        },
+        {
+          "scorerIndex": 4,
+          "type": "regex",
+          "label": "No exclamation marks",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /^[^!]*$/ with \"Subject: Confirmation of Proposal Review Meeting\n\nDear Marcus Bell,\n\nI\u2019m confirming that we will review the proposal t\u2026",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:56:48.700Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182648_d6b9df"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:56:51.470Z",
+          "text": "Subject: Confirmation of Proposal Review Meeting\n\nDear Marcus Bell,\n\nI\u2019m confirming that we will review the proposal together on 2026-11-05.\n\nBest regards,\n[Your Name]\nAccount Coordinator\nLakeshore Digital"
+        }
+      ],
+      "workspaceFiles": []
+    }
+  ]
+}
