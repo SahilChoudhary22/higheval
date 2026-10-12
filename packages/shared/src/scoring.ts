@@ -33,6 +33,9 @@ function compiles(pattern: string, flags = ''): boolean {
   }
 }
 
+const isRepeat = (char: string | undefined): boolean =>
+  char === '*' || char === '+' || char === '{';
+
 /**
  * Heuristic guard against catastrophic backtracking: flags a quantified group
  * whose body is itself quantified, the classic ReDoS shape, e.g. `(a+)+` or
@@ -40,8 +43,6 @@ function compiles(pattern: string, flags = ''): boolean {
  */
 export function hasNestedQuantifier(pattern: string): boolean {
   const groups: boolean[] = [];
-  const isRepeat = (char: string | undefined): boolean =>
-    char === '*' || char === '+' || char === '{';
   for (let index = 0; index < pattern.length; index++) {
     const char = pattern[index];
     if (char === '\\') {
