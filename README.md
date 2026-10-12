@@ -1,3 +1,5 @@
+<img src="docs/images/logo.svg" alt="HighEval logo" width="96" />
+
 # HighEval
 
 **Did the agent get better, worse, or stay the same?** HighEval answers that with evidence. It runs the same task suite under two [Hermes Agent](https://github.com/NousResearch/hermes-agent) configurations (different model, skills, memory or tools), scores every run with deterministic checks, and reports the paired difference with a confidence interval and an explicit verdict. Every individual run can be opened to see why it passed or failed.

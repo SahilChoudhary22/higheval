@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TriangleAlert } from '@lucide/vue';
+import { PhWarning } from '@phosphor-icons/vue';
 
 defineProps<{ title: string; error: Error }>();
 defineEmits<{ retry: [] }>();
@@ -7,7 +7,7 @@ defineEmits<{ retry: [] }>();
 
 <template>
   <div class="error-notice" role="alert">
-    <TriangleAlert class="error-notice__icon" aria-hidden="true" />
+    <PhWarning class="error-notice__icon" aria-hidden="true" />
     <div class="error-notice__body">
       <p class="error-notice__title">{{ title }}</p>
       <p class="muted wrap-anywhere">{{ error.message }}</p>

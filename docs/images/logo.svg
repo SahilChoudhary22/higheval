@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">HighEval logo mark</title>
+  <desc id="desc">Geometric H with a confidence interval, estimate marker, and dashed vertical reference line.</desc>
+  <!-- Change these values to customize the logo colors (light, then dark). -->
+  <defs>
+    <style>
+      :root {
+        --higheval-ink: #0D151C;
+        --higheval-blue: #004D91;
+        --higheval-guide: #004D91;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --higheval-ink: #E4E8ED;
+          --higheval-blue: #73B0EE;
+          --higheval-guide: #73B0EE;
+        }
+      }
+      .h-mark { fill: var(--higheval-ink); }
+      .interval { fill: none; stroke: var(--higheval-blue); stroke-width: 10; stroke-linecap: butt; stroke-linejoin: miter; }
+      .estimate { fill: var(--higheval-blue); }
+      .reference { fill: none; stroke: var(--higheval-guide); stroke-width: 3; stroke-dasharray: 10 13; opacity: .48; }
+    </style>
+  </defs>
+  <!-- Dashed zero/reference line -->
+  <path class="reference" d="M256 128V384"/>
+  <!-- Angular, symmetric uprights of the H -->
+  <path class="h-mark" d="M137 128 L193 164 L193 215 L173 235 L173 277 L193 297 L193 348 L137 384 Z"/>
+  <path class="h-mark" d="M375 128 L319 164 L319 215 L339 235 L339 277 L319 297 L319 348 L375 384 Z"/>
+  <!-- Confidence interval with end caps -->
+  <path class="interval" d="M174 256 H338 M174 241 V271 M338 241 V271"/>
+  <!-- Point estimate, intentionally slightly right of center -->
+  <rect class="estimate" x="273" y="244" width="22" height="24"/>
+</svg>

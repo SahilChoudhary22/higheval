@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FlaskConical } from '@lucide/vue';
+import { PhFlask } from '@phosphor-icons/vue';
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { api } from '@/api/endpoints';
@@ -84,7 +84,7 @@ const blockers = computed(() => {
       <SkeletonRows v-else-if="!experiments.data.value" />
       <EmptyState
         v-else-if="recent.length === 0"
-        :icon="FlaskConical"
+        :icon="PhFlask"
         title="No experiments yet."
         detail="An experiment runs every task in a suite under two configs and tells you which scores higher, and how sure you can be."
       >

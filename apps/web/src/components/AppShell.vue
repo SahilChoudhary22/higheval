@@ -1,17 +1,29 @@
 <script setup lang="ts">
-import { Check, CircleDashed, Menu, TriangleAlert, X } from '@lucide/vue';
+import {
+  PhBookOpen,
+  PhCheck,
+  PhCircleDashed,
+  PhFlask,
+  PhList,
+  PhListChecks,
+  PhSlidersHorizontal,
+  PhSquaresFour,
+  PhWarning,
+  PhX,
+} from '@phosphor-icons/vue';
 import { computed, ref, watch, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { api } from '@/api/endpoints';
 import { useResource } from '@/composables/useResource';
+import LogoMark from './LogoMark.vue';
 import ToastRegion from './ToastRegion.vue';
 
 const NAV = [
-  { to: '/', label: 'Overview', exact: true },
-  { to: '/experiments', label: 'Experiments' },
-  { to: '/suites', label: 'Suites' },
-  { to: '/configs', label: 'Configs' },
-  { to: '/skills', label: 'Skills' },
+  { to: '/', label: 'Overview', icon: PhSquaresFour, exact: true },
+  { to: '/experiments', label: 'Experiments', icon: PhFlask },
+  { to: '/suites', label: 'Suites', icon: PhListChecks },
+  { to: '/configs', label: 'Configs', icon: PhSlidersHorizontal },
+  { to: '/skills', label: 'Skills', icon: PhBookOpen },
 ];
 
 const route = useRoute();
@@ -55,16 +67,16 @@ const checks = computed(() => {
   ] satisfies { label: string; state: CheckState; detail: string }[];
 });
 const ICON: Record<CheckState, Component> = {
-  ok: Check,
-  bad: TriangleAlert,
-  unknown: CircleDashed,
+  ok: PhCheck,
+  bad: PhWarning,
+  unknown: PhCircleDashed,
 };
 </script>
 
 <template>
   <div class="shell">
     <header class="shell__bar">
-      <RouterLink to="/" class="wordmark">HighEval</RouterLink>
+      <RouterLink to="/" class="wordmark"><LogoMark class="wordmark__mark" />HighEval</RouterLink>
       <button
         type="button"
         class="btn btn--compact"
@@ -72,13 +84,15 @@ const ICON: Record<CheckState, Component> = {
         aria-controls="primary-nav"
         @click="menuOpen = !menuOpen"
       >
-        <component :is="menuOpen ? X : Menu" aria-hidden="true" />
+        <component :is="menuOpen ? PhX : PhList" aria-hidden="true" />
         Menu
       </button>
     </header>
 
     <aside id="primary-nav" class="shell__rail" :class="{ 'shell__rail--open': menuOpen }">
-      <RouterLink to="/" class="wordmark shell__wordmark">HighEval</RouterLink>
+      <RouterLink to="/" class="wordmark shell__wordmark">
+        <LogoMark class="wordmark__mark" />HighEval
+      </RouterLink>
       <nav aria-label="Primary">
         <ul class="nav">
           <li v-for="item in NAV" :key="item.to">
@@ -88,6 +102,7 @@ const ICON: Record<CheckState, Component> = {
               :class="{ 'nav__link--active': isActive(item) }"
               :aria-current="isActive(item) ? 'page' : undefined"
             >
+              <component :is="item.icon" class="nav__icon" aria-hidden="true" />
               {{ item.label }}
             </RouterLink>
           </li>
@@ -117,12 +132,21 @@ const ICON: Record<CheckState, Component> = {
 }
 
 .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
   font-family: var(--font-outlier);
   font-size: var(--text-lg);
   font-weight: 600;
   letter-spacing: var(--tracking-heading);
   color: var(--color-ink);
   text-decoration: none;
+}
+
+.wordmark__mark {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
 }
 
 .shell__bar {
@@ -181,19 +205,14 @@ const ICON: Record<CheckState, Component> = {
   text-decoration: none;
 }
 
-.nav__link::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  background: transparent;
+.nav__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
 }
 
 .nav__link--active {
   color: var(--color-accent);
-}
-
-.nav__link--active::before {
-  background: var(--color-accent);
 }
 
 @media (hover: hover) {
@@ -268,7 +287,8 @@ const ICON: Record<CheckState, Component> = {
   }
 
   .shell__wordmark {
-    display: block;
+    display: inline-flex;
+    align-self: flex-start;
   }
 }
 </style>
