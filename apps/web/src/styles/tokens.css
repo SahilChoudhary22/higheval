@@ -1,0 +1,132 @@
+/*
+ * Design tokens. Theme: "Almanac" (Hallmark), extended with a dark mode and
+ * outcome colours for evaluation results. Anchor hue 245 (cool slate paper),
+ * one ink-blue accent. Every colour, size and duration used in the app lives
+ * here; components reference tokens only.
+ */
+:root {
+  color-scheme: light;
+
+  --color-paper: #ecf1f5;
+  --color-surface: #f7f9fc;
+  --color-paper-2: #e2e7ec;
+  --color-paper-3: #d3dae0;
+  --color-rule: #c8cfd4;
+  --color-rule-strong: #798188;
+  --color-ink: #0d151c;
+  --color-ink-2: #313940;
+  --color-muted: #5a6168;
+  --color-accent: #004d91;
+  --color-accent-hover: #003d79;
+  --color-accent-ink: #f7f9fc;
+  --color-accent-tint: #d7e6f9;
+  --color-focus: #0062bf;
+  --color-better: #006e64;
+  --color-better-bg: #cff0eb;
+  --color-worse: #9c470d;
+  --color-worse-bg: #fbe2d2;
+  --color-equiv: #3d4955;
+  --color-equiv-bg: #dbe2e9;
+  --color-inconc: #7d5e07;
+  --color-inconc-bg: #f2e7ca;
+  --color-error: #b32130;
+  --color-error-bg: #ffe4e2;
+  --color-band: #d0e0f2;
+  --color-shadow: rgb(13 21 28 / 6%);
+
+  --font-body: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-outlier: 'Newsreader', Georgia, serif;
+  --weight-body: 400;
+
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --leading-tight: 1.1;
+  --leading-heading: 1.22;
+  --leading-body: 1.5;
+  --leading-row: 1.35;
+  --leading-code: 1.55;
+  --tracking-heading: -0.014em;
+  --tracking-label: 0.06em;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4.5rem;
+
+  --radius-container: 0;
+  --radius-control: 2px;
+  --radius-tag: 2px;
+
+  --control-height: 2.5rem;
+  --control-height-compact: 1.875rem;
+  --tag-height: 1.25rem;
+  --row-height: 2.5rem;
+  --rail-width: 15rem;
+  --content-max: 84rem;
+  --form-max: 44rem;
+  --prose-max: 64ch;
+  --gutter: clamp(1rem, 4vw, 3rem);
+  --banner-height: 3.25rem;
+
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-nav: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+
+  --dur-micro: 100ms;
+  --dur-short: 190ms;
+  --dur-long: 360ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (pointer: coarse) {
+  :root {
+    --control-height: 2.75rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --color-paper: #0b1014;
+    --color-surface: #13181d;
+    --color-paper-2: #191f24;
+    --color-paper-3: #232a31;
+    --color-rule: #282f35;
+    --color-rule-strong: #646d75;
+    --color-ink: #e4e8ed;
+    --color-ink-2: #bbc2c8;
+    --color-muted: #9199a1;
+    --color-accent: #73b0ee;
+    --color-accent-hover: #8cc3fc;
+    --color-accent-ink: #0b1014;
+    --color-accent-tint: #1a2f46;
+    --color-focus: #73bdff;
+    --color-better: #5cc6b9;
+    --color-better-bg: #0d2f2b;
+    --color-worse: #e69461;
+    --color-worse-bg: #3d2515;
+    --color-equiv: #b4bfca;
+    --color-equiv-bg: #21272d;
+    --color-inconc: #d9ba70;
+    --color-inconc-bg: #342a13;
+    --color-error: #f17070;
+    --color-error-bg: #451e1d;
+    --color-band: #1a2f46;
+    --color-shadow: rgb(0 0 0 / 0%);
+    --weight-body: 350;
+  }
+}

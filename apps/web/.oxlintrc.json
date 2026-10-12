@@ -4,5 +4,13 @@
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "vue", "vitest"],
   "env": {
     "browser": true
+  },
+  "rules": {
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        "allow": ["**/*.css"]
+      }
+    ]
   }
 }
