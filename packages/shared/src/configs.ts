@@ -44,6 +44,27 @@ export const modelSettingsSchema = z.object({
 });
 export type ModelSettings = z.infer<typeof modelSettingsSchema>;
 
+/** The pinned Hermes commit ships 58 built-in skills. */
+const MAX_BUNDLED_SKILLS = 58;
+
+/**
+ * Which of Hermes' built-in ("bundled") skills each run gets. Off by default,
+ * so a run sees only the skills its configuration names explicitly.
+ */
+export const bundledSkillsSchema = z.discriminatedUnion('mode', [
+  z.object({ mode: z.literal('none') }),
+  z.object({ mode: z.literal('all') }),
+  z.object({
+    mode: z.literal('selected'),
+    names: z
+      .array(slugSchema)
+      .min(1, 'Select at least one built-in skill')
+      .max(MAX_BUNDLED_SKILLS)
+      .refine((names) => new Set(names).size === names.length, 'Built-in skills must be unique'),
+  }),
+]);
+export type BundledSkills = z.infer<typeof bundledSkillsSchema>;
+
 /**
  * Hermes toolsets exposed by the platform. Limited to tools that work offline
  * in the run's working directory, so results do not depend on third-party
@@ -64,6 +85,7 @@ export const agentConfigInputSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'Skills must be unique')
     .default([]),
   memory: memorySettingsSchema.default({ mode: 'disabled' }),
+  bundledSkills: bundledSkillsSchema.default({ mode: 'none' }),
   /** Hermes toolsets the agent may use. Empty means no tools. */
   toolsets: z
     .array(toolsetSchema)
@@ -88,7 +110,7 @@ export type AgentConfig = z.infer<typeof agentConfigSchema>;
  * starts. Skill contents are inlined so later edits cannot change history.
  */
 export const configSnapshotSchema = agentConfigSchema
-  .omit({ skillIds: true, createdAt: true, updatedAt: true })
+  .omit({ skillIds: true, bundledSkills: true, createdAt: true, updatedAt: true })
   .extend({
     skills: z.array(skillInputSchema),
     /** SHA-256 over every behavior-affecting field. */
