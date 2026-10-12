@@ -14,6 +14,7 @@ import {
   type ExecutionOutcome,
   type ExecutionRequest,
 } from '../agent-executor.js';
+import { CatalogCache } from './catalog-cache.js';
 import { hermesCommand, loadHermesRuntime } from './hermes-runtime.js';
 import { HermesStreamParser, type HermesResult } from './hermes-stream-parser.js';
 import { runProcess } from './process.js';
@@ -39,9 +40,11 @@ const execFileAsync = promisify(execFile);
 @Injectable()
 export class HermesExecutor extends AgentExecutor {
   private readonly logger = new Logger(HermesExecutor.name);
+  private readonly catalog: CatalogCache;
 
   constructor(private readonly config: ConfigService<Env, true>) {
     super();
+    this.catalog = new CatalogCache(join(config.get('DATA_DIR', { infer: true }), 'hermes-cache'));
   }
 
   async execute(request: ExecutionRequest, hooks: ExecutionHooks): Promise<ExecutionOutcome> {
@@ -122,6 +125,9 @@ export class HermesExecutor extends AgentExecutor {
     consume(parser.end());
     await Promise.all([closeStream(stdoutLog), closeStream(stderrLog)]);
 
+    await this.catalog.capture(dirs.home).catch((error: unknown) => {
+      this.logger.warn(`Could not cache the model catalog: ${String(error)}`);
+    });
     const finalResult = result as HermesResult | null;
     const stats = readSessionStats(join(dirs.home, 'state.db'), finalResult?.sessionId ?? null);
     const common = {
@@ -210,6 +216,7 @@ export class HermesExecutor extends AgentExecutor {
     await Promise.all(Object.values(dirs).map((dir) => mkdir(dir, { recursive: true })));
     await writeFile(promptFile, request.prompt);
     await writeFiles(dirs.home, homeFiles);
+    await this.catalog.seed(dirs.home);
     await writeFiles(
       dirs.work,
       Object.fromEntries(request.fixtures.map((file) => [file.path, file.content])),
