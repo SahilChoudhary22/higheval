@@ -13,10 +13,21 @@ const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const MAX_REQUESTS = 4;
 /** Unparseable replies get one more chance before the run is marked `scoring`. */
 const MAX_PARSE_RETRIES = 1;
-const MAX_OUTPUT_TOKENS = 800;
+/**
+ * Generous because many judges are reasoning models: their hidden reasoning
+ * counts against this limit, and a cut-off reply contains no verdict.
+ */
+const MAX_OUTPUT_TOKENS = 4_000;
 
 const responseSchema = z.object({
-  choices: z.array(z.object({ message: z.object({ content: z.string().nullable() }) })).min(1),
+  choices: z
+    .array(
+      z.object({
+        message: z.object({ content: z.string().nullable() }),
+        finish_reason: z.string().nullable().optional(),
+      }),
+    )
+    .min(1),
   usage: z
     .object({
       prompt_tokens: z.number().default(0),
@@ -82,11 +93,14 @@ export class OpenRouterJudge extends Judge {
       const parsed = responseSchema.safeParse(await response.json());
       if (!parsed.success) throw new JudgeError('Judge returned an unexpected response shape');
       addUsage(usage, parsed.data.usage);
+      const choice = parsed.data.choices[0];
       try {
-        const verdict = parseJudgeReply(
-          parsed.data.choices[0]?.message.content ?? '',
-          request.criteria,
-        );
+        if (choice?.finish_reason === 'length') {
+          throw new JudgeError(
+            `Judge reply was cut off at the ${String(MAX_OUTPUT_TOKENS)}-token output limit`,
+          );
+        }
+        const verdict = parseJudgeReply(choice?.message.content ?? '', request.criteria);
         return { ...verdict, usage };
       } catch (error) {
         if (!(error instanceof JudgeError) || parseFailures >= MAX_PARSE_RETRIES) throw error;

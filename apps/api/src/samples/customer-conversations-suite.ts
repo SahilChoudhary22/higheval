@@ -38,7 +38,8 @@ export const CUSTOMER_CONVERSATIONS_SUITE: SuiteInput = {
         {
           type: 'regex',
           target: finalOutput,
-          pattern: '5\\s*(?:–|-|to)\\s*7\\s+business\\s+days',
+          // Any dash: models also write non-breaking hyphens (U+2011) and minus signs.
+          pattern: '5\\s*(?:[-\\u2010-\\u2015\\u2212]|to)\\s*7\\s+business\\s+days',
           flags: 'i',
           label: 'States the 5–7 business day window',
           required: true,

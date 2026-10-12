@@ -64,6 +64,24 @@ describe('Customer conversations sample suite', () => {
     },
   );
 
+  it('accepts the refund window written with any dash', async () => {
+    const task = suite.tasks.find((candidate) => candidate.key === 'late-refund-reply');
+    for (const dash of ['-', '\u2011', '\u2013', '\u2014', ' to ']) {
+      const result = await scoreTask(
+        task?.scorers ?? [],
+        {
+          taskPrompt: task?.prompt ?? '',
+          finalOutput: `Sorry! Refunds take 5${dash}7 business days. If it is not there after day 7, I will escalate.`,
+          readFile: () => null,
+          toolCalls: [],
+        },
+        task?.passThreshold ?? 1,
+        { judge },
+      );
+      expect(result.results[0]).toMatchObject({ passed: true });
+    }
+  });
+
   it.each(suite.tasks.map((task) => [task.key, task] as const))(
     '%s: a non-compliant reply fails a hard requirement even with top judge marks',
     async (key, task) => {

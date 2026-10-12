@@ -28,6 +28,14 @@ const completion = (content: string, cost = 0.0002) =>
     },
   );
 
+const truncated = () =>
+  new Response(
+    JSON.stringify({
+      choices: [{ message: { content: '{"criteria": [' }, finish_reason: 'length' }],
+    }),
+    { status: 200 },
+  );
+
 function createJudge(
   env: Record<string, unknown> = { OPENROUTER_API_KEY: 'key' },
 ): OpenRouterJudge {
@@ -74,6 +82,16 @@ describe('OpenRouterJudge', () => {
       vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(completion('still not json'))),
     );
     await expect(createJudge().evaluate(request)).rejects.toThrow('Judge reply contained no JSON');
+  });
+
+  it('reports a reply cut off by the output limit clearly', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(truncated())),
+    );
+    await expect(createJudge().evaluate(request)).rejects.toThrow(
+      'cut off at the 4000-token output limit',
+    );
   });
 
   it('backs off on rate limits, then fails with a clear error', async () => {
