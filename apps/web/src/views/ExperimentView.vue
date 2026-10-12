@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Arm, ArmSummary } from '@higheval/shared';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { api } from '@/api/endpoints';
 import DiffBar from '@/components/DiffBar.vue';
@@ -36,14 +36,27 @@ const experiment = useResource(() => api.experiments.get(props.id), {
   pollMs: (data) => (isActive(data?.status) ? POLL_MS : null),
 });
 const active = computed(() => isActive(experiment.data.value?.status));
-const runs = useResource(() => api.experiments.runs(props.id), {
-  source: () => props.id,
-  pollMs: () => (active.value ? POLL_MS : null),
-});
+const runs = useResource(() => api.experiments.runs(props.id), { source: () => props.id });
 const comparison = useResource(() => api.experiments.comparison(props.id), {
   source: () => props.id,
-  pollMs: () => (active.value ? POLL_MS : null),
 });
+
+// The experiment is the only thing polled. Runs and the comparison refresh
+// whenever its progress or status changes, so they can never stall on a stale
+// "inactive" reading, and they always get a final refresh on completion.
+watch(
+  () => {
+    const data = experiment.data.value;
+    if (!data) return null;
+    const { scored, errored, cancelled, running } = data.progress;
+    return `${data.status}:${String(scored)}:${String(errored)}:${String(cancelled)}:${String(running)}`;
+  },
+  (signature, previous) => {
+    if (signature === null || previous === null) return;
+    void runs.refresh();
+    void comparison.refresh();
+  },
+);
 
 const remaining = computed(() => {
   const data = experiment.data.value;
