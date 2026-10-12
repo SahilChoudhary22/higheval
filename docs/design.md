@@ -63,7 +63,7 @@ The platform must be TypeScript, and Hermes is Python. The options were a Python
 - Processes are spawned **with an argument array, never a shell**, in their own process group. Cancellation and hard timeouts send SIGTERM and then SIGKILL to the whole group, so tools the agent started die with it.
 - Hermes is installed from a **pinned commit** into `./.hermes-runtime` by `scripts/setup-hermes.sh`, which skips the browser and computer-use extras. The API calls the installed interpreter directly, avoiding a wrapper that re-verified dependencies on every call (15–20 s each).
 
-### 2. Every run is isolated, and the isolation is tested
+### 2. Every run starts from a clean, separate environment, and the separation is tested
 
 A comparison is only meaningful if the two arms differ **only** in the configuration under test. Reading the Hermes source turned up several ways state could leak between runs or arms. Each run gets a fresh `HERMES_HOME`, a throwaway `HOME`, and a fresh working directory, and the generated `config.yaml` pins the following:
 
@@ -84,14 +84,16 @@ A comparison is only meaningful if the two arms differ **only** in the configura
 - "no tools" produces no tool calls
 - the stored system prompt contains no host project context
 
-Expected answers live only in scorer definitions in the database, never in files the agent can read; a unit test enforces this for the sample suite.
+Expected answers live only in scorer definitions in the database, never in the files given to the agent; a unit test enforces this for the sample suite.
+
+**What this does not cover.** Hermes' `file` and `terminal` tools accept absolute paths and run as the user who started HighEval, so an agent _could_ deliberately read outside its workspace: other runs' workspaces, or the SQLite database holding the scorers. No run in the reported experiments did so (the inspector records every tool call and path), but it is a threat to validity for untrusted agents. The fix is to run Hermes in a container; see [limitations.md](limitations.md).
 
 ### 3. Failures are classified, not averaged away
 
 Runs end in one of two classes, and the distinction drives the statistics:
 
 - **Scored**, with termination `completed`, `max_turns` or `timeout`. The agent produced something (or ran out of budget), so its output is scored. Running out of turns or time is agent behaviour and counts against it.
-- **Errored**, with kind `provider`, `setup`, `crash` or `interrupted`. These are infrastructure failures that say nothing about agent quality, so they are excluded from the comparison and reported as missing coverage. Rate limits (HTTP 429) are retried with exponential backoff up to `MAX_RUN_ATTEMPTS`.
+- **Errored**, with kind `provider`, `setup`, `crash`, `interrupted` or `scoring`. These are failures outside the agent's control (including a bug in a scorer) that say nothing about agent quality, so they are excluded from the comparison and reported as missing coverage. Rate limits (HTTP 429) are retried with exponential backoff up to `MAX_RUN_ATTEMPTS`. Whatever goes wrong after the agent returns, a run always ends in a final state and the queue keeps moving.
 
 The classification uses Hermes' exit contract: exit 0 means completed; exit 1 _without_ an error field means the turn did not complete, which is a turn-limit stop when the API call count reached `maxTurns`; exit 1 _with_ an error is matched against provider error patterns. `--run-budget` is only advisory in Hermes, so the executor enforces a hard wall-clock limit itself.
 
@@ -104,13 +106,15 @@ Each task is run under both arms, so the natural unit of analysis is the **paire
 3. **Sign-flip permutation test** for a p-value: exact enumeration up to 16 tasks, seeded Monte Carlo above that.
 4. **Decision rule**, fixed before data and shown in the UI:
    - fewer than 5 paired tasks → _not enough data_
-   - interval entirely above 0 → _candidate better_; entirely below 0 → _candidate worse_
-   - interval entirely inside ±margin → _practically equivalent_
+   - interval entirely above 0 **and** permutation p ≤ 0.05 → _candidate better_; entirely below 0 and p ≤ 0.05 → _candidate worse_
+   - interval entirely inside ±margin **and** at least 3/margin paired tasks (60 at ±0.05) → _practically equivalent_
    - anything else → _inconclusive_
+
+Why both conditions? The percentile bootstrap is anti-conservative when most tasks tie, which is common with pass/fail scorers. Five tied tasks give a zero-width interval [0, 0]. Five tasks that all favour the candidate give an interval excluding zero, even though the exact permutation p-value cannot go below 0.0625 at n = 5. Requiring the exact test to agree removes the first problem. The equivalence floor comes from the "rule of three": with no discordant task among n, up to about 3/n of tasks could still differ unseen, and each can move the mean by up to 1/n.
 
 An interval that merely contains zero is never reported as "no difference". Equivalence needs an explicit practical margin, chosen when the experiment is launched. A judge's self-reported confidence or a raw score gap is not used as confidence.
 
-The percentile bootstrap is known to be somewhat anti-conservative for small task counts. With 16 tasks the interval should be read as approximate, and the permutation p-value offers a second, assumption-light view. See [limitations.md](limitations.md).
+With 16 tasks the interval should still be read as approximate. See [limitations.md](limitations.md).
 
 ### 5. Experiments are immutable snapshots
 
@@ -189,7 +193,7 @@ erDiagram
     int sequence "randomized order"
     text status "queued|running|scored|errored|cancelled"
     text termination "completed|max_turns|timeout"
-    text error_kind "provider|setup|crash|interrupted"
+    text error_kind "provider|setup|crash|interrupted|scoring"
     real score
     json tokens
     int api_calls
@@ -200,7 +204,7 @@ erDiagram
 ## Assumptions
 
 - **"TypeScript throughout"** means all authored application code is TypeScript. Hermes is a required Python dependency invoked as an external program; no Python was written for this project.
-- **Single user, local first.** No authentication. The API binds to `127.0.0.1` by default. A public deployment would need authentication in front of every endpoint that launches agents, since those spend provider quota.
+- **Single user, local first.** No authentication. The API binds to `127.0.0.1` by default and rejects requests addressed to any other host (DNS rebinding) or sent by another site's pages (cross-site POSTs), because it launches agents that run tools on this machine. A public deployment would still need authentication in front of every endpoint that launches agents, since those spend provider quota.
 - **OpenRouter as the provider.** The configuration contract has a `provider` field ready for others, but only OpenRouter is wired and tested. Free-tier models were used for the reported experiments.
 - **Model IDs are exact.** Router aliases such as `openrouter/free` are rejected, because a comparison is meaningless if the model can change underneath it.
 - **Toolsets offered are `file`, `terminal` and `todo`.** Hermes denies `execute_code` in non-interactive runs, and `web` depends on third-party search accounts that would make results irreproducible.
@@ -209,10 +213,11 @@ erDiagram
 
 ## Testing strategy
 
-| Layer                            | What it proves                                                                                                                                                                                                                                                |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit (Vitest)                    | Scorers, JSON extraction, statistics (exact p-values, degenerate and seeded cases), stream parsing across arbitrary chunk boundaries, exit classification, process control (no shell interpolation, group kill, timeout), workspace path safety, run planning |
-| Sample-suite reference solutions | Every task scores exactly 1 for a correct answer and rejects plausible wrong ones; no answer leaks into fixtures                                                                                                                                              |
-| API e2e (fake executor)          | Launch → interleaved execution → scoring → comparison → run detail through HTTP, plus validation errors                                                                                                                                                       |
-| Live (`test:live`, opt-in)       | The real Hermes runtime with a real model: tool use, no-tools, skill isolation, memory isolation, no host-context leakage                                                                                                                                     |
-| CI                               | Format, lint (type-aware oxlint + ESLint for Vue), typecheck, unit and e2e tests, build                                                                                                                                                                       |
+| Layer                            | What it proves                                                                                                                                                                                                                                                                          |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit (Vitest)                    | Scorers, JSON extraction, statistics (exact p-values, degenerate and seeded cases), stream parsing across arbitrary chunk boundaries, exit classification, process control (no shell interpolation, group kill, timeout), workspace path safety, run planning                           |
+| Sample-suite reference solutions | Every task scores exactly 1 for a correct answer and rejects plausible wrong ones; no answer leaks into fixtures                                                                                                                                                                        |
+| API e2e (fake executor)          | Launch → interleaved execution → scoring → comparison → run detail through HTTP; validation errors; a scoring failure ends as an errored run; editing a config after launch leaves the experiment's snapshot unchanged; foreign-Host, cross-site and form-encoded requests are rejected |
+| Web component (fake timers)      | The experiment page keeps runs and verdict live even when they load before the experiment, and refreshes them once more on completion                                                                                                                                                   |
+| Live (`test:live`, opt-in)       | The real Hermes runtime with a real model: tool use, no-tools, skill isolation, memory isolation, no host-context leakage                                                                                                                                                               |
+| CI                               | Format, lint (type-aware oxlint + ESLint for Vue), typecheck, unit and e2e tests, build                                                                                                                                                                                                 |

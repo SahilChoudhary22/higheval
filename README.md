@@ -4,13 +4,13 @@
 
 - **Define tasks and scoring:** suites of tasks with fixture files and typed scorers (JSON fields with tolerances, regexes, files created, tools used), each producing a readable reason.
 - **Define configurations:** model, skills, memory (off or seeded) and toolsets, snapshotted and hashed at launch.
-- **Run them:** each run in an isolated Hermes environment, with retries, cancellation, hard timeouts and restart recovery.
+- **Run them:** each run in its own fresh Hermes environment (configuration, skills, memory and workspace), with retries, cancellation, hard timeouts and restart recovery.
 - **Compare with confidence:** paired per-task differences, a 95% bootstrap interval, a permutation test and a verdict rule fixed before data.
 - **Inspect a run:** scorer results, final reply, tool-call timeline, workspace files, tokens, API calls and cost.
 
 ## Quick start
 
-Prerequisites: **Node.js 22.18+** with Corepack (`corepack enable pnpm`), **[uv](https://docs.astral.sh/uv/)**, **git**, and an **[OpenRouter](https://openrouter.ai) API key** (free models are enough).
+Prerequisites: **macOS or Linux** (Windows via WSL2 is untested), **Node.js 22.18+** with Corepack (`corepack enable pnpm`), **[uv](https://docs.astral.sh/uv/)**, **git**, and an **[OpenRouter](https://openrouter.ai) API key**. The sample configurations use free models, but free-model request limits depend on your account: a Quick check uses about 30 requests and a full 96-run experiment about 360.
 
 ```bash
 pnpm start
@@ -46,7 +46,7 @@ Almost all of the time goes to waiting on the model: each run makes 3–5 model 
 - compliance: SMS quiet hours, refund policy
 - reporting: pipeline forecast, attribution, ROI, churn, SLAs, reorder quantities
 
-Each task has exactly one correct answer, deliberate edge cases (boundary dates, time zones, partial payments, tiered thresholds), and a reference solution that must score 1.0 in the test suite. Expected answers are never visible to the agent.
+Each task has exactly one correct answer, deliberate edge cases (boundary dates, time zones, partial payments, tiered thresholds), and a reference solution that must score 1.0 in the test suite. Expected answers live only in scorer definitions and are never written into the agent's workspace.
 
 Seeded configurations:
 
@@ -100,22 +100,24 @@ pnpm dev            # API on :3000 (watch), web on :5173 with /api proxied
 | `pnpm --filter @higheval/api test:e2e`  | API end-to-end through HTTP with a deterministic fake executor                          |
 | `pnpm --filter @higheval/api test:live` | Real Hermes + OpenRouter: verifies tool, skill and memory isolation (uses ~10 requests) |
 
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enforced by a commit-msg hook. CI runs the full check on every push.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enforced by a commit-msg hook. CI runs the full check, plus the e2e tests, on pushes to `main` and on pull requests.
 
 ### Configuration
 
 All settings are optional except the provider key. They are validated at startup, and the app refuses to boot on invalid values.
 
-| Variable              | Default              | Purpose                                                           |
-| --------------------- | -------------------- | ----------------------------------------------------------------- |
-| `OPENROUTER_API_KEY`  | —                    | Provider key used by Hermes                                       |
-| `HOST` / `PORT`       | `127.0.0.1` / `3000` | Bind address. Keep it local unless behind an authenticating proxy |
-| `DATA_DIR`            | `./data`             | SQLite database and per-run artifacts                             |
-| `MAX_CONCURRENT_RUNS` | `4`                  | Parallel agent runs across all experiments                        |
-| `MAX_RUN_ATTEMPTS`    | `3`                  | Attempts for retryable failures (rate limits, restarts)           |
-| `RETRY_BASE_DELAY_MS` | `15000`              | First retry delay; doubles each attempt                           |
-| `SEED_SAMPLES`        | `true`               | Seed the sample suite into an empty database                      |
-| `LOG_FORMAT`          | `pretty`             | `json` for structured logs                                        |
+| Variable              | Default                         | Purpose                                                                                    |
+| --------------------- | ------------------------------- | ------------------------------------------------------------------------------------------ |
+| `OPENROUTER_API_KEY`  | —                               | Provider key used by Hermes                                                                |
+| `HOST` / `PORT`       | `127.0.0.1` / `3000`            | Bind address. Keep it local unless behind an authenticating proxy                          |
+| `DATA_DIR`            | `./data`                        | SQLite database and per-run artifacts                                                      |
+| `MAX_CONCURRENT_RUNS` | `4`                             | Parallel agent runs across all experiments                                                 |
+| `MAX_RUN_ATTEMPTS`    | `3`                             | Attempts for retryable failures (rate limits, restarts)                                    |
+| `RETRY_BASE_DELAY_MS` | `15000`                         | First retry delay; doubles each attempt                                                    |
+| `SEED_SAMPLES`        | `true`                          | Seed the sample suites into an empty database                                              |
+| `ALLOWED_HOSTS`       | —                               | Extra hostnames the API answers to (e.g. a tunnel's public name); other hosts are rejected |
+| `HERMES_MANIFEST`     | `.hermes-runtime/manifest.json` | Where `setup-hermes` records the installed runtime                                         |
+| `LOG_FORMAT`          | `pretty`                        | `json` for structured logs                                                                 |
 
 ## License
 
