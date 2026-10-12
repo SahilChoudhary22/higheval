@@ -8,6 +8,13 @@
       "when": 1791794439767,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791803811655,
+      "tag": "0001_bundled_skills",
+      "breakpoints": true
     }
   ]
 }

@@ -22,13 +22,14 @@ Grouped by area. Each item says what the limit is, why it exists, and what would
 - **Single node, global concurrency.** Runs are executed by the API process with a global concurrency limit (`MAX_CONCURRENT_RUNS`). There is no distributed worker pool. Throughput is bounded by one machine and the provider's rate limits.
 - **Retries discard earlier attempts' events.** When a rate-limited run is retried, the inspector shows the final attempt; the attempt count records that retries happened.
 - **Disk usage grows with runs.** Each run keeps its Hermes home, workspace and raw stream under `data/runs/` for auditability, about 7.7 MB apparent per run. 5 MB of that is a shared model-catalog snapshot, cloned copy-on-write where the filesystem supports it, so real usage is about 2.5 MB per run on APFS or Btrfs. There is no retention policy yet.
+- **Built-in skills depend on the host.** A built-in skill limited to one operating system (the `apple` skills are macOS-only) is copied into every run but indexed only on that OS, so the same configuration can expose different skills on different machines. The snapshot records the selection, content hash and Hermes commit, not the host OS. The catalog is cached per Hermes commit, so editing the pinned checkout in place is not noticed until the API restarts.
 - **Hermes footprint.** The pinned runtime is about 1.3 GB (Python, Node, ripgrep, ffmpeg and the venv), installed once into `.hermes-runtime/`.
 
 ## Product scope
 
 - **Two arms per experiment.** A/B comparisons only. Comparing N configurations would need multiplicity-aware statistics.
 - **Deterministic scorers only.** There is no LLM-as-judge for subjective quality. It was left out deliberately (cost, variance, and judge drift contaminating the comparison), but it limits the platform to tasks with checkable answers.
-- **Configuration dimensions.** Model, skills, memory (disabled or seeded), toolsets, max turns and timeout are configurable. Reasoning effort, system-prompt overrides and provider routing preferences are pinned, not configurable.
+- **Configuration dimensions.** Model, skills, Hermes built-in skills (none, all or selected), memory (disabled or seeded), toolsets, max turns and timeout are configurable. Reasoning effort, system-prompt overrides and provider routing preferences are pinned, not configurable.
 - **OpenRouter only.** Other providers Hermes supports (including subscription-based ones) are not wired up.
 - **Single user, no authentication.** The API binds to `127.0.0.1` by default and rejects foreign `Host` headers and cross-site state-changing requests, which blocks drive-by attacks from web pages. There is still no login: exposing it publicly would let anyone spend your provider quota.
 - **macOS and Linux only.** The start scripts are bash and process groups are POSIX; Windows would need WSL2 (untested).

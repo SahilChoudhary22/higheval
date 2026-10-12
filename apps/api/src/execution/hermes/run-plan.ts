@@ -1,4 +1,4 @@
-import type { ConfigSnapshot } from '@higheval/shared';
+import type { ConfigSnapshot, Toolset } from '@higheval/shared';
 
 /** Reasoning effort is pinned so both arms send identical reasoning settings. */
 export const REASONING_EFFORT = 'medium';
@@ -9,6 +9,11 @@ const MEMORY_DELIMITER = '\n§\n';
 export interface RunPlan {
   /** Files to write under the run's HERMES_HOME, keyed by relative path. */
   homeFiles: Record<string, string>;
+  /**
+   * Paths under Hermes' bundled skills root to copy unchanged into the home's
+   * `skills/` directory (skill directories and category descriptions).
+   */
+  bundledSkillPaths: string[];
   /** Arguments after the Hermes entry point. */
   args: string[];
 }
@@ -16,22 +21,33 @@ export interface RunPlan {
 /**
  * Translates a configuration snapshot into an isolated Hermes invocation.
  * Every setting that could leak state between runs or arms is pinned off:
- * bundled/project skills, memory providers and background review, coding-
- * context injection of the host repo, OpenRouter response caching, model
- * fallbacks, lazy installs and update checks. Model and provider are set in
- * config rather than on the CLI, which would trigger an interactive cost guard.
+ * unrecorded bundled skills and project skills, memory providers and
+ * background review, coding-context injection of the host repo, OpenRouter
+ * response caching, model fallbacks, lazy installs and update checks. Model and
+ * provider are set in config rather than on the CLI, which would trigger an
+ * interactive cost guard.
+ *
+ * Built-in skills the snapshot selected are copied in (Hermes' own seeding
+ * stays disabled) and are found on demand through the `skills` toolset, which
+ * is therefore always enabled alongside them. Snapshots from before built-in
+ * skills were configurable have none.
  */
 export function buildRunPlan(
   config: ConfigSnapshot,
   paths: { promptFile: string; workDir: string },
 ): RunPlan {
   const seededMemory = config.memory.mode === 'seeded';
+  const bundledSkillPaths = config.bundledSkills?.paths ?? [];
+  const toolsets: Toolset[] =
+    bundledSkillPaths.length > 0
+      ? [...new Set([...config.toolsets, 'skills' as const])]
+      : config.toolsets;
   const hermesConfig = {
     model: { provider: config.model.provider, default: config.model.model },
     fallback_providers: [],
     openrouter: { response_cache: false },
     // Used when --toolsets is omitted, which is how "no tools" is expressed.
-    platform_toolsets: { cli: config.toolsets },
+    platform_toolsets: { cli: toolsets },
     timezone: 'UTC',
     agent: {
       max_turns: config.maxTurns,
@@ -90,9 +106,9 @@ export function buildRunPlan(
     '--source',
     'tool',
   ];
-  if (config.toolsets.length > 0) args.push('--toolsets', config.toolsets.join(','));
+  if (toolsets.length > 0) args.push('--toolsets', toolsets.join(','));
   if (config.skills.length > 0)
     args.push('--skills', config.skills.map((skill) => skill.name).join(','));
 
-  return { homeFiles, args };
+  return { homeFiles, bundledSkillPaths, args };
 }

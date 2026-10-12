@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { z } from 'zod';
 
 const manifestSchema = z.object({
@@ -11,6 +12,8 @@ const manifestSchema = z.object({
 
 /** Installed Hermes, as recorded by scripts/setup-hermes.sh. */
 export type HermesRuntime = z.infer<typeof manifestSchema>;
+
+export const HERMES_NOT_INSTALLED = 'Hermes is not installed. Run `pnpm setup:hermes`.';
 
 export function loadHermesRuntime(manifestPath: string): HermesRuntime | null {
   try {
@@ -34,4 +37,9 @@ export function hermesCommand(runtime: HermesRuntime): { command: string; prefix
     'sys.exit(main())',
   ].join('; ');
   return { command: runtime.python, prefixArgs: ['-I', '-c', bootstrap] };
+}
+
+/** Hermes' built-in skills in the pinned checkout, as `<category>/<name>/SKILL.md`. */
+export function bundledSkillsDir(runtime: HermesRuntime): string {
+  return join(runtime.repo, 'skills');
 }

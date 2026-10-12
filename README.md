@@ -5,7 +5,7 @@
 **Did the agent get better, worse, or stay the same?** HighEval answers that with evidence. It runs the same task suite under two [Hermes Agent](https://github.com/NousResearch/hermes-agent) configurations (different model, skills, memory or tools), scores every run with deterministic checks, and reports the paired difference with a confidence interval and an explicit verdict. Every individual run can be opened to see why it passed or failed.
 
 - **Define tasks and scoring:** suites of tasks with fixture files and typed scorers (JSON fields with tolerances, regexes, files created, tools used), each producing a readable reason.
-- **Define configurations:** model, skills, memory (off or seeded) and toolsets, snapshotted and hashed at launch.
+- **Define configurations:** model, skills, Hermes' built-in skills (off by default), memory (off or seeded) and toolsets, snapshotted and hashed at launch.
 - **Run them:** each run in its own fresh Hermes environment (configuration, skills, memory and workspace), with retries, cancellation, hard timeouts and restart recovery.
 - **Compare with confidence:** paired per-task differences, a 95% bootstrap interval, a permutation test and a verdict rule fixed before data.
 - **Inspect a run:** scorer results, final reply, tool-call timeline, workspace files, tokens, API calls and cost.
@@ -57,6 +57,8 @@ Seeded configurations:
 | Nemotron 3 Super · file tools                         | Baseline model         |
 | Nemotron 3.5 Lightning · file tools                   | Model-change candidate |
 | Nemotron 3.5 Lightning · file tools + checklist skill | Skill-change candidate |
+
+None of them use Hermes' 58 built-in skills. A configuration can opt into all of them or a selection; the choice is recorded and hashed like any other setting ([design decision 2](docs/design.md#2-every-run-starts-from-a-clean-separate-environment-and-the-separation-is-tested)).
 
 ## Results
 

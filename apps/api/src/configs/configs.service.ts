@@ -1,12 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { asc, eq, sql } from 'drizzle-orm';
-import type { AgentConfig, agentConfigInputSchema, ConfigSnapshot } from '@higheval/shared';
+import type {
+  AgentConfig,
+  agentConfigInputSchema,
+  BundledSkills,
+  ConfigSnapshot,
+  Skill,
+} from '@higheval/shared';
 import type { z } from 'zod';
 import { sha256Hex } from '../common/hash.js';
 import { newId, nowIso } from '../common/ids.js';
+import { validationError } from '../common/validation-error.js';
 import { InjectDb } from '../database/database.module.js';
 import type { Db } from '../database/database.js';
 import { agentConfigs } from '../database/schema.js';
+import {
+  BundledSkillsService,
+  type BundledSkillsResolved,
+} from '../execution/hermes/bundled-skills.service.js';
 import { SkillsService } from '../skills/skills.service.js';
 
 export type AgentConfigData = z.output<typeof agentConfigInputSchema>;
@@ -17,6 +28,7 @@ export class ConfigsService {
   constructor(
     @InjectDb() private readonly db: Db,
     private readonly skills: SkillsService,
+    private readonly bundledSkills: BundledSkillsService,
   ) {}
 
   list(): AgentConfig[] {
@@ -36,7 +48,7 @@ export class ConfigsService {
   }
 
   create(input: AgentConfigData): AgentConfig {
-    this.skills.getMany(input.skillIds);
+    this.resolveSkills(input);
     const timestamp = nowIso();
     const config: AgentConfig = {
       id: newId(),
@@ -50,7 +62,7 @@ export class ConfigsService {
 
   update(id: string, input: AgentConfigData): AgentConfig {
     const existing = this.get(id);
-    this.skills.getMany(input.skillIds);
+    this.resolveSkills(input);
     const config: AgentConfig = { ...existing, ...input, updatedAt: nowIso() };
     this.db.update(agentConfigs).set(toRow(config)).where(eq(agentConfigs.id, id)).run();
     return config;
@@ -63,16 +75,24 @@ export class ConfigsService {
 
   /**
    * Resolves a configuration into an immutable snapshot with skill contents
-   * inlined, plus a hash over every field that can change agent behavior.
+   * inlined and built-in skills pinned to the installed Hermes, plus a hash
+   * over every field that can change agent behavior.
    */
   snapshot(id: string): ConfigSnapshot {
     const config = this.get(id);
-    const skills = this.skills
-      .getMany(config.skillIds)
-      .map(({ name, description, content }) => ({ name, description, content }));
+    const resolved = this.resolveSkills(config);
+    const skills = resolved.skills.map(({ name, description, content }) => ({
+      name,
+      description,
+      content,
+    }));
+    const { bundledSkills, hermesCommit } = resolved;
     const behavior = {
       model: config.model,
       skills,
+      // The mode is left out: "all" and selecting every skill behave identically.
+      bundledSkills: { names: bundledSkills.names, contentHash: bundledSkills.contentHash },
+      hermesCommit: hermesCommit ?? null,
       memory: config.memory,
       toolsets: config.toolsets.toSorted(),
       maxTurns: config.maxTurns,
@@ -82,10 +102,39 @@ export class ConfigsService {
       id: config.id,
       name: config.name,
       description: config.description,
-      ...behavior,
+      model: config.model,
+      skills,
+      bundledSkills,
+      ...(hermesCommit === undefined ? {} : { hermesCommit }),
+      memory: config.memory,
       toolsets: config.toolsets,
+      maxTurns: config.maxTurns,
+      timeoutSeconds: config.timeoutSeconds,
       hash: sha256Hex(behavior),
     };
+  }
+
+  /**
+   * Loads the configuration's skills and resolves its built-in skills against
+   * the installed Hermes, rejecting selections that cannot be honoured.
+   */
+  private resolveSkills(config: {
+    skillIds: readonly string[];
+    bundledSkills: BundledSkills;
+  }): BundledSkillsResolved & { skills: Skill[] } {
+    const skills = this.skills.getMany(config.skillIds);
+    const resolved = this.bundledSkills.resolve(config.bundledSkills);
+    // Same-named skills would make Hermes' index and --skills preload ambiguous.
+    const clashes = skills.filter((skill) => resolved.bundledSkills.names.includes(skill.name));
+    if (clashes.length > 0) {
+      throw validationError(
+        clashes.map((skill) => ({
+          path: 'bundledSkills',
+          message: `Skill "${skill.name}" has the same name as a Hermes built-in skill; rename it or leave that built-in skill out`,
+        })),
+      );
+    }
+    return { ...resolved, skills };
   }
 }
 

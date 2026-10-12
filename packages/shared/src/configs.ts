@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idSchema, slugSchema, timestampSchema } from './common.js';
+import { idSchema, relativePathSchema, slugSchema, timestampSchema } from './common.js';
 
 export const skillInputSchema = z.object({
   name: slugSchema,
@@ -44,13 +44,51 @@ export const modelSettingsSchema = z.object({
 });
 export type ModelSettings = z.infer<typeof modelSettingsSchema>;
 
+/** The pinned Hermes commit ships 58 built-in skills. */
+const MAX_BUNDLED_SKILLS = 58;
+
+/**
+ * Which of Hermes' built-in ("bundled") skills each run gets. Off by default,
+ * so a run sees only the skills its configuration names explicitly.
+ */
+export const bundledSkillsSchema = z.discriminatedUnion('mode', [
+  z.object({ mode: z.literal('none') }),
+  z.object({ mode: z.literal('all') }),
+  z.object({
+    mode: z.literal('selected'),
+    names: z
+      .array(slugSchema)
+      .min(1, 'Select at least one built-in skill')
+      .max(MAX_BUNDLED_SKILLS)
+      .refine((names) => new Set(names).size === names.length, 'Built-in skills must be unique'),
+  }),
+]);
+export type BundledSkills = z.infer<typeof bundledSkillsSchema>;
+
+/** A built-in skills setting resolved against the installed Hermes when an experiment starts. */
+export const resolvedBundledSkillsSchema = z.object({
+  mode: z.enum(['none', 'all', 'selected']),
+  /** Every skill copied into each run (all of them for `all`), sorted. */
+  names: z.array(slugSchema),
+  /**
+   * What is copied into each run's skills directory, relative to Hermes'
+   * bundled skills root: skill directories and their category descriptions.
+   */
+  paths: z.array(relativePathSchema),
+  /** SHA-256 over the copied files; null when nothing is copied. */
+  contentHash: z.string().length(64).nullable(),
+});
+export type ResolvedBundledSkills = z.infer<typeof resolvedBundledSkillsSchema>;
+
 /**
  * Hermes toolsets exposed by the platform. Limited to tools that work offline
  * in the run's working directory, so results do not depend on third-party
  * accounts. `code_execution` is omitted because Hermes denies it in
- * non-interactive runs; skills and memory have their own settings.
+ * non-interactive runs; memory has its own setting. `skills` lets the agent
+ * list and open the skills in its home on demand; runs with built-in skills
+ * always get it, since an undiscoverable skill would be an unrecorded no-op.
  */
-export const toolsetSchema = z.enum(['file', 'terminal', 'todo']);
+export const toolsetSchema = z.enum(['file', 'terminal', 'todo', 'skills']);
 export type Toolset = z.infer<typeof toolsetSchema>;
 
 export const agentConfigInputSchema = z.object({
@@ -64,6 +102,7 @@ export const agentConfigInputSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'Skills must be unique')
     .default([]),
   memory: memorySettingsSchema.default({ mode: 'disabled' }),
+  bundledSkills: bundledSkillsSchema.default({ mode: 'none' }),
   /** Hermes toolsets the agent may use. Empty means no tools. */
   toolsets: z
     .array(toolsetSchema)
@@ -88,9 +127,16 @@ export type AgentConfig = z.infer<typeof agentConfigSchema>;
  * starts. Skill contents are inlined so later edits cannot change history.
  */
 export const configSnapshotSchema = agentConfigSchema
-  .omit({ skillIds: true, createdAt: true, updatedAt: true })
+  .omit({ skillIds: true, bundledSkills: true, createdAt: true, updatedAt: true })
   .extend({
     skills: z.array(skillInputSchema),
+    /**
+     * Built-in skills copied into every run. Absent on snapshots taken before
+     * they were configurable, which ran without any.
+     */
+    bundledSkills: resolvedBundledSkillsSchema.optional(),
+    /** Hermes commit installed at launch; absent if Hermes was not installed (or on older snapshots). */
+    hermesCommit: z.string().optional(),
     /** SHA-256 over every behavior-affecting field. */
     hash: z.string().length(64),
   });

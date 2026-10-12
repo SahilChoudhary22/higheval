@@ -1,0 +1,1 @@
+ALTER TABLE `agent_configs` ADD `bundled_skills` text DEFAULT '{"mode":"none"}' NOT NULL;

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
@@ -9,6 +10,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import type {
   AgentEvent,
+  BundledSkills,
   ConfigSnapshot,
   FixtureFile,
   MemorySettings,
@@ -74,6 +76,10 @@ export const agentConfigs = sqliteTable('agent_configs', {
   skillIds: text('skill_ids', { mode: 'json' }).$type<string[]>().notNull(),
   memory: text('memory', { mode: 'json' }).$type<MemorySettings>().notNull(),
   toolsets: text('toolsets', { mode: 'json' }).$type<Toolset[]>().notNull(),
+  bundledSkills: text('bundled_skills', { mode: 'json' })
+    .$type<BundledSkills>()
+    .notNull()
+    .default(sql`'{"mode":"none"}'`),
   maxTurns: integer('max_turns').notNull(),
   timeoutSeconds: integer('timeout_seconds').notNull(),
   ...timestamps,

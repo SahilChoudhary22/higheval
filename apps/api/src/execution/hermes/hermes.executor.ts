@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AgentEvent } from '@higheval/shared';
 import { execFile } from 'node:child_process';
-import { createWriteStream } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { constants, createWriteStream } from 'node:fs';
+import { cp, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
 import type { Env } from '../../config/env.schema.js';
@@ -15,11 +15,16 @@ import {
   type ExecutionRequest,
 } from '../agent-executor.js';
 import { CatalogCache } from './catalog-cache.js';
-import { hermesCommand, loadHermesRuntime } from './hermes-runtime.js';
+import {
+  bundledSkillsDir,
+  HERMES_NOT_INSTALLED,
+  hermesCommand,
+  loadHermesRuntime,
+} from './hermes-runtime.js';
 import { HermesStreamParser, type HermesResult } from './hermes-stream-parser.js';
 import { runProcess } from './process.js';
 import { classifyHermesExit } from './run-classification.js';
-import { buildRunPlan } from './run-plan.js';
+import { buildRunPlan, type RunPlan } from './run-plan.js';
 import { readSessionStats } from './session-stats.js';
 
 const STDERR_TAIL_BYTES = 8_000;
@@ -31,7 +36,8 @@ const execFileAsync = promisify(execFile);
 /**
  * Runs one task through the Hermes CLI in a fresh, isolated environment:
  *
- *   <runDir>/home     HERMES_HOME with only this config's settings, skills, memory
+ *   <runDir>/home     HERMES_HOME with only this config's settings, skills (its own
+ *                     and the built-in ones it selected) and memory
  *   <runDir>/oshome   throwaway HOME so Hermes never touches the real profile
  *   <runDir>/work     the agent's working directory (task fixtures, outputs)
  *
@@ -54,9 +60,16 @@ export class HermesExecutor extends AgentExecutor {
     const apiKey = this.config.get('OPENROUTER_API_KEY', { infer: true });
     if (!runtime || !apiKey) {
       return setupError(
-        !runtime
-          ? 'Hermes is not installed. Run `pnpm setup:hermes`.'
-          : 'OPENROUTER_API_KEY is not set. Add it to .env.',
+        !runtime ? HERMES_NOT_INSTALLED : 'OPENROUTER_API_KEY is not set. Add it to .env.',
+        elapsed(),
+      );
+    }
+
+    const launchedWith = request.config.hermesCommit;
+    if (launchedWith !== undefined && launchedWith !== runtime.commit) {
+      // The snapshot (and its built-in skill hashes) describes a different Hermes.
+      return setupError(
+        `Hermes changed since this experiment was launched (${launchedWith.slice(0, 7)} → ${runtime.commit.slice(0, 7)}); relaunch it to compare like with like.`,
         elapsed(),
       );
     }
@@ -68,7 +81,7 @@ export class HermesExecutor extends AgentExecutor {
     };
     const promptFile = join(request.runDir, 'prompt.md');
     const plan = buildRunPlan(request.config, { promptFile, workDir: dirs.work });
-    await this.prepareRunDir(request, dirs, promptFile, plan.homeFiles);
+    await this.prepareRunDir(request, dirs, promptFile, plan, bundledSkillsDir(runtime));
 
     const { command, prefixArgs } = hermesCommand(runtime);
     const parser = new HermesStreamParser();
@@ -104,7 +117,8 @@ export class HermesExecutor extends AgentExecutor {
           HOME: dirs.osHome,
           HERMES_HOME: dirs.home,
           HERMES_RUNTIME_DIR: runtime.runtimeDir,
-          // Points at a directory that does not exist, so no bundled skills are seeded.
+          // Points at a directory that does not exist, so Hermes seeds no bundled
+          // skills itself; the ones the snapshot selected were copied in.
           HERMES_BUNDLED_SKILLS: join(request.runDir, 'no-bundled-skills'),
           HERMES_DISABLE_LAZY_INSTALLS: '1',
           HERMES_TIMEZONE: 'UTC',
@@ -215,11 +229,13 @@ export class HermesExecutor extends AgentExecutor {
     request: ExecutionRequest,
     dirs: { home: string; osHome: string; work: string },
     promptFile: string,
-    homeFiles: Record<string, string>,
+    plan: RunPlan,
+    bundledSkillsRoot: string,
   ): Promise<void> {
     await Promise.all(Object.values(dirs).map((dir) => mkdir(dir, { recursive: true })));
     await writeFile(promptFile, request.prompt);
-    await writeFiles(dirs.home, homeFiles);
+    await writeFiles(dirs.home, plan.homeFiles);
+    await copyBundledSkills(bundledSkillsRoot, dirs.home, plan.bundledSkillPaths);
     await this.catalog.seed(dirs.home);
     await writeFiles(
       dirs.work,
@@ -240,6 +256,22 @@ async function writeFiles(root: string, files: Record<string, string>): Promise<
     const target = join(root, path);
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, content);
+  }
+}
+
+/** Copies built-in skills verbatim (cloned copy-on-write where the filesystem allows). */
+async function copyBundledSkills(
+  sourceRoot: string,
+  homeDir: string,
+  paths: readonly string[],
+): Promise<void> {
+  for (const path of paths) {
+    await cp(join(sourceRoot, path), join(homeDir, 'skills', path), {
+      recursive: true,
+      errorOnExist: true,
+      force: false,
+      mode: constants.COPYFILE_FICLONE,
+    });
   }
 }
 

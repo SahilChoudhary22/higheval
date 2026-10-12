@@ -10,6 +10,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import SkeletonRows from '@/components/SkeletonRows.vue';
 import { useResource } from '@/composables/useResource';
 import { useUndoableDelete } from '@/composables/useUndoableDelete';
+import { bundledSkillsSummary } from '@/lib/bundled-skills';
 
 const configs = useResource(() => api.configs.list());
 const skills = useResource(() => api.skills.list());
@@ -19,10 +20,14 @@ const visible = computed(
 );
 const remove = useUndoableDelete();
 
-const skillNames = (config: AgentConfig): string =>
-  config.skillIds
-    .map((id) => skills.data.value?.find((skill) => skill.id === id)?.name ?? 'unknown')
-    .join(', ') || 'none';
+function skillNames(config: AgentConfig): string {
+  const names = config.skillIds.map(
+    (id) => skills.data.value?.find((skill) => skill.id === id)?.name ?? 'unknown',
+  );
+  const builtIn = bundledSkillsSummary(config.bundledSkills);
+  if (builtIn) names.push(builtIn);
+  return names.join(', ') || 'none';
+}
 const memory = (config: AgentConfig): string =>
   config.memory.mode === 'disabled' ? 'off' : `${String(config.memory.entries.length)} seeded`;
 
@@ -81,7 +86,16 @@ function deleteConfig(config: AgentConfig): void {
             </td>
             <td class="mono wrap-anywhere">{{ config.model.model }}</td>
             <td class="mono">{{ config.toolsets.join(', ') || 'none' }}</td>
-            <td class="mono wrap-anywhere">{{ skillNames(config) }}</td>
+            <td
+              class="mono wrap-anywhere"
+              :title="
+                config.bundledSkills.mode === 'selected'
+                  ? `Built-in: ${config.bundledSkills.names.join(', ')}`
+                  : undefined
+              "
+            >
+              {{ skillNames(config) }}
+            </td>
             <td>{{ memory(config) }}</td>
             <td class="num">{{ config.maxTurns }}</td>
             <td class="num actions">
