@@ -8,6 +8,7 @@ import { join } from 'node:path';
 const dataDir = mkdtempSync(join(tmpdir(), 'higheval-e2e-'));
 process.env.DATA_DIR = dataDir;
 process.env.RETRY_BASE_DELAY_MS = '0';
+process.env.SEED_SAMPLES = 'false';
 
 afterAll(() => {
   rmSync(dataDir, { recursive: true, force: true });

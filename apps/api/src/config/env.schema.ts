@@ -17,6 +17,11 @@ export const envSchema = z.object({
   MAX_RUN_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(3),
   /** Base delay before retrying a retryable failure; doubles each attempt. */
   RETRY_BASE_DELAY_MS: z.coerce.number().int().min(0).default(15_000),
+  /** Seed the sample suite, skill and configurations into an empty database. */
+  SEED_SAMPLES: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
   /** Optional at boot so the UI can start and explain what is missing. */
   OPENROUTER_API_KEY: z.string().min(1).optional(),
 });

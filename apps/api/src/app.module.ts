@@ -7,6 +7,7 @@ import { ConfigsModule } from './configs/configs.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { ExperimentsModule } from './experiments/experiments.module.js';
 import { HealthModule } from './health/health.module.js';
+import { SamplesModule } from './samples/samples.module.js';
 import { SkillsModule } from './skills/skills.module.js';
 import { SuitesModule } from './suites/suites.module.js';
 
@@ -24,6 +25,7 @@ import { SuitesModule } from './suites/suites.module.js';
     SuitesModule,
     ConfigsModule,
     ExperimentsModule,
+    SamplesModule,
   ],
 })
 export class AppModule {}
