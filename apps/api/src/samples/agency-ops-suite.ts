@@ -439,7 +439,7 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
         '- Local SEO (Google): 2000 → 5200',
         '- Referral Push (Email): 250 → 500',
         'ROI = (revenue − spend) / spend.',
-        'Reply with ONLY a JSON object: {"best_campaign": "<name>", "best_roi": <2 decimals>, "overall_roi": <ROI of all campaigns combined, 2 decimals>}.',
+        'Reply with ONLY a JSON object: {"best_campaign": "<campaign name without the channel>", "best_roi": <2 decimals>, "overall_roi": <ROI of all campaigns combined, 2 decimals>}.',
       ].join('\n'),
       scorers: [
         {
@@ -703,7 +703,7 @@ export const AGENCY_OPS_SUITE: SuiteInput = {
         'Read inventory.csv and decide what to reorder.',
         '- Reorder point = avg_daily_usage × (lead_time_days + safety_days).',
         '- Reorder a SKU only when on_hand is at or below its reorder point.',
-        '- Order enough to reach avg_daily_usage × (lead_time_days + safety_days + 30) units, then round the order up to a whole number of case_pack units.',
+        '- Target stock = avg_daily_usage × (lead_time_days + safety_days + 30). Order quantity = target stock − on_hand, rounded up to a whole number of case_pack units.',
         'Write orders.json as {"orders": {"<sku>": <units to order>, ...}} listing only SKUs that need an order.',
       ].join('\n'),
       fixtures: [

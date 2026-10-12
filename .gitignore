@@ -28,3 +28,4 @@ data/
 
 # Tool caches
 .eslintcache
+.claude/
