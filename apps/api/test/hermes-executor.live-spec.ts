@@ -34,12 +34,20 @@ const baseConfig: ConfigSnapshot = {
   hash: '0'.repeat(64),
 };
 
+/** The run's assembled system prompt, which Hermes stores content-addressed in `system_prompts`. */
 function systemPrompt(runDir: string): string {
   const db = new Database(join(runDir, 'home', 'state.db'), { readonly: true });
   try {
-    const row: unknown = db.prepare('SELECT system_prompt FROM sessions LIMIT 1').get();
-    return typeof row === 'object' && row !== null && 'system_prompt' in row
-      ? String(row.system_prompt)
+    const row: unknown = db
+      .prepare(
+        'SELECT p.prompt FROM sessions s JOIN system_prompts p ON p.hash = s.system_prompt_hash LIMIT 1',
+      )
+      .get();
+    return typeof row === 'object' &&
+      row !== null &&
+      'prompt' in row &&
+      typeof row.prompt === 'string'
+      ? row.prompt
       : '';
   } finally {
     db.close();
