@@ -1,5 +1,6 @@
 import {
   agentConfigSchema,
+  bundledSkillCatalogSchema,
   comparisonSchema,
   experimentSchema,
   healthResponseSchema,
@@ -19,6 +20,10 @@ import { deleteResource, getJson, postJson, putJson } from './client';
 /** Typed API surface. Every response is validated against the shared contract. */
 export const api = {
   health: () => getJson('/health', healthResponseSchema),
+
+  hermes: {
+    skills: () => getJson('/hermes/skills', bundledSkillCatalogSchema),
+  },
 
   suites: {
     list: () => getJson('/suites', z.array(suiteSummarySchema)),

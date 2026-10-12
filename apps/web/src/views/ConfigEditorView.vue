@@ -3,6 +3,7 @@ import {
   agentConfigInputSchema,
   toolsetSchema,
   type AgentConfigInput,
+  type BundledSkills,
   type Toolset,
 } from '@higheval/shared';
 import { computed, reactive, ref, watch } from 'vue';
@@ -12,10 +13,12 @@ import PageHeader from '@/components/PageHeader.vue';
 import SkeletonRows from '@/components/SkeletonRows.vue';
 import { useFormErrors } from '@/composables/useFormErrors';
 import { useResource } from '@/composables/useResource';
+import { groupByCategory, platformLabel } from '@/lib/bundled-skills';
 
 const props = defineProps<{ id?: string }>();
 const router = useRouter();
 const skills = useResource(() => api.skills.list());
+const catalog = useResource(() => api.hermes.skills());
 const { errors, formError, validate, fromError, clear } = useFormErrors();
 
 const TOOLSET_HELP: Record<Toolset, string> = {
@@ -36,6 +39,8 @@ interface ConfigForm {
   model: string;
   toolsets: Toolset[];
   skillIds: string[];
+  bundledMode: BundledSkills['mode'];
+  bundledNames: string[];
   memoryMode: 'disabled' | 'seeded';
   memoryEntries: string;
   maxTurns: number;
@@ -48,6 +53,8 @@ const form = reactive<ConfigForm>({
   model: '',
   toolsets: ['file'],
   skillIds: [],
+  bundledMode: 'none',
+  bundledNames: [],
   memoryMode: 'disabled',
   memoryEntries: '',
   maxTurns: 12,
@@ -69,6 +76,9 @@ watch(
         model: config.model.model,
         toolsets: [...config.toolsets],
         skillIds: [...config.skillIds],
+        bundledMode: config.bundledSkills.mode,
+        bundledNames:
+          config.bundledSkills.mode === 'selected' ? [...config.bundledSkills.names] : [],
         memoryMode: config.memory.mode,
         memoryEntries: config.memory.mode === 'seeded' ? config.memory.entries.join('\n') : '',
         maxTurns: config.maxTurns,
@@ -82,6 +92,29 @@ watch(
   },
   { immediate: true },
 );
+
+const bundledQuery = ref('');
+const bundledCatalog = computed(() =>
+  catalog.data.value?.status === 'available' ? catalog.data.value.skills : [],
+);
+const bundledGroups = computed(() => groupByCategory(bundledCatalog.value, bundledQuery.value));
+const usesBundledSkills = computed(() => form.bundledMode !== 'none');
+const bundledError = computed(
+  () => Object.entries(errors.value).find(([path]) => path.startsWith('bundledSkills'))?.[1],
+);
+const bundledSkills = computed((): BundledSkills =>
+  form.bundledMode === 'selected'
+    ? { mode: 'selected', names: form.bundledNames }
+    : { mode: form.bundledMode },
+);
+
+const bundledHelp = computed((): string => {
+  if (!usesBundledSkills.value) {
+    return 'Off: runs get none of the skills a normal Hermes install ships with.';
+  }
+  const count = form.bundledMode === 'all' ? bundledCatalog.value.length : form.bundledNames.length;
+  return `${String(count)} selected. Copied into every run and listed in its skills index; the agent opens them on demand with the skills tools. OS-limited skills do not load on other systems.`;
+});
 
 const entries = computed(() =>
   form.memoryEntries
@@ -98,6 +131,7 @@ async function save(): Promise<void> {
     model: { provider: 'openrouter', model: form.model.trim() },
     toolsets: form.toolsets,
     skillIds: form.skillIds,
+    bundledSkills: bundledSkills.value,
     memory:
       form.memoryMode === 'seeded'
         ? { mode: 'seeded', entries: entries.value }
@@ -174,14 +208,23 @@ async function save(): Promise<void> {
         :key="toolset"
         class="checkbox checkbox--described"
       >
-        <input v-model="form.toolsets" type="checkbox" :value="toolset" />
+        <input v-if="toolset === 'skills' && usesBundledSkills" type="checkbox" checked disabled />
+        <input v-else v-model="form.toolsets" type="checkbox" :value="toolset" />
         <span>
           <span class="mono">{{ toolset }}</span>
-          <span class="muted option-help">{{ TOOLSET_HELP[toolset] }}</span>
+          <span class="muted option-help">{{
+            toolset === 'skills' && usesBundledSkills
+              ? 'On automatically: the agent finds built-in skills through it.'
+              : TOOLSET_HELP[toolset]
+          }}</span>
         </span>
       </label>
       <p class="field__help">
-        {{ form.toolsets.length === 0 ? 'No tools: the agent can only reply in text.' : '' }}
+        {{
+          form.toolsets.length === 0 && !usesBundledSkills
+            ? 'No tools: the agent can only reply in text.'
+            : ''
+        }}
       </p>
     </fieldset>
 
@@ -202,8 +245,75 @@ async function save(): Promise<void> {
           <span class="muted option-help">{{ skill.description }}</span>
         </span>
       </label>
-      <p class="field__help">
-        Selected skills are the only ones the agent can see; they are preloaded into its context.
+      <p class="field__help">Selected skills are preloaded into the agent's context in full.</p>
+    </fieldset>
+
+    <fieldset class="group">
+      <legend class="field__label">Hermes built-in skills</legend>
+      <p v-if="catalog.data.value?.status === 'unavailable'" class="muted">
+        {{ catalog.data.value.message }} Until then, built-in skills can't be selected.
+      </p>
+      <p v-else-if="catalog.error.value" class="muted">
+        Couldn't load Hermes' built-in skills.
+        <button type="button" class="btn btn--quiet btn--compact" @click="catalog.refresh">
+          Retry
+        </button>
+      </p>
+      <label class="checkbox">
+        <input v-model="form.bundledMode" type="radio" value="none" />
+        <span>None — only the skills selected above</span>
+      </label>
+      <label class="checkbox">
+        <input
+          v-model="form.bundledMode"
+          type="radio"
+          value="all"
+          :disabled="bundledCatalog.length === 0"
+        />
+        <span>All ({{ bundledCatalog.length }})</span>
+      </label>
+      <label class="checkbox">
+        <input
+          v-model="form.bundledMode"
+          type="radio"
+          value="selected"
+          :disabled="bundledCatalog.length === 0"
+        />
+        <span>Selected</span>
+      </label>
+      <div v-if="form.bundledMode === 'selected'" class="bundled">
+        <input
+          v-model="bundledQuery"
+          class="input"
+          type="search"
+          placeholder="Search by name, category or description"
+          aria-label="Search built-in skills"
+        />
+        <div class="bundled__list">
+          <fieldset v-for="group in bundledGroups" :key="group.category" class="bundled__group">
+            <legend class="label">{{ group.category }}</legend>
+            <label
+              v-for="skill in group.skills"
+              :key="skill.name"
+              class="checkbox checkbox--described"
+            >
+              <input v-model="form.bundledNames" type="checkbox" :value="skill.name" />
+              <span>
+                <span class="mono">{{ skill.name }}</span>
+                <span v-if="platformLabel(skill.platforms)" class="platform">{{
+                  platformLabel(skill.platforms)
+                }}</span>
+                <span class="muted option-help">{{ skill.description }}</span>
+              </span>
+            </label>
+          </fieldset>
+          <p v-if="bundledGroups.length === 0" class="muted">
+            No built-in skills match “{{ bundledQuery.trim() }}”.
+          </p>
+        </div>
+      </div>
+      <p class="field__help" :class="{ 'field__help--error': bundledError }">
+        {{ bundledError ?? bundledHelp }}
       </p>
     </fieldset>
 
@@ -321,6 +431,45 @@ async function save(): Promise<void> {
 .option-help {
   display: block;
   font-size: var(--text-sm);
+}
+
+.bundled {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.bundled__list {
+  max-height: 28rem;
+  overflow-y: auto;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule);
+  background: var(--color-surface);
+}
+
+.bundled__group {
+  margin: 0;
+  padding: var(--space-xs) 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.bundled__group:last-child {
+  border-bottom: 0;
+}
+
+.bundled__group legend {
+  padding: var(--space-2xs) 0 0;
+}
+
+.platform {
+  margin-left: var(--space-xs);
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-tag);
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
 }
 
 .form__pair {
