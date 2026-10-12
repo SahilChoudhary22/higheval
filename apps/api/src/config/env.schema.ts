@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { modelIdSchema, providerIdSchema } from '@higheval/shared';
 import { z } from 'zod';
+import { LOOPBACK_HOSTS } from '../common/request-guard.js';
 import { REPO_ROOT } from './paths.js';
 
 export const envSchema = z.object({
@@ -52,6 +53,19 @@ export const envSchema = z.object({
   DEEPSEEK_API_KEY: z.string().min(1).optional(),
   XAI_API_KEY: z.string().min(1).optional(),
   NVIDIA_API_KEY: z.string().min(1).optional(),
+  /**
+   * Sign-in for hosted deployments. Set both to require a login for the UI and
+   * API; leave both unset for local use. Required when HOST is not loopback.
+   */
+  AUTH_USERNAME: z.string().min(1).max(200).optional(),
+  AUTH_PASSWORD: z.string().min(1).max(200).optional(),
+  /** Signs session cookies. Optional: without it, sessions end when the server restarts. */
+  SESSION_SECRET: z.string().min(32, 'Use at least 32 characters').optional(),
+  /** Hide the key editor in Settings, so visitors to a hosted demo cannot change provider keys. */
+  PROVIDER_KEYS_READ_ONLY: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -60,7 +74,25 @@ export type Env = z.infer<typeof envSchema>;
 export function validateEnv(raw: Record<string, unknown>): Env {
   // Blank values (e.g. `OPENROUTER_API_KEY=` copied from .env.example) mean "unset".
   const present = Object.fromEntries(Object.entries(raw).filter(([, value]) => value !== ''));
-  const result = envSchema.safeParse(present);
+  const result = envSchema
+    .superRefine((env, context) => {
+      if ((env.AUTH_USERNAME === undefined) !== (env.AUTH_PASSWORD === undefined)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['AUTH_PASSWORD'],
+          message: 'Set both AUTH_USERNAME and AUTH_PASSWORD, or neither',
+        });
+      }
+      // The API launches agents that run tools on this machine: never expose it without a login.
+      if (!(LOOPBACK_HOSTS as readonly string[]).includes(env.HOST) && !env.AUTH_USERNAME) {
+        context.addIssue({
+          code: 'custom',
+          path: ['HOST'],
+          message: `HOST=${env.HOST} makes the API reachable from other machines; set AUTH_USERNAME and AUTH_PASSWORD to require a login`,
+        });
+      }
+    })
+    .safeParse(present);
   if (!result.success) {
     throw new Error(`Invalid environment configuration:\n${z.prettifyError(result.error)}`);
   }

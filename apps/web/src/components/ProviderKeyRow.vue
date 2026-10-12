@@ -12,7 +12,11 @@ import { useToasts } from '@/composables/useToasts';
 import type { TagSpec } from '@/lib/labels';
 import StatusTag from './StatusTag.vue';
 
-const props = defineProps<{ provider: ProviderStatus }>();
+const props = defineProps<{
+  provider: ProviderStatus;
+  /** Keys are managed by the deployment: only testing is offered. */
+  readOnly?: boolean;
+}>();
 const emit = defineEmits<{ changed: [] }>();
 const { show } = useToasts();
 
@@ -41,7 +45,7 @@ const message = computed((): string => {
       ? `${result.value.message} The key is kept; runs will report a provider error if it is wrong.`
       : result.value.message;
   }
-  return props.provider.source === 'environment'
+  return props.provider.source === 'environment' && !props.readOnly
     ? 'Using the key from .env. Saving one here overrides it.'
     : '';
 });
@@ -115,23 +119,30 @@ const remove = () =>
       >
     </p>
 
-    <form class="provider__form" novalidate @submit.prevent="save">
-      <label class="visually-hidden" :for="inputId">{{ provider.name }} API key</label>
-      <input
-        :id="inputId"
-        ref="input"
-        v-model="key"
-        class="input mono"
-        type="password"
-        autocomplete="off"
-        spellcheck="false"
-        :placeholder="provider.configured ? 'Paste a new key to replace it' : 'Paste API key'"
-        :aria-invalid="isError"
-        :aria-describedby="messageId"
-      />
-      <button type="submit" class="btn btn--primary" :disabled="busy !== null || !key.trim()">
-        {{ busy === 'save' ? 'Checking…' : 'Save' }}
-      </button>
+    <form
+      class="provider__form"
+      :class="{ 'provider__form--read-only': readOnly }"
+      novalidate
+      @submit.prevent="save"
+    >
+      <template v-if="!readOnly">
+        <label class="visually-hidden" :for="inputId">{{ provider.name }} API key</label>
+        <input
+          :id="inputId"
+          ref="input"
+          v-model="key"
+          class="input mono"
+          type="password"
+          autocomplete="off"
+          spellcheck="false"
+          :placeholder="provider.configured ? 'Paste a new key to replace it' : 'Paste API key'"
+          :aria-invalid="isError"
+          :aria-describedby="messageId"
+        />
+        <button type="submit" class="btn btn--primary" :disabled="busy !== null || !key.trim()">
+          {{ busy === 'save' ? 'Checking…' : 'Save' }}
+        </button>
+      </template>
       <button
         type="button"
         class="btn"
@@ -141,7 +152,7 @@ const remove = () =>
         {{ busy === 'test' ? 'Testing…' : 'Test' }}
       </button>
       <button
-        v-if="provider.source === 'settings'"
+        v-if="provider.source === 'settings' && !readOnly"
         type="button"
         class="btn btn--quiet"
         :disabled="busy !== null"
@@ -215,6 +226,17 @@ const remove = () =>
 @media (width >= 40rem) {
   .provider__form {
     grid-template-columns: minmax(0, 1fr) auto auto auto;
+  }
+}
+
+.provider__form--read-only {
+  grid-template-columns: auto;
+  justify-content: start;
+}
+
+@media (width >= 40rem) {
+  .provider__form--read-only {
+    grid-template-columns: auto;
   }
 }
 

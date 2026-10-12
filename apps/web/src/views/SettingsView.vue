@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { api } from '@/api/endpoints';
 import ErrorNotice from '@/components/ErrorNotice.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -9,6 +10,7 @@ import { useResource } from '@/composables/useResource';
 
 const providers = useResource(() => api.providers.list());
 const health = useHealth();
+const readOnly = computed(() => health.data.value?.providerKeysEditable === false);
 
 async function refresh(): Promise<void> {
   await Promise.all([providers.refresh(), health.refresh()]);
@@ -26,7 +28,11 @@ async function refresh(): Promise<void> {
     <div class="section__head">
       <h2 id="providers-heading">Model providers</h2>
     </div>
-    <p class="muted prose intro">
+    <p v-if="readOnly" class="muted prose intro">
+      Keys on this deployment are managed by its administrator, so they can't be changed here. You
+      can still test them.
+    </p>
+    <p v-else class="muted prose intro">
       A key saved here is checked with the provider, then used instead of the matching variable in
       <code>.env</code>. Keys are stored in the local database, readable only by your user, and are
       never sent back to the browser; only the last four characters are shown. The sample configs
@@ -45,6 +51,7 @@ async function refresh(): Promise<void> {
         v-for="provider in providers.data.value"
         :key="provider.id"
         :provider="provider"
+        :read-only="readOnly"
         @changed="refresh"
       />
     </ul>

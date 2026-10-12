@@ -1,9 +1,10 @@
-import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { createRequire } from 'node:module';
 import { dirname } from 'node:path';
 import { createRequestGuard, LOOPBACK_HOSTS } from './common/request-guard.js';
+import { createAuthGate } from './auth/auth-gate.js';
+import { AuthService } from './auth/auth.service.js';
 import type { Env } from './config/env.schema.js';
 import { DOCS_ASSETS_PATH } from './openapi/openapi.controller.js';
 
@@ -29,16 +30,9 @@ export function configureApp(app: NestExpressApplication): void {
   ]);
 
   app.use(createRequestGuard(allowedHosts));
+  app.use(createAuthGate(app.get(AuthService)));
   app.useBodyParser('json', { limit: JSON_BODY_LIMIT });
   app.useStaticAssets(SWAGGER_UI_DIR, { prefix: DOCS_ASSETS_PATH, index: false });
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();
-
-  const host = config.get('HOST', { infer: true });
-  if (!(LOOPBACK_HOSTS as readonly string[]).includes(host)) {
-    Logger.warn(
-      `HOST=${host} exposes the API beyond this machine. It has no authentication; put it behind an authenticating proxy.`,
-      'Security',
-    );
-  }
 }

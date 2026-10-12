@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { validateEnv } from './config/env.schema.js';
 import { REPO_ROOT } from './config/paths.js';
 import { AssistantModule } from './assistant/assistant.module.js';
+import { AuthModule } from './auth/auth.module.js';
 import { ConfigsModule } from './configs/configs.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { ExperimentsModule } from './experiments/experiments.module.js';
@@ -39,6 +40,7 @@ function webApp(): DynamicModule[] {
     DatabaseModule,
     ProvidersModule,
     AssistantModule,
+    AuthModule,
     HealthModule,
     OpenApiModule,
     SkillsModule,

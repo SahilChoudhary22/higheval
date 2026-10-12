@@ -16,6 +16,7 @@ const HEALTHY = {
   uptimeSeconds: 3,
   checks: { configuredProviders: ['openrouter'], hermesVersion: 'Hermes 1.0' },
   maxConcurrentRuns: 4,
+  providerKeysEditable: true,
 };
 
 describe('getJson', () => {
