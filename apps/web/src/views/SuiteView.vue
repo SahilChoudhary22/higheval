@@ -97,6 +97,7 @@ async function remove(): Promise<void> {
                 <td class="wrap-anywhere">
                   <strong>{{ describeScorer(scorer).kind }}</strong>
                   <span class="mono on">{{ describeScorer(scorer).on }}</span>
+                  <span v-if="scorer.required" class="label required">required</span>
                   <span class="check muted mono">{{ describeScorer(scorer).check }}</span>
                 </td>
                 <td class="num">{{ scorer.weight }}</td>
@@ -145,6 +146,10 @@ async function remove(): Promise<void> {
 }
 
 .on {
+  margin-left: var(--space-xs);
+}
+
+.required {
   margin-left: var(--space-xs);
 }
 

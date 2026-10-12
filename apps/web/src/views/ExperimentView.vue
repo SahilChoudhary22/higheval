@@ -80,6 +80,20 @@ const ARM_ROWS: { label: string; value: (arm: ArmSummary) => string }[] = [
   { label: 'Config hash', value: (arm) => arm.configHash.slice(0, 12) },
 ];
 
+/** Scoring spend by LLM judges, shown only when the suite uses a judge. */
+const JUDGE_ROWS: typeof ARM_ROWS = [
+  { label: 'Judge requests', value: (arm) => String(arm.judgeRequests) },
+  { label: 'Judge tokens', value: (arm) => formatCount(arm.judgeTokens) },
+  { label: 'Judge cost', value: (arm) => formatCost(arm.judgeCostUsd) },
+];
+
+const armRows = computed(() => {
+  const data = comparison.data.value;
+  const judged =
+    data !== undefined && data.baseline.judgeRequests + data.candidate.judgeRequests > 0;
+  return judged ? [...ARM_ROWS, ...JUDGE_ROWS] : ARM_ROWS;
+});
+
 const armName = (arm: Arm): string =>
   (arm === 'baseline'
     ? experiment.data.value?.baseline.name
@@ -187,7 +201,7 @@ async function remove(): Promise<void> {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in ARM_ROWS" :key="row.label">
+            <tr v-for="row in armRows" :key="row.label">
               <th scope="row" class="label">{{ row.label }}</th>
               <td class="num wrap-anywhere">{{ row.value(comparison.data.value.baseline) }}</td>
               <td class="num wrap-anywhere">{{ row.value(comparison.data.value.candidate) }}</td>
