@@ -1,4 +1,6 @@
+import { resolve } from 'node:path';
 import { validateEnv } from './env.schema.js';
+import { REPO_ROOT } from './paths.js';
 
 describe('validateEnv', () => {
   it('applies defaults for a minimal environment', () => {
@@ -7,6 +9,11 @@ describe('validateEnv', () => {
       HOST: '127.0.0.1',
       PORT: 3000,
       LOG_FORMAT: 'pretty',
+      DATA_DIR: resolve(REPO_ROOT, 'data'),
+      HERMES_MANIFEST: resolve(REPO_ROOT, '.hermes-runtime/manifest.json'),
+      MAX_CONCURRENT_RUNS: 2,
+      MAX_RUN_ATTEMPTS: 3,
+      RETRY_BASE_DELAY_MS: 15_000,
     });
   });
 

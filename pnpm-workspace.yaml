@@ -15,3 +15,5 @@ catalog:
 # Dependencies allowed to run install scripts (supply-chain hardening).
 allowBuilds:
   better-sqlite3: true
+  # Its install script only verifies the platform binary, which pnpm installs anyway.
+  esbuild: false

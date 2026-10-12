@@ -19,7 +19,8 @@
       {
         "allowWithDecorator": true
       }
-    ]
+    ],
+    "typescript/consistent-return": "off"
   },
   "ignorePatterns": ["**/dist/**", "**/coverage/**", "**/drizzle/**"]
 }
