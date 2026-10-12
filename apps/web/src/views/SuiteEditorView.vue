@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { suiteInputSchema, type Suite, type SuiteInput } from '@higheval/shared';
+import { friendlyError, suiteInputSchema, type Suite, type SuiteInput } from '@higheval/shared';
 import { computed, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { api } from '@/api/endpoints';
@@ -9,7 +9,8 @@ import { useFormErrors } from '@/composables/useFormErrors';
 
 const props = defineProps<{ id?: string }>();
 const router = useRouter();
-const { errors, formError, fromError, clear } = useFormErrors();
+const { errors, formError, fromError, focusFirstInvalid, clear } = useFormErrors();
+const formEl = ref<HTMLFormElement | null>(null);
 
 const TEMPLATE: SuiteInput = {
   name: 'New suite',
@@ -86,7 +87,7 @@ const parsed = computed(() => {
       issues: [{ path: '', message: error instanceof Error ? error.message : 'Invalid JSON' }],
     };
   }
-  const result = suiteInputSchema.safeParse(json);
+  const result = suiteInputSchema.safeParse(json, { error: friendlyError });
   return result.success
     ? { ok: true as const, value: result.data, issues: [] }
     : {
@@ -114,6 +115,7 @@ async function save(): Promise<void> {
     await router.push(`/suites/${suite.id}`);
   } catch (error) {
     fromError(error);
+    await focusFirstInvalid(formEl.value);
   } finally {
     saving.value = false;
   }
@@ -131,7 +133,7 @@ async function save(): Promise<void> {
   </PageHeader>
 
   <SkeletonRows v-if="loading" :rows="8" />
-  <form v-else class="editor" novalidate @submit.prevent="save">
+  <form v-else ref="formEl" class="editor" novalidate @submit.prevent="save">
     <div class="field">
       <label class="field__label" for="suite-json">Suite definition</label>
       <textarea
@@ -139,7 +141,7 @@ async function save(): Promise<void> {
         v-model="source"
         class="textarea textarea--code editor__text"
         spellcheck="false"
-        :aria-invalid="!parsed.ok"
+        :aria-invalid="issues.length > 0"
         aria-describedby="suite-issues"
       />
     </div>

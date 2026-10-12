@@ -4,8 +4,11 @@ import { computed, reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { api } from '@/api/endpoints';
 import ErrorNotice from '@/components/ErrorNotice.vue';
+import FormAlert from '@/components/FormAlert.vue';
+import FormField from '@/components/FormField.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import { useFormErrors } from '@/composables/useFormErrors';
+import { useHealth } from '@/composables/useHealth';
 import { useResource } from '@/composables/useResource';
 import { estimateDurationMs, formatApproxDuration, TYPICAL_RUN_SECONDS } from '@/lib/timing';
 
@@ -15,8 +18,18 @@ const REQUESTS_PER_RUN = 3;
 const router = useRouter();
 const suites = useResource(() => api.suites.list());
 const configs = useResource(() => api.configs.list());
-const health = useResource(() => api.health());
-const { errors, formError, validate, fromError, clear } = useFormErrors();
+const health = useHealth();
+const { formError, validate, fromError, errorFor, unclaimed, focusFirstInvalid, clear } =
+  useFormErrors();
+const FIELDS = [
+  'name',
+  'suiteId',
+  'baselineConfigId',
+  'candidateConfigId',
+  'repetitions',
+  'practicalMargin',
+] as const;
+const formEl = ref<HTMLFormElement | null>(null);
 const submitting = ref(false);
 
 const form = reactive({
@@ -60,13 +73,17 @@ const disabledReason = computed(() => {
 async function submit(): Promise<void> {
   clear();
   const input: ExperimentInput = { ...form, name: form.name.trim() || defaultName.value };
-  if (!validate(experimentInputSchema, input)) return;
+  if (!validate(experimentInputSchema, input)) {
+    await focusFirstInvalid(formEl.value);
+    return;
+  }
   submitting.value = true;
   try {
     const experiment = await api.experiments.create(input);
     await router.push(`/experiments/${experiment.id}`);
   } catch (error) {
     fromError(error);
+    await focusFirstInvalid(formEl.value);
   } finally {
     submitting.value = false;
   }
@@ -86,65 +103,79 @@ async function submit(): Promise<void> {
     @retry="() => (suites.refresh(), configs.refresh())"
   />
 
-  <form v-else class="form" novalidate @submit.prevent="submit">
-    <div class="field">
-      <label class="field__label" for="suite">Suite</label>
+  <form v-else ref="formEl" class="form" novalidate @submit.prevent="submit">
+    <FormField
+      id="suite"
+      v-slot="field"
+      label="Suite"
+      :error="errorFor('suiteId')"
+      help="Every task in the suite runs under both configs."
+    >
       <select
         id="suite"
         v-model="form.suiteId"
         class="select"
-        :aria-invalid="Boolean(errors.suiteId)"
+        :aria-invalid="field.invalid"
+        :aria-describedby="field.describedby"
       >
         <option value="" disabled>Choose a suite</option>
         <option v-for="item in suites.data.value" :key="item.id" :value="item.id">
           {{ item.name }} ({{ item.taskCount }} tasks)
         </option>
       </select>
-      <p class="field__help" :class="{ 'field__help--error': errors.suiteId }">
-        {{ errors.suiteId ?? 'Every task in the suite runs under both configs.' }}
-      </p>
-    </div>
+    </FormField>
 
     <div class="form__pair">
-      <div class="field">
-        <label class="field__label" for="baseline">Baseline config</label>
+      <FormField
+        id="baseline"
+        v-slot="field"
+        label="Baseline config"
+        :error="errorFor('baselineConfigId')"
+        help="What you run today."
+      >
         <select
           id="baseline"
           v-model="form.baselineConfigId"
           class="select"
-          :aria-invalid="Boolean(errors.baselineConfigId)"
+          :aria-invalid="field.invalid"
+          :aria-describedby="field.describedby"
         >
           <option value="" disabled>Choose a config</option>
           <option v-for="item in configs.data.value" :key="item.id" :value="item.id">
             {{ item.name }}
           </option>
         </select>
-        <p class="field__help" :class="{ 'field__help--error': errors.baselineConfigId }">
-          {{ errors.baselineConfigId ?? 'What you run today.' }}
-        </p>
-      </div>
-      <div class="field">
-        <label class="field__label" for="candidate">Candidate config</label>
+      </FormField>
+      <FormField
+        id="candidate"
+        v-slot="field"
+        label="Candidate config"
+        :error="errorFor('candidateConfigId')"
+        help="The change you are evaluating."
+      >
         <select
           id="candidate"
           v-model="form.candidateConfigId"
           class="select"
-          :aria-invalid="Boolean(errors.candidateConfigId)"
+          :aria-invalid="field.invalid"
+          :aria-describedby="field.describedby"
         >
           <option value="" disabled>Choose a config</option>
           <option v-for="item in configs.data.value" :key="item.id" :value="item.id">
             {{ item.name }}
           </option>
         </select>
-        <p class="field__help" :class="{ 'field__help--error': errors.candidateConfigId }">
-          {{ errors.candidateConfigId ?? 'The change you are evaluating.' }}
-        </p>
-      </div>
+      </FormField>
     </div>
 
     <div class="form__pair">
-      <div class="field">
-        <label class="field__label" for="repetitions">Repetitions per task</label>
+      <FormField
+        id="repetitions"
+        v-slot="field"
+        label="Repetitions per task"
+        :error="errorFor('repetitions')"
+        help="Repeats are averaged per task, reducing run-to-run noise."
+      >
         <input
           id="repetitions"
           v-model.number="form.repetitions"
@@ -152,14 +183,17 @@ async function submit(): Promise<void> {
           type="number"
           min="1"
           max="10"
-          :aria-invalid="Boolean(errors.repetitions)"
+          :aria-invalid="field.invalid"
+          :aria-describedby="field.describedby"
         />
-        <p class="field__help" :class="{ 'field__help--error': errors.repetitions }">
-          {{ errors.repetitions ?? 'Repeats are averaged per task, reducing run-to-run noise.' }}
-        </p>
-      </div>
-      <div class="field">
-        <label class="field__label" for="margin">Practical margin</label>
+      </FormField>
+      <FormField
+        id="margin"
+        v-slot="field"
+        label="Practical margin"
+        :error="errorFor('practicalMargin')"
+        help="Smallest score difference that matters. Set it before you see results."
+      >
         <input
           id="margin"
           v-model.number="form.practicalMargin"
@@ -169,27 +203,28 @@ async function submit(): Promise<void> {
           max="1"
           step="0.01"
           placeholder="0.05"
-          :aria-invalid="Boolean(errors.practicalMargin)"
+          :aria-invalid="field.invalid"
+          :aria-describedby="field.describedby"
         />
-        <p class="field__help" :class="{ 'field__help--error': errors.practicalMargin }">
-          {{
-            errors.practicalMargin ??
-            'Smallest score difference that matters. Set it before you see results.'
-          }}
-        </p>
-      </div>
+      </FormField>
     </div>
 
-    <div class="field">
-      <label class="field__label" for="name">Name</label>
+    <FormField
+      id="name"
+      v-slot="field"
+      label="Name"
+      :error="errorFor('name')"
+      help="Optional. Defaults to the two config names."
+    >
       <input
         id="name"
         v-model="form.name"
         class="input"
         :placeholder="defaultName || 'Candidate vs baseline'"
+        :aria-invalid="field.invalid"
+        :aria-describedby="field.describedby"
       />
-      <p class="field__help">{{ errors.name ?? 'Optional. Defaults to the two config names.' }}</p>
-    </div>
+    </FormField>
 
     <dl class="spec form__estimate">
       <dt class="label">Agent runs</dt>
@@ -200,7 +235,7 @@ async function submit(): Promise<void> {
       <dd>{{ duration }} · {{ concurrency }} at a time, ~{{ TYPICAL_RUN_SECONDS }} s each</dd>
     </dl>
 
-    <p v-if="formError" class="field__help field__help--error" role="alert">{{ formError }}</p>
+    <FormAlert :message="formError" :details="unclaimed(FIELDS)" />
     <div class="form__actions">
       <button
         type="submit"
