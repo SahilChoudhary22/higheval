@@ -4,6 +4,8 @@ import {
   comparisonSchema,
   experimentSchema,
   healthResponseSchema,
+  providerStatusSchema,
+  providerTestResultSchema,
   runDetailSchema,
   runSummarySchema,
   skillSchema,
@@ -11,6 +13,8 @@ import {
   suiteSummarySchema,
   type AgentConfigInput,
   type ExperimentInput,
+  type ProviderId,
+  type ProviderKeyInput,
   type SkillInput,
   type SuiteInput,
 } from '@higheval/shared';
@@ -20,6 +24,14 @@ import { deleteResource, getJson, postJson, putJson } from './client';
 /** Typed API surface. Every response is validated against the shared contract. */
 export const api = {
   health: () => getJson('/health', healthResponseSchema),
+
+  providers: {
+    list: () => getJson('/providers', z.array(providerStatusSchema)),
+    saveKey: (id: ProviderId, input: ProviderKeyInput) =>
+      putJson(`/providers/${id}/key`, input, providerTestResultSchema),
+    removeKey: (id: ProviderId) => deleteResource(`/providers/${id}/key`),
+    test: (id: ProviderId) => postJson(`/providers/${id}/test`, {}, providerTestResultSchema),
+  },
 
   hermes: {
     skills: () => getJson('/hermes/skills', bundledSkillCatalogSchema),

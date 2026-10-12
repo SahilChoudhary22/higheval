@@ -4,12 +4,14 @@ import Database from 'better-sqlite3';
 import { config as loadDotenv } from 'dotenv';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { validateEnv } from '../src/config/env.schema.js';
+import { validateEnv, type Env } from '../src/config/env.schema.js';
 import { REPO_ROOT } from '../src/config/paths.js';
+import { openDatabase } from '../src/database/database.js';
 import type { ExecutionOutcome } from '../src/execution/agent-executor.js';
 import { BundledSkillsService } from '../src/execution/hermes/bundled-skills.service.js';
 import { loadHermesRuntime } from '../src/execution/hermes/hermes-runtime.js';
 import { HermesExecutor } from '../src/execution/hermes/hermes.executor.js';
+import { ProviderCredentials } from '../src/providers/provider-credentials.service.js';
 
 /**
  * Live verification that configuration controls actually change Hermes'
@@ -56,7 +58,11 @@ function systemPrompt(runDir: string): string {
 }
 
 describe.skipIf(!ready)('HermesExecutor (live)', () => {
-  const executor = new HermesExecutor(new ConfigService(env));
+  const appConfig = new ConfigService<Env, true>(env);
+  const executor = new HermesExecutor(
+    appConfig,
+    new ProviderCredentials(openDatabase(':memory:').db, appConfig),
+  );
   // Inside the repository on purpose, like real runs under DATA_DIR, so the
   // leak test below exercises Hermes' upward discovery of project context.
   const liveRoot = resolve(REPO_ROOT, 'data', 'live-tests');

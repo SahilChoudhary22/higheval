@@ -9,6 +9,8 @@ const dataDir = mkdtempSync(join(tmpdir(), 'higheval-e2e-'));
 process.env.DATA_DIR = dataDir;
 process.env.RETRY_BASE_DELAY_MS = '0';
 process.env.SEED_SAMPLES = 'false';
+// A stand-in key, so tests never read (or depend on) a real key in .env.
+process.env.OPENROUTER_API_KEY = 'e2e-openrouter-key';
 
 // A stand-in Hermes install with two built-in skills, so the skill catalog does
 // not depend on whether the real runtime is installed. Nothing is ever executed.

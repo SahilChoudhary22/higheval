@@ -26,7 +26,7 @@ That one command:
 4. Installs the pinned Hermes runtime into `./.hermes-runtime`. This happens once, takes about 1 minute and about 1.3 GB, and writes nothing to your home directory.
 5. Builds everything and serves the app at **http://127.0.0.1:3000**.
 
-Add your key to `.env` (`OPENROUTER_API_KEY=…`) and run `pnpm start` again. The UI shows what's missing until then.
+Then open **Settings** and paste an OpenRouter key (or set `OPENROUTER_API_KEY` in `.env`). The key is checked with the provider before it is saved, and the status rail shows what's missing until then. Configurations can also run on OpenAI, Anthropic, Google AI Studio, DeepSeek, xAI or NVIDIA NIM with that provider's key.
 
 On first start the database is seeded with three sample suites, a skill and three configurations, so you can launch an experiment immediately.
 
@@ -58,9 +58,9 @@ Seeded configurations:
 | Nemotron 3.5 Lightning · file tools                   | Model-change candidate |
 | Nemotron 3.5 Lightning · file tools + checklist skill | Skill-change candidate |
 
-None of them use Hermes' 58 built-in skills. A configuration can opt into all of them or a selection; the choice is recorded and hashed like any other setting ([design decision 2](docs/design.md#2-every-run-starts-from-a-clean-separate-environment-and-the-separation-is-tested)).
-
 [`Customer conversations`](apps/api/src/samples/customer-conversations-suite.ts) has three synthetic customer messages (a late refund, a pricing question, an SMS reschedule). Hard requirements (states the refund window, quotes no prices, fits one SMS) are `required` deterministic checks; empathy, accuracy to policy and a clear next step are rated by a pinned LLM judge from a different model family than the configurations under test.
+
+None of the seeded configurations use Hermes' 58 built-in skills. A configuration can opt into all of them or a selection; the choice is recorded and hashed like any other setting ([design decision 2](docs/design.md#2-every-run-starts-from-a-clean-separate-environment-and-the-separation-is-tested)).
 
 ## Results
 
@@ -111,11 +111,12 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/), enf
 
 ### Configuration
 
-All settings are optional except the provider key. They are validated at startup, and the app refuses to boot on invalid values.
+All settings are optional. They are validated at startup, and the app refuses to boot on invalid values. Provider keys can be set here or in **Settings**; a key saved in Settings takes precedence.
 
 | Variable                    | Default                         | Purpose                                                                                    |
 | --------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------ |
-| `OPENROUTER_API_KEY`        | —                               | Provider key used by Hermes                                                                |
+| `OPENROUTER_API_KEY`        | —                               | OpenRouter key, used by the sample configs and the LLM judge                               |
+| `<PROVIDER>_API_KEY`        | —                               | Keys for other providers: `OPENAI`, `ANTHROPIC`, `GEMINI`, `DEEPSEEK`, `XAI`, `NVIDIA`     |
 | `HOST` / `PORT`             | `127.0.0.1` / `3000`            | Bind address. Keep it local unless behind an authenticating proxy                          |
 | `DATA_DIR`                  | `./data`                        | SQLite database and per-run artifacts                                                      |
 | `MAX_CONCURRENT_RUNS`       | `4`                             | Parallel agent runs across all experiments                                                 |

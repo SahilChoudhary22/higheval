@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import {
   agentConfigInputSchema,
+  PROVIDER_IDS,
+  PROVIDERS,
   toolsetSchema,
+  type ProviderId,
   type AgentConfigInput,
   type BundledSkills,
   type Toolset,
@@ -19,6 +22,7 @@ const props = defineProps<{ id?: string }>();
 const router = useRouter();
 const skills = useResource(() => api.skills.list());
 const catalog = useResource(() => api.hermes.skills());
+const providers = useResource(() => api.providers.list());
 const { errors, formError, validate, fromError, clear } = useFormErrors();
 
 const TOOLSET_HELP: Record<Toolset, string> = {
@@ -27,6 +31,7 @@ const TOOLSET_HELP: Record<Toolset, string> = {
   todo: 'Keep a task list while working.',
   skills: 'List and open the available skills on demand.',
 };
+/** Free OpenRouter models used by the samples. */
 const SUGGESTED_MODELS = [
   'nvidia/nemotron-3-super-120b-a12b:free',
   'nvidia/nemotron-3.5-lightning:free',
@@ -36,6 +41,7 @@ const SUGGESTED_MODELS = [
 interface ConfigForm {
   name: string;
   description: string;
+  provider: ProviderId;
   model: string;
   toolsets: Toolset[];
   skillIds: string[];
@@ -50,6 +56,7 @@ interface ConfigForm {
 const form = reactive<ConfigForm>({
   name: '',
   description: '',
+  provider: 'openrouter',
   model: '',
   toolsets: ['file'],
   skillIds: [],
@@ -73,6 +80,7 @@ watch(
       Object.assign(form, {
         name: config.name,
         description: config.description,
+        provider: config.model.provider,
         model: config.model.model,
         toolsets: [...config.toolsets],
         skillIds: [...config.skillIds],
@@ -91,6 +99,12 @@ watch(
     }
   },
   { immediate: true },
+);
+
+const providerInfo = computed(() => PROVIDERS[form.provider]);
+/** False only once we know the selected provider has no key; unknown counts as fine. */
+const providerReady = computed(
+  () => providers.data.value?.find((provider) => provider.id === form.provider)?.configured ?? true,
 );
 
 const bundledQuery = ref('');
@@ -128,7 +142,7 @@ async function save(): Promise<void> {
   const input: AgentConfigInput = {
     name: form.name.trim(),
     description: form.description.trim(),
-    model: { provider: 'openrouter', model: form.model.trim() },
+    model: { provider: form.provider, model: form.model.trim() },
     toolsets: form.toolsets,
     skillIds: form.skillIds,
     bundledSkills: bundledSkills.value,
@@ -180,13 +194,40 @@ async function save(): Promise<void> {
     </div>
 
     <div class="field">
+      <label class="field__label" for="provider">Provider</label>
+      <select
+        id="provider"
+        v-model="form.provider"
+        class="select"
+        aria-describedby="provider-help"
+        :aria-invalid="Boolean(errors['model.provider'])"
+      >
+        <option v-for="providerId in PROVIDER_IDS" :key="providerId" :value="providerId">
+          {{ PROVIDERS[providerId].name }}
+        </option>
+      </select>
+      <p
+        id="provider-help"
+        class="field__help"
+        :class="{ 'field__help--error': errors['model.provider'] }"
+      >
+        <template v-if="errors['model.provider']">{{ errors['model.provider'] }}</template>
+        <template v-else-if="!providerReady">
+          No {{ providerInfo.name }} key yet. Runs with this config will fail until you
+          <RouterLink to="/settings">add one in Settings</RouterLink>.
+        </template>
+        <template v-else>Runs use this provider's key from Settings or .env.</template>
+      </p>
+    </div>
+
+    <div class="field">
       <label class="field__label" for="model">Model</label>
       <input
         id="model"
         v-model="form.model"
         class="input mono"
-        list="model-suggestions"
-        placeholder="vendor/model-id"
+        :list="form.provider === 'openrouter' ? 'model-suggestions' : undefined"
+        :placeholder="providerInfo.modelExample"
         spellcheck="false"
         :aria-invalid="Boolean(errors['model.model'])"
       />
@@ -196,7 +237,7 @@ async function save(): Promise<void> {
       <p class="field__help" :class="{ 'field__help--error': errors['model.model'] }">
         {{
           errors['model.model'] ??
-          'Exact OpenRouter model ID. Router aliases are not allowed, so results stay attributable.'
+          `Exact ${providerInfo.name} model ID. Router aliases are not allowed, so results stay attributable.`
         }}
       </p>
     </div>

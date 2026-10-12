@@ -1,9 +1,8 @@
-import { ConfigService } from '@nestjs/config';
 import type { AgentEvent, ConfigSnapshot } from '@higheval/shared';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { validateEnv, type Env } from '../../config/env.schema.js';
+import { testCredentials } from '../../providers/testing.js';
 import type { ExecutionOutcome } from '../agent-executor.js';
 import { HermesExecutor } from './hermes.executor.js';
 
@@ -72,12 +71,12 @@ describe('HermesExecutor (fake Hermes CLI)', () => {
         version: 'Fake Hermes',
       }),
     );
-    const env = validateEnv({
+    const { config, credentials } = testCredentials({
       OPENROUTER_API_KEY: 'test-key',
       HERMES_MANIFEST: manifest,
       DATA_DIR: root,
     });
-    executor = new HermesExecutor(new ConfigService<Env, true>(env));
+    executor = new HermesExecutor(config, credentials);
   });
 
   afterAll(() => {
@@ -155,8 +154,11 @@ describe('HermesExecutor (fake Hermes CLI)', () => {
   });
 
   it('reports a setup error when no provider key is configured', async () => {
-    const env = validateEnv({ HERMES_MANIFEST: join(root, 'manifest.json'), DATA_DIR: root });
-    const keyless = new HermesExecutor(new ConfigService<Env, true>(env));
+    const { config, credentials } = testCredentials({
+      HERMES_MANIFEST: join(root, 'manifest.json'),
+      DATA_DIR: root,
+    });
+    const keyless = new HermesExecutor(config, credentials);
     const outcome = await keyless.execute(
       {
         runId: 'k',

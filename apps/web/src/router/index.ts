@@ -72,6 +72,11 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Edit skill' },
   },
   {
+    path: '/settings',
+    component: () => import('@/views/SettingsView.vue'),
+    meta: { title: 'Settings' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     component: () => import('@/views/NotFoundView.vue'),
     meta: { title: 'Not found' },

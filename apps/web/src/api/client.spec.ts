@@ -14,7 +14,7 @@ const HEALTHY = {
   status: 'ok',
   version: '0.1.0',
   uptimeSeconds: 3,
-  checks: { providerKey: true, hermesVersion: 'Hermes 1.0' },
+  checks: { configuredProviders: ['openrouter'], hermesVersion: 'Hermes 1.0' },
   maxConcurrentRuns: 4,
 };
 

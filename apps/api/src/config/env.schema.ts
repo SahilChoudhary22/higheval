@@ -37,8 +37,17 @@ export const envSchema = z.object({
     .transform((value) => value === 'true'),
   /** First retry delay for LLM-judge calls that hit a rate limit; doubles each attempt. */
   JUDGE_RETRY_BASE_DELAY_MS: z.coerce.number().int().min(0).default(2_000),
-  /** Optional at boot so the UI can start and explain what is missing. */
+  /**
+   * Provider keys. All optional: keys can also be saved in the UI (Settings),
+   * which take precedence. The UI starts without any and explains what is missing.
+   */
   OPENROUTER_API_KEY: z.string().min(1).optional(),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  DEEPSEEK_API_KEY: z.string().min(1).optional(),
+  XAI_API_KEY: z.string().min(1).optional(),
+  NVIDIA_API_KEY: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

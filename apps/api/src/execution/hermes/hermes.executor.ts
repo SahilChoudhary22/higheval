@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { AgentEvent } from '@higheval/shared';
+import { PROVIDERS, type AgentEvent } from '@higheval/shared';
 import { execFile } from 'node:child_process';
 import { constants, createWriteStream } from 'node:fs';
 import { cp, mkdir, writeFile } from 'node:fs/promises';
@@ -14,6 +14,7 @@ import {
   type ExecutionOutcome,
   type ExecutionRequest,
 } from '../agent-executor.js';
+import { ProviderCredentials } from '../../providers/provider-credentials.service.js';
 import { CatalogCache } from './catalog-cache.js';
 import {
   bundledSkillsDir,
@@ -48,7 +49,10 @@ export class HermesExecutor extends AgentExecutor {
   private readonly logger = new Logger(HermesExecutor.name);
   private readonly catalog: CatalogCache;
 
-  constructor(private readonly config: ConfigService<Env, true>) {
+  constructor(
+    private readonly config: ConfigService<Env, true>,
+    private readonly credentials: ProviderCredentials,
+  ) {
     super();
     this.catalog = new CatalogCache(join(config.get('DATA_DIR', { infer: true }), 'hermes-cache'));
   }
@@ -57,10 +61,12 @@ export class HermesExecutor extends AgentExecutor {
     const startedAt = Date.now();
     const elapsed = (): number => Date.now() - startedAt;
     const runtime = loadHermesRuntime(this.config.get('HERMES_MANIFEST', { infer: true }));
-    const apiKey = this.config.get('OPENROUTER_API_KEY', { infer: true });
-    if (!runtime || !apiKey) {
+    const provider = PROVIDERS[request.config.model.provider];
+    const apiKey = this.credentials.key(provider.id);
+    if (!runtime) return setupError(HERMES_NOT_INSTALLED, elapsed());
+    if (!apiKey) {
       return setupError(
-        !runtime ? HERMES_NOT_INSTALLED : 'OPENROUTER_API_KEY is not set. Add it to .env.',
+        `No API key for ${provider.name}. Add one in Settings, or set ${provider.keyEnvVar} in .env.`,
         elapsed(),
       );
     }
@@ -122,7 +128,8 @@ export class HermesExecutor extends AgentExecutor {
           HERMES_BUNDLED_SKILLS: join(request.runDir, 'no-bundled-skills'),
           HERMES_DISABLE_LAZY_INSTALLS: '1',
           HERMES_TIMEZONE: 'UTC',
-          OPENROUTER_API_KEY: apiKey,
+          // Only the key for this run's provider, under the name Hermes reads.
+          [provider.keyEnvVar]: apiKey,
         },
       },
       {

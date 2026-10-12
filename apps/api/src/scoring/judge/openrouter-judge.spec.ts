@@ -1,6 +1,4 @@
-import { ConfigService } from '@nestjs/config';
-import { validateEnv, type Env } from '../../config/env.schema.js';
-import { ProviderCredentials } from '../../providers/provider-credentials.service.js';
+import { testCredentials } from '../../providers/testing.js';
 import { JudgeError, type JudgeRequest } from './judge.js';
 import { OpenRouterJudge } from './openrouter-judge.js';
 
@@ -39,10 +37,8 @@ const truncated = () =>
 function createJudge(
   env: Record<string, unknown> = { OPENROUTER_API_KEY: 'key' },
 ): OpenRouterJudge {
-  const config = new ConfigService<Env, true>(
-    validateEnv({ JUDGE_RETRY_BASE_DELAY_MS: '0', ...env }),
-  );
-  return new OpenRouterJudge(new ProviderCredentials(config), config);
+  const { config, credentials } = testCredentials({ JUDGE_RETRY_BASE_DELAY_MS: '0', ...env });
+  return new OpenRouterJudge(credentials, config);
 }
 
 describe('OpenRouterJudge', () => {
