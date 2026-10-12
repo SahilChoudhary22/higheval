@@ -134,11 +134,11 @@ const ICON: Record<CheckState, Component> = {
             </dd>
           </div>
         </dl>
-        <ThemeSwitch />
         <a class="api-link" href="/api/docs" target="_blank" rel="noopener">
           <PhBracketsCurly aria-hidden="true" />
           API reference<span class="visually-hidden"> (opens in a new tab)</span>
         </a>
+        <ThemeSwitch class="rail-footer__theme" />
       </div>
     </aside>
 
@@ -256,6 +256,12 @@ const ICON: Record<CheckState, Component> = {
   display: grid;
   gap: var(--space-md);
   margin: auto 0 0;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-rule);
+}
+
+/* The theme switch is a preference, not status, so a rule separates it. */
+.rail-footer .rail-footer__theme {
   padding-top: var(--space-sm);
   border-top: 1px solid var(--color-rule);
 }
