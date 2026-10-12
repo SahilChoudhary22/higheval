@@ -216,6 +216,12 @@ docker compose up -d --build
 
 Then point a tunnel (for example Cloudflare Tunnel or Tailscale Funnel) or an HTTPS reverse proxy at `http://127.0.0.1:3000`, and add its public hostname to `ALLOWED_HOSTS`.
 
+Without a domain, `compose.tailscale.yaml` publishes HighEval through Tailscale Funnel as its own tailnet node, at `https://higheval.<your-tailnet>.ts.net`. Add a Tailscale auth key as `TS_AUTHKEY` in `.env`, then run:
+
+```bash
+docker compose -f compose.yaml -f compose.tailscale.yaml up -d
+```
+
 What protects a hosted instance:
 
 - **Agents are confined to the container.** Their tools can run commands, so the container runs as an unprivileged user with no Linux capabilities, and the host never sees its files.
