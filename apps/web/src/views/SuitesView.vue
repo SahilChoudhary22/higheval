@@ -33,7 +33,7 @@ function deleteSuite(suite: SuiteSummary): void {
   <PageHeader title="Suites">
     <template #meta><span>Sets of tasks, each with the checks that score it.</span></template>
     <template #actions>
-      <RouterLink to="/suites/new#draft" class="btn">Draft with Hermes</RouterLink>
+      <RouterLink to="/suites/new#draft" class="btn">Draft with HighEval AI</RouterLink>
       <RouterLink to="/suites/new" class="btn btn--primary">New suite</RouterLink>
     </template>
   </PageHeader>
@@ -51,7 +51,7 @@ function deleteSuite(suite: SuiteSummary): void {
       title="No suites yet."
       detail="A suite is the fixed set of tasks both configs are measured on. Each task defines its own scorers."
     >
-      <RouterLink to="/suites/new#draft" class="btn">Draft with Hermes</RouterLink>
+      <RouterLink to="/suites/new#draft" class="btn">Draft with HighEval AI</RouterLink>
       <RouterLink to="/suites/new" class="btn btn--primary">New suite</RouterLink>
     </EmptyState>
     <div v-else class="table-wrap">

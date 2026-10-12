@@ -1,4 +1,5 @@
 import type { AgentConfigInput, SkillInput } from '@higheval/shared';
+import { CLIENT_MEMORY_ENTRIES } from './capability-suites.js';
 
 /** A reusable skill demonstrating how skills change agent behaviour. */
 export const DATA_TASK_CHECKLIST_SKILL: SkillInput = {
@@ -48,3 +49,44 @@ export const SAMPLE_SKILL_CONFIG = (skillId: string): AgentConfigInput => ({
   skillIds: [skillId],
   ...shared,
 });
+
+/**
+ * Capability demos on one model, each differing from the "no tools" baseline in
+ * exactly one setting (or, for tools, from the file-tools baseline above).
+ */
+export const CAPABILITY_CONFIGS = (skillIds: {
+  catalog: string;
+  emailStyle: string;
+}): AgentConfigInput[] => [
+  {
+    name: 'Nemotron 3 Super · no tools',
+    description: 'No tools, skills or memory: the model can only answer from what it knows.',
+    model: { provider: 'openrouter', model: SAMPLE_MODELS.baseline },
+    ...shared,
+    toolsets: [],
+  },
+  {
+    name: 'Nemotron 3 Super · no tools + service catalog skill',
+    description: 'Adds the lakeshore-service-catalog skill; nothing else changes.',
+    model: { provider: 'openrouter', model: SAMPLE_MODELS.baseline },
+    ...shared,
+    toolsets: [],
+    skillIds: [skillIds.catalog],
+  },
+  {
+    name: 'Nemotron 3 Super · no tools + client memory',
+    description: 'Adds seeded memory with eight client facts; nothing else changes.',
+    model: { provider: 'openrouter', model: SAMPLE_MODELS.baseline },
+    ...shared,
+    toolsets: [],
+    memory: { mode: 'seeded', entries: CLIENT_MEMORY_ENTRIES },
+  },
+  {
+    name: 'Nemotron 3 Super · no tools + email style skill',
+    description: 'Adds the lakeshore-email-style skill; nothing else changes.',
+    model: { provider: 'openrouter', model: SAMPLE_MODELS.baseline },
+    ...shared,
+    toolsets: [],
+    skillIds: [skillIds.emailStyle],
+  },
+];

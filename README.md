@@ -35,7 +35,7 @@ HighEval runs the same task suite under two Hermes configurations, scores every 
 ## Features
 
 - **Tasks and scoring.** Suites of tasks with fixture files and typed scorers: JSON fields with tolerances, regular expressions, files created, tools used, and a pinned LLM judge for conversational quality. Every scorer explains its result, and hard rules can be marked `required`.
-- **Draft suites with Hermes.** Describe what to test in plain language. Hermes writes the tasks, fixtures and scorers, computes expected values with a script, and HighEval checks the draft against the schema and Hermes' own reference answers before you review it.
+- **Draft suites with HighEval AI.** Describe what to test in plain language. HighEval AI, an agent built on Hermes, writes the tasks, fixtures and scorers, computes expected values with a script, and HighEval checks the draft against the schema and the agent's own reference answers before you review it.
 - **Configurations.** Provider and model, skills, Hermes' built-in skills, memory (off or seeded), toolsets and limits, snapshotted and hashed at launch so edits never rewrite history.
 - **Isolated, durable runs.** Every run gets a fresh Hermes home, workspace and environment. Runs are interleaved in a seeded random order, with retries, cancellation, hard timeouts and restart recovery.
 - **Statistics you can defend.** Paired per-task differences, a seeded 95% bootstrap interval, an exact sign-flip permutation test, and an explicit equivalence margin.
@@ -71,29 +71,38 @@ One command does the setup. It:
 4. Installs the pinned Hermes runtime into `./.hermes-runtime`. This happens once, takes about a minute and about 1.3 GB, and leaves your home directory untouched.
 5. Serves the app at **http://127.0.0.1:3000**.
 
-Open **Settings** and paste your OpenRouter key; it's verified with the provider before it's saved. The database is seeded with sample suites, a skill and three configurations, so you can launch an experiment right away.
+Open **Settings** and paste your OpenRouter key; it's verified with the provider before it's saved. The database is seeded with sample suites, skills and configurations, including pairs that differ in one setting (a skill, memory or tools), so you can launch an experiment right away.
 
 ### Try it in a minute
 
-**Launch experiment** → suite **Quick check** (preselected) → **Repetitions** 1 → **Launch experiment**. The 10 runs finish in about a minute on free models, with a verdict, per-task results and an inspectable timeline for every run.
+**Launch experiment**, then choose:
+
+| Field       | Choose                                                  |
+| ----------- | ------------------------------------------------------- |
+| Suite       | **Capability: service catalog**                         |
+| Baseline    | **Nemotron 3 Super · no tools**                         |
+| Candidate   | **Nemotron 3 Super · no tools + service catalog skill** |
+| Repetitions | **1**                                                   |
+
+The 16 runs finish in about 30 seconds on a free model, and the verdict should be _Candidate is better_: the skill holds pricing rules the model cannot know. Open a baseline run in the inspector to see what the model said without it. The other capability suites work the same way with the memory, email style and file-tools configurations.
 
 A full experiment takes longer because nearly all the time is spent waiting on the model. Each run makes 3–5 calls, and free endpoints take about 10 s per call, so plan on roughly _runs × 40 s ÷ concurrency_. The 96-run model-change experiment took 22 minutes at concurrency 3. The launch form shows this estimate before you start.
 
 Free-model request limits depend on your OpenRouter account: a Quick check uses about 30 requests and a 96-run experiment about 360.
 
-### Draft a suite with Hermes
+### Draft a suite with HighEval AI
 
-Go to **Suites → Draft with Hermes** and describe what to test, for example:
+Go to **Suites → Draft with HighEval AI** and describe what to test, for example:
 
 > Three tasks for a dental clinic front desk: find double-booked appointments (back-to-back slots are fine), compute no-show fees with a 24-hour grace period, and list patients due for a six-month check-up.
 
-Hermes works in an isolated workspace with:
+HighEval AI is a Hermes agent. It works in an isolated workspace, like any experiment run, with:
 
 - the suite's JSON Schema
 - two known-good example tasks
 - an authoring skill
 
-It writes the suite and a reference solution for each task. HighEval then requires every deterministic scorer to pass against that reference, and sends any problems back for another attempt. The draft opens in the editor for you to review; nothing is saved until you save it. You can follow up with changes ("make the second task stricter"), and Hermes revises the draft. See [design decision 10](docs/design.md#10-hermes-drafts-suites-higheval-checks-them).
+It writes the suite and a reference solution for each task. HighEval then requires every deterministic scorer to pass against that reference, and sends any problems back for another attempt. The draft opens in the editor for you to review; nothing is saved until you save it. You can follow up with changes ("make the second task stricter"), and it revises the draft. See [design decision 10](docs/design.md#10-hermes-drafts-suites-higheval-checks-them).
 
 ## How it works
 
@@ -128,19 +137,33 @@ The verdict is fixed before any data comes in:
 | [Agency operations](apps/api/src/samples/agency-ops-suite.ts)                  |    16 | Back-office work for a marketing agency: billing, CRM hygiene, scheduling, compliance and reporting, with deliberate edge cases (boundary dates, time zones, partial payments, tiered thresholds)                   |
 | [Quick check](apps/api/src/samples/quick-check-suite.ts)                       |     5 | A fast subset of Agency operations, for demos                                                                                                                                                                       |
 | [Customer conversations](apps/api/src/samples/customer-conversations-suite.ts) |     3 | Customer replies. Hard rules (states the refund window, quotes no prices, fits in one SMS) are `required` checks; empathy, accuracy and a clear next step are rated by a pinned judge from a different model family |
+| [Capability suites](apps/api/src/samples/capability-suites.ts)                 | 4 × 8 | Service catalog, email house style, client memory and reading files: each answerable only with one setting (a skill, seeded memory or file tools), with matching configurations to switch it on and off             |
 
 Every deterministic task has a reference solution that must score 1.0 in CI. Expected answers live only in the scorers and are never written into the agent's workspace.
 
 ## Results
 
-Two real experiments on the Agency operations suite, each comparing two configurations:
+Six real experiments, all on free models.
 
-| Experiment                                       | Change                                     | Runs | Verdict                                           | Takeaway                                                                                  |
-| ------------------------------------------------ | ------------------------------------------ | ---: | ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| [Model change](docs/experiments/model-change.md) | Nemotron 3 Super → Nemotron 3.5 Lightning  |   96 | Inconclusive<br/>Δ −0.104, 95% CI [−0.229, 0.000] | Lightning won no task, lost 3, and was 2× slower. Don't switch on this evidence.          |
-| [Skill change](docs/experiments/skill-change.md) | Lightning without → with a checklist skill |   64 | Inconclusive<br/>Δ −0.030, 95% CI [−0.083, 0.000] | The skill changed behaviour (more output checks) but not outcomes, and added 25% latency. |
+**Capability experiments** ([report](docs/experiments/capabilities.md)) change one setting on the same model (Nemotron 3 Super), on 8-task suites that only that setting makes answerable. Each takes about 30 seconds, and each reaches a conclusive verdict:
 
-Each report was generated by the platform from stored results (`GET /api/experiments/:id/report.md`), then extended with a written analysis that traces failures through the run inspector. The full JSON evidence for each ships next to its report.
+| Change                                                        | Verdict    | Mean difference, 95% CI            | Wins / losses |
+| ------------------------------------------------------------- | ---------- | ---------------------------------- | ------------- |
+| + a skill with the agency's service catalog and pricing rules | **Better** | +1.000 [+1.000, +1.000], p = 0.008 | 8 / 0         |
+| + a skill with the agency's email house style                 | **Better** | +0.738 [+0.675, +0.800], p = 0.008 | 8 / 0         |
+| Memory off → seeded with client facts                         | **Better** | +1.000 [+1.000, +1.000], p = 0.008 | 8 / 0         |
+| File tools removed                                            | **Worse**  | −0.938 [−1.000, −0.813], p = 0.008 | 0 / 8         |
+
+**Realistic experiments** on the 16-task Agency operations suite, where the changes were subtler:
+
+| Experiment                                       | Change                                             | Runs | Verdict                                           | Takeaway                                                                                  |
+| ------------------------------------------------ | -------------------------------------------------- | ---: | ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [Model change](docs/experiments/model-change.md) | Nemotron 3 Super → Nemotron 3.5 Lightning          |   96 | Inconclusive<br/>Δ −0.104, 95% CI [−0.229, 0.000] | Lightning won no task, lost 3, and was 2× slower. Don't switch on this evidence.          |
+| [Skill change](docs/experiments/skill-change.md) | Lightning without → with a generic checklist skill |   64 | Inconclusive<br/>Δ −0.030, 95% CI [−0.083, 0.000] | The skill changed behaviour (more output checks) but not outcomes, and added 25% latency. |
+
+Together they show both halves of the job: a skill that carries knowledge or a procedure the model lacks produces a clear, conclusive improvement, while a generic "be careful" checklist does not, and HighEval says so instead of overclaiming.
+
+Each report was generated by the platform from stored results (`GET /api/experiments/:id/report.md`), then extended with an analysis that traces failures through the run inspector. The full JSON evidence for each ships next to its report.
 
 ## API
 

@@ -1,0 +1,1260 @@
+{
+  "experiment": {
+    "id": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+    "name": "Skill: service catalog on Nemotron 3 Super",
+    "suiteId": "b699e19f-8b7e-464b-93a3-2643d0bc8abd",
+    "suiteName": "Capability: service catalog",
+    "suiteHash": "1e4cc991464cc21e3799e7c73387ca584685dee1ef15dbc12463ed12754a9c60",
+    "baseline": {
+      "id": "5bad6ec3-b62e-427f-9cd4-9451d8e36570",
+      "name": "Nemotron 3 Super \u00b7 no tools",
+      "description": "No tools, skills or memory: the model can only answer from what it knows.",
+      "model": {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3-super-120b-a12b:free"
+      },
+      "skills": [],
+      "bundledSkills": {
+        "mode": "none",
+        "names": [],
+        "paths": [],
+        "contentHash": null
+      },
+      "hermesCommit": "73162b00eefde3794bed0afb53d84a19c0eed230",
+      "memory": {
+        "mode": "disabled"
+      },
+      "toolsets": [],
+      "maxTurns": 12,
+      "timeoutSeconds": 240,
+      "hash": "18bd5d1df8204507bc8044561920a84d4887b64378c35cb7de4f4467c90d6a58"
+    },
+    "candidate": {
+      "id": "b0f2a5e6-f579-4014-abd1-b310b1793025",
+      "name": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "description": "Adds the lakeshore-service-catalog skill; nothing else changes.",
+      "model": {
+        "provider": "openrouter",
+        "model": "nvidia/nemotron-3-super-120b-a12b:free"
+      },
+      "skills": [
+        {
+          "name": "lakeshore-service-catalog",
+          "description": "Lakeshore Digital's service codes, prices, discount rules, support SLAs and escalation contacts.",
+          "content": "# Lakeshore Digital service catalog\n\nUse this whenever a question involves Lakeshore Digital's services, billing codes, prices, discounts, support targets or escalations.\n\n## Services (monthly list price, USD)\n\n| Code | Service | Price |\n| --- | --- | ---: |\n| LSD-SEO-210 | Local SEO | 640 |\n| LSD-PPC-330 | Google Ads management | 890 |\n| LSD-SOC-115 | Social media management | 520 |\n| LSD-WEB-404 | Website care plan | 310 |\n| LSD-REP-150 | Review management | 275 |\n| LSD-EML-260 | Email marketing | 430 |\n\n## Discounts\n\n1. **Bundle:** 3 or more services take 12% off their combined list price.\n2. **Annual prepay:** a further 5% off, applied after the bundle discount (or to list price if there is no bundle).\n3. **Non-profit:** 20% off list price *instead of* the bundle and prepay discounts. Charge whichever of the two outcomes is cheaper for the client.\n\nQuote monthly prices in whole dollars, rounding halves up.\n\n## Support first-response targets by plan\n\n- Starter: 2 business days\n- Growth: 8 business hours\n- Scale: 1 business hour\n\n## Escalations\n\n- Billing disputes: Dana Ortiz (Finance)\n- Suspended ad accounts: Ravi Menon (Paid media lead)\n- Website outages: the on-call engineer, via #web-oncall\n- Anything legal: Grace Liu (Account director)"
+        }
+      ],
+      "bundledSkills": {
+        "mode": "none",
+        "names": [],
+        "paths": [],
+        "contentHash": null
+      },
+      "hermesCommit": "73162b00eefde3794bed0afb53d84a19c0eed230",
+      "memory": {
+        "mode": "disabled"
+      },
+      "toolsets": [],
+      "maxTurns": 12,
+      "timeoutSeconds": 240,
+      "hash": "a29e1e5b2ea710bdc0d8e82a532f6adb467c6c546a492b2ce3fcac3339fa2996"
+    },
+    "repetitions": 1,
+    "practicalMargin": 0.05,
+    "seed": 784699128,
+    "status": "completed",
+    "createdAt": "2026-10-12T12:53:13.345Z",
+    "startedAt": "2026-10-12T12:53:13.351Z",
+    "finishedAt": "2026-10-12T12:53:48.673Z",
+    "progress": {
+      "total": 16,
+      "queued": 0,
+      "running": 0,
+      "scored": 16,
+      "errored": 0,
+      "cancelled": 0
+    }
+  },
+  "comparison": {
+    "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+    "direction": "candidate_minus_baseline",
+    "baseline": {
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "configHash": "18bd5d1df8204507bc8044561920a84d4887b64378c35cb7de4f4467c90d6a58",
+      "runs": 8,
+      "scoredRuns": 8,
+      "erroredRuns": 0,
+      "meanScore": 0,
+      "passRate": 0,
+      "meanDurationMs": 9891.375,
+      "meanTotalTokens": 1308.625,
+      "totalTokens": 10469,
+      "totalApiCalls": 8,
+      "totalCostUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null
+    },
+    "candidate": {
+      "configName": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "configHash": "a29e1e5b2ea710bdc0d8e82a532f6adb467c6c546a492b2ce3fcac3339fa2996",
+      "runs": 8,
+      "scoredRuns": 8,
+      "erroredRuns": 0,
+      "meanScore": 1,
+      "passRate": 1,
+      "meanDurationMs": 6612.375,
+      "meanTotalTokens": 1744.5,
+      "totalTokens": 13956,
+      "totalApiCalls": 8,
+      "totalCostUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null
+    },
+    "pairedTasks": 8,
+    "totalTasks": 8,
+    "repetitions": 1,
+    "meanDifference": 1,
+    "confidenceInterval": {
+      "level": 0.95,
+      "lower": 1,
+      "upper": 1,
+      "method": "paired_bootstrap_percentile",
+      "resamples": 10000
+    },
+    "pValue": 0.0078125,
+    "wins": 8,
+    "losses": 0,
+    "ties": 0,
+    "practicalMargin": 0.05,
+    "verdict": "candidate_better",
+    "verdictReason": "Mean difference +1.000 (95% CI [+1.000, +1.000], p = 0.008) over 8 tasks. The interval excludes zero and the permutation test agrees.",
+    "tasks": [
+      {
+        "taskId": "5ed1f57f-1963-468c-8b66-7b4822e58f4a",
+        "taskKey": "catalog-service-code",
+        "title": "Service code",
+        "baselineMean": 0,
+        "candidateMean": 1,
+        "difference": 1,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "e7ee8d5e-2ba3-4fcf-b531-06ba09fcc080",
+        "taskKey": "catalog-bundle-price",
+        "title": "Bundle price",
+        "baselineMean": 0,
+        "candidateMean": 1,
+        "difference": 1,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "d777feba-e8b9-42f6-8826-b6b4dbf8843d",
+        "taskKey": "catalog-bundle-prepay",
+        "title": "Bundle with annual prepay",
+        "baselineMean": 0,
+        "candidateMean": 1,
+        "difference": 1,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "2bf70b99-c91c-4604-87e9-ca6f74fe5b8e",
+        "taskKey": "catalog-prepay-rounding",
+        "title": "Prepay without a bundle",
+        "baselineMean": 0,
+        "candidateMean": 1,
+        "difference": 1,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "debc53fb-3b8c-4776-8029-1ea5d234afa5",
+        "taskKey": "catalog-nonprofit-small",
+        "title": "Non-profit, two services",
+        "baselineMean": 0,
+        "candidateMean": 1,
+        "difference": 1,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "014811d1-5fa6-4f2d-9ef4-83ab3c418b28",
+        "taskKey": "catalog-nonprofit-best-deal",
+        "title": "Non-profit versus bundle",
+        "baselineMean": 0,
+        "candidateMean": 1,
+        "difference": 1,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "370bd539-997e-413b-8159-b8ce010b7117",
+        "taskKey": "catalog-support-target",
+        "title": "Support target",
+        "baselineMean": 0,
+        "candidateMean": 1,
+        "difference": 1,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      },
+      {
+        "taskId": "1dc2106c-99d2-4f55-917e-4ff9a9ed19ca",
+        "taskKey": "catalog-escalation",
+        "title": "Escalation contact",
+        "baselineMean": 0,
+        "candidateMean": 1,
+        "difference": 1,
+        "baselineScoredRuns": 1,
+        "candidateScoredRuns": 1
+      }
+    ]
+  },
+  "runs": [
+    {
+      "id": "59d0f781-4ca0-4f59-a18e-09a56d4871b3",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "candidate",
+      "taskId": "e7ee8d5e-2ba3-4fcf-b531-06ba09fcc080",
+      "taskKey": "catalog-bundle-price",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 7440,
+      "tokens": {
+        "input": 1505,
+        "output": 245,
+        "cacheRead": 0,
+        "total": 1750
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:13.351Z",
+      "finishedAt": "2026-10-12T12:53:20.793Z",
+      "taskTitle": "Bundle price",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client wants Local SEO, Social media management and Email marketing, billed monthly. They are not a non-profit. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"monthly_price\": 1399}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182316_9dd858\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Field \"monthly_price\" = 1399",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:16.303Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182316_9dd858"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:20.406Z",
+          "text": "{\"monthly_price\": 1399}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "45c84b6d-7e6e-47f3-9dc8-1868496d8725",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "baseline",
+      "taskId": "5ed1f57f-1963-468c-8b66-7b4822e58f4a",
+      "taskKey": "catalog-service-code",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0,
+      "passed": false,
+      "durationMs": 9934,
+      "tokens": {
+        "input": 935,
+        "output": 339,
+        "cacheRead": 0,
+        "total": 1274
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:13.353Z",
+      "finishedAt": "2026-10-12T12:53:23.288Z",
+      "taskTitle": "Service code",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. What is our billing code for Google Ads management? Reply with only JSON: {\"code\": \"<code>\"}",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"code\": \"NOT_AVAILABLE\"}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182316_407741\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 code",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Field \"code\" = \"NOT_AVAILABLE\", expected \"LSD-PPC-330\"",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:16.299Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182316_407741"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:22.807Z",
+          "text": "{\"code\": \"NOT_AVAILABLE\"}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "72d7d3be-b2ab-4027-b139-b84708cf7f04",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "baseline",
+      "taskId": "e7ee8d5e-2ba3-4fcf-b531-06ba09fcc080",
+      "taskKey": "catalog-bundle-price",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0,
+      "passed": false,
+      "durationMs": 13902,
+      "tokens": {
+        "input": 938,
+        "output": 160,
+        "cacheRead": 0,
+        "total": 1098
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:13.355Z",
+      "finishedAt": "2026-10-12T12:53:27.257Z",
+      "taskTitle": "Bundle price",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client wants Local SEO, Social media management and Email marketing, billed monthly. They are not a non-profit. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"monthly_price\":1200}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182316_d4289d\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Field \"monthly_price\" = 1200, expected 1399",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:16.299Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182316_d4289d"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:26.702Z",
+          "text": "{\"monthly_price\":1200}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "8e42dc2d-b711-4272-ae84-908d06a7133d",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "baseline",
+      "taskId": "014811d1-5fa6-4f2d-9ef4-83ab3c418b28",
+      "taskKey": "catalog-nonprofit-best-deal",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0,
+      "passed": false,
+      "durationMs": 17387,
+      "tokens": {
+        "input": 950,
+        "output": 764,
+        "cacheRead": 0,
+        "total": 1714
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:13.356Z",
+      "finishedAt": "2026-10-12T12:53:30.743Z",
+      "taskTitle": "Non-profit versus bundle",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A non-profit client wants Local SEO, Google Ads management, Social media management and Email marketing, and prepays annually. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "I don\u2019t have enough information about Lakeshore Digital\u2019s service rates to calculate the monthly price. Please provide the standard pricing for each service or any annual package details.",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182316_617ba9\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output: No parseable JSON found",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:16.299Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182316_617ba9"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:30.128Z",
+          "text": "I don\u2019t have enough information about Lakeshore Digital\u2019s service rates to calculate the monthly price. Please provide the standard pricing for each service or any annual package details."
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "3c085cfd-d31a-442b-ab93-2129ce042562",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "candidate",
+      "taskId": "014811d1-5fa6-4f2d-9ef4-83ab3c418b28",
+      "taskKey": "catalog-nonprofit-best-deal",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 10449,
+      "tokens": {
+        "input": 1490,
+        "output": 578,
+        "cacheRead": 0,
+        "total": 2068
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:20.796Z",
+      "finishedAt": "2026-10-12T12:53:31.246Z",
+      "taskTitle": "Non-profit versus bundle",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A non-profit client wants Local SEO, Google Ads management, Social media management and Email marketing, and prepays annually. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"monthly_price\": 1984}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182322_0ca45b\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Field \"monthly_price\" = 1984",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:22.538Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182322_0ca45b"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:30.779Z",
+          "text": "{\"monthly_price\": 1984}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "7d459517-b19a-4646-aa2c-34130f4279a1",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "candidate",
+      "taskId": "1dc2106c-99d2-4f55-917e-4ff9a9ed19ca",
+      "taskKey": "catalog-escalation",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 4212,
+      "tokens": {
+        "input": 1489,
+        "output": 45,
+        "cacheRead": 0,
+        "total": 1534
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:23.289Z",
+      "finishedAt": "2026-10-12T12:53:27.502Z",
+      "taskTitle": "Escalation contact",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client's Google Ads account has just been suspended. Who do we escalate this to? Reply in one sentence with the person's name.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "Ravi Menon",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182324_c4e511\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "contains",
+          "label": "Final output contains \"Ravi Menon\"",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Found \"Ravi Menon\"",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:24.816Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182324_c4e511"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:27.141Z",
+          "text": "Ravi Menon"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "cacd350a-99f0-4888-93be-865e6dd6b967",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "baseline",
+      "taskId": "370bd539-997e-413b-8159-b8ce010b7117",
+      "taskKey": "catalog-support-target",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0,
+      "passed": false,
+      "durationMs": 5598,
+      "tokens": {
+        "input": 926,
+        "output": 190,
+        "cacheRead": 0,
+        "total": 1116
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:27.258Z",
+      "finishedAt": "2026-10-12T12:53:32.858Z",
+      "taskTitle": "Support target",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client on the Growth plan just emailed support. What is our first-response target for them? Reply in one sentence.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "I\u2019m not certain of the exact first\u2011response target for Growth\u2011plan clients at Lakeshore Digital; please refer to the agency\u2019s SLA documentation for that detail.",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182328_dfeacd\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Final output matches /\\b8 business hours\\b/",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not match /\\b8 business hours\\b/",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:28.845Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182328_dfeacd"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:32.268Z",
+          "text": "I\u2019m not certain of the exact first\u2011response target for Growth\u2011plan clients at Lakeshore Digital; please refer to the agency\u2019s SLA documentation for that detail."
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "5d4fef14-07f3-466e-b3f7-f1a82d132a0c",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "baseline",
+      "taskId": "2bf70b99-c91c-4604-87e9-ca6f74fe5b8e",
+      "taskKey": "catalog-prepay-rounding",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0,
+      "passed": false,
+      "durationMs": 9697,
+      "tokens": {
+        "input": 950,
+        "output": 450,
+        "cacheRead": 0,
+        "total": 1400
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:27.503Z",
+      "finishedAt": "2026-10-12T12:53:37.201Z",
+      "taskTitle": "Prepay without a bundle",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client wants Social media management and the Website care plan, and prepays annually. They are not a non-profit. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"monthly_price\": -1}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182328_900deb\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Field \"monthly_price\" = -1, expected 789",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:29.048Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182328_900deb"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:36.764Z",
+          "text": "{\"monthly_price\": -1}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "38943cac-1aaf-42e7-9994-e3a5650e3005",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "candidate",
+      "taskId": "debc53fb-3b8c-4776-8029-1ea5d234afa5",
+      "taskKey": "catalog-nonprofit-small",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 9988,
+      "tokens": {
+        "input": 1492,
+        "output": 514,
+        "cacheRead": 0,
+        "total": 2006
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:30.746Z",
+      "finishedAt": "2026-10-12T12:53:40.735Z",
+      "taskTitle": "Non-profit, two services",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A non-profit client wants Local SEO and Google Ads management, billed monthly. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"monthly_price\": 1224}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182332_d89149\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Field \"monthly_price\" = 1224",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:32.367Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182332_d89149"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:40.341Z",
+          "text": "{\"monthly_price\": 1224}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "ef93644d-578d-4001-91a9-9edad6c5e130",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "candidate",
+      "taskId": "5ed1f57f-1963-468c-8b66-7b4822e58f4a",
+      "taskKey": "catalog-service-code",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 4427,
+      "tokens": {
+        "input": 1472,
+        "output": 86,
+        "cacheRead": 0,
+        "total": 1558
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:31.247Z",
+      "finishedAt": "2026-10-12T12:53:35.684Z",
+      "taskTitle": "Service code",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. What is our billing code for Google Ads management? Reply with only JSON: {\"code\": \"<code>\"}",
+      "configName": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"code\": \"LSD-PPC-330\"}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182332_859f35\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 code",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Field \"code\" = \"LSD-PPC-330\"",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:32.858Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182332_859f35"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:35.368Z",
+          "text": "{\"code\": \"LSD-PPC-330\"}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "7e29b957-bc61-4dad-9ee3-8ac2dfab9c59",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "baseline",
+      "taskId": "1dc2106c-99d2-4f55-917e-4ff9a9ed19ca",
+      "taskKey": "catalog-escalation",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0,
+      "passed": false,
+      "durationMs": 6438,
+      "tokens": {
+        "input": 918,
+        "output": 228,
+        "cacheRead": 0,
+        "total": 1146
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:32.859Z",
+      "finishedAt": "2026-10-12T12:53:39.298Z",
+      "taskTitle": "Escalation contact",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client's Google Ads account has just been suspended. Who do we escalate this to? Reply in one sentence with the person's name.",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "I\u2019m not sure who the designated escalation contact is for a suspended Google Ads account at Lakeshore Digital.",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182334_edd59a\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "contains",
+          "label": "Final output contains \"Ravi Menon\"",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Final output does not contain \"Ravi Menon\"",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:34.490Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182334_edd59a"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:38.368Z",
+          "text": "I\u2019m not sure who the designated escalation contact is for a suspended Google Ads account at Lakeshore Digital."
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "fc02df4c-6e0d-469e-ac0f-1a8e6704a3f0",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "baseline",
+      "taskId": "d777feba-e8b9-42f6-8826-b6b4dbf8843d",
+      "taskKey": "catalog-bundle-prepay",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0,
+      "passed": false,
+      "durationMs": 10805,
+      "tokens": {
+        "input": 949,
+        "output": 664,
+        "cacheRead": 0,
+        "total": 1613
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:35.685Z",
+      "finishedAt": "2026-10-12T12:53:46.491Z",
+      "taskTitle": "Bundle with annual prepay",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client wants Google Ads management, the Website care plan and Review management, and prepays annually. They are not a non-profit. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"monthly_price\": 0}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182337_f090f3\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Field \"monthly_price\" = 0, expected 1233",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:37.248Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182337_f090f3"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:46.125Z",
+          "text": "{\"monthly_price\": 0}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "936ec0f0-1c28-47e7-a1b0-ab470ec468d0",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "candidate",
+      "taskId": "2bf70b99-c91c-4604-87e9-ca6f74fe5b8e",
+      "taskKey": "catalog-prepay-rounding",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 7014,
+      "tokens": {
+        "input": 1490,
+        "output": 185,
+        "cacheRead": 0,
+        "total": 1675
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:37.202Z",
+      "finishedAt": "2026-10-12T12:53:44.217Z",
+      "taskTitle": "Prepay without a bundle",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client wants Social media management and the Website care plan, and prepays annually. They are not a non-profit. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"monthly_price\": 789}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182338_69ef88\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Field \"monthly_price\" = 789",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:38.869Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182338_69ef88"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:43.689Z",
+          "text": "{\"monthly_price\": 789}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "5568b12c-4364-45c5-9f93-e35159c8b7ad",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "candidate",
+      "taskId": "370bd539-997e-413b-8159-b8ce010b7117",
+      "taskKey": "catalog-support-target",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 3982,
+      "tokens": {
+        "input": 1485,
+        "output": 43,
+        "cacheRead": 0,
+        "total": 1528
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:39.300Z",
+      "finishedAt": "2026-10-12T12:53:43.283Z",
+      "taskTitle": "Support target",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client on the Growth plan just emailed support. What is our first-response target for them? Reply in one sentence.",
+      "configName": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "The first\u2011response target for a client on the Growth plan is 8 business hours.",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182340_5a5472\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "regex",
+          "label": "Final output matches /\\b8 business hours\\b/",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Matched /\\b8 business hours\\b/ with \"8 business hours\"",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:40.873Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182340_5a5472"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:42.826Z",
+          "text": "The first\u2011response target for a client on the Growth plan is 8 business hours."
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "25b286be-d713-4bfa-9094-2a2b2fc9e44c",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "baseline",
+      "taskId": "debc53fb-3b8c-4776-8029-1ea5d234afa5",
+      "taskKey": "catalog-nonprofit-small",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 0,
+      "passed": false,
+      "durationMs": 5370,
+      "tokens": {
+        "input": 938,
+        "output": 170,
+        "cacheRead": 0,
+        "total": 1108
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:40.736Z",
+      "finishedAt": "2026-10-12T12:53:46.107Z",
+      "taskTitle": "Non-profit, two services",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A non-profit client wants Local SEO and Google Ads management, billed monthly. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"monthly_price\": 1500}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182342_50c275\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": false,
+          "score": 0,
+          "reason": "Field \"monthly_price\" = 1500, expected 1224",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:42.503Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182342_50c275"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:45.746Z",
+          "text": "{\"monthly_price\": 1500}"
+        }
+      ],
+      "workspaceFiles": []
+    },
+    {
+      "id": "6880ec7b-d9e5-45ef-b8b5-9b39937af2aa",
+      "experimentId": "6fae2a7b-8714-4dfc-b7a8-034e8e833ca1",
+      "arm": "candidate",
+      "taskId": "d777feba-e8b9-42f6-8826-b6b4dbf8843d",
+      "taskKey": "catalog-bundle-prepay",
+      "repetition": 0,
+      "status": "scored",
+      "termination": "completed",
+      "errorKind": null,
+      "score": 1,
+      "passed": true,
+      "durationMs": 5387,
+      "tokens": {
+        "input": 1488,
+        "output": 349,
+        "cacheRead": 0,
+        "total": 1837
+      },
+      "toolCalls": 0,
+      "apiCalls": 1,
+      "costUsd": 0,
+      "judgeRequests": 0,
+      "judgeTokens": 0,
+      "judgeCostUsd": null,
+      "attempts": 1,
+      "startedAt": "2026-10-12T12:53:43.284Z",
+      "finishedAt": "2026-10-12T12:53:48.672Z",
+      "taskTitle": "Bundle with annual prepay",
+      "prompt": "You are an account coordinator at Lakeshore Digital, a marketing agency. A client wants Google Ads management, the Website care plan and Review management, and prepays annually. They are not a non-profit. What is their monthly price? Reply with only JSON: {\"monthly_price\": <whole dollars>}",
+      "configName": "Nemotron 3 Super \u00b7 no tools + service catalog skill",
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "reportedModel": "nvidia/nemotron-3-super-120b-a12b:free",
+      "finalOutput": "{\"monthly_price\": 1233}",
+      "errorMessage": null,
+      "exitCode": 0,
+      "stderrTail": "\nsession_id: 20261012_182344_110fea\n",
+      "scores": [
+        {
+          "scorerIndex": 0,
+          "type": "json_field",
+          "label": "Final output \u2192 monthly_price",
+          "weight": 1,
+          "passed": true,
+          "score": 1,
+          "reason": "Field \"monthly_price\" = 1233",
+          "required": false,
+          "details": null
+        }
+      ],
+      "events": [
+        {
+          "type": "session",
+          "at": "2026-10-12T12:53:44.877Z",
+          "model": "nvidia/nemotron-3-super-120b-a12b:free",
+          "sessionId": "20261012_182344_110fea"
+        },
+        {
+          "type": "text",
+          "at": "2026-10-12T12:53:48.291Z",
+          "text": "{\"monthly_price\": 1233}"
+        }
+      ],
+      "workspaceFiles": []
+    }
+  ]
+}

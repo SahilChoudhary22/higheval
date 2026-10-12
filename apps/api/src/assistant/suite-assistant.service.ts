@@ -212,7 +212,7 @@ export class SuiteAssistantService implements OnModuleDestroy {
       if (review.problems.length === 0) return this.finish(job, 'ready', null);
       this.note(
         draft,
-        `${String(review.problems.length)} problem(s) found; ${attempt < MAX_DRAFT_ATTEMPTS ? 'asking Hermes to fix them' : 'no attempts left'}`,
+        `${String(review.problems.length)} problem(s) found; ${attempt < MAX_DRAFT_ATTEMPTS ? 'asking the agent to fix them' : 'no attempts left'}`,
       );
       previous = { suite: suiteText, problems: review.problems };
     }

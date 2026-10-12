@@ -11,7 +11,7 @@ export class SuiteAssistantController {
   @Post()
   @HttpCode(202)
   @ApiDoc({
-    summary: 'Ask Hermes to draft (or revise) a suite',
+    summary: 'Ask HighEval AI to draft (or revise) a suite',
     description:
       'Starts a Hermes run that writes a suite from the description, then checks it against the suite schema and its own reference solutions, retrying with the problems found. Poll the returned draft; nothing is saved until you save the suite yourself.',
     body: suiteDraftRequestSchema,

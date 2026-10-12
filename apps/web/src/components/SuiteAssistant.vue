@@ -18,7 +18,7 @@ const props = defineProps<{
   current?: SuiteInput | undefined;
   /** Start in revision mode (editing an existing suite). */
   revising?: boolean;
-  /** Focus the description on mount, e.g. when opened from "Draft with Hermes". */
+  /** Focus the description on mount, e.g. when opened from "Draft with HighEval AI". */
   focus?: boolean;
 }>();
 const emit = defineEmits<{ drafted: [suite: SuiteInput] }>();
@@ -118,13 +118,13 @@ async function cancel(): Promise<void> {
   <section class="assistant" aria-labelledby="assistant-heading">
     <h2 id="assistant-heading" class="assistant__title">
       <PhChatCenteredText aria-hidden="true" />
-      Draft with Hermes
+      Draft with HighEval AI
     </h2>
     <p class="muted assistant__intro">
-      Describe what the suite should test. Hermes writes the tasks, fixture files and scorers,
-      computes expected values with a script, and HighEval checks the result against the suite
-      schema and Hermes' own reference answers. The draft opens in the editor below; nothing is
-      saved until you save it.
+      Describe what the suite should test. HighEval AI, a Hermes agent, writes the tasks, fixture
+      files and scorers, computes expected values with a script, and HighEval checks the result
+      against the suite schema and the agent's own reference answers. The draft opens in the editor
+      below; nothing is saved until you save it.
     </p>
 
     <form class="assistant__form" novalidate @submit.prevent="start">
@@ -189,12 +189,12 @@ async function cancel(): Promise<void> {
         </ul>
         <p class="muted assistant__note">
           Loaded into the editor. Check the expected values yourself before saving: a self-check
-          proves the scorers agree with Hermes' answers, not that the answers are right.
+          proves the scorers agree with the agent's answers, not that the answers are right.
         </p>
       </template>
       <p v-else-if="draft.status === 'failed'" class="assistant__line is-error" role="alert">
         <PhWarning aria-hidden="true" />
-        {{ draft.error ?? 'Hermes could not draft a valid suite.' }}
+        {{ draft.error ?? 'HighEval AI could not draft a valid suite.' }}
       </p>
       <p v-else-if="draft.status === 'cancelled'" class="muted">Stopped.</p>
 

@@ -98,35 +98,37 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --color-paper: #0b1014;
-    --color-surface: #13181d;
-    --color-paper-2: #191f24;
-    --color-paper-3: #232a31;
-    --color-rule: #282f35;
-    --color-rule-strong: #646d75;
-    --color-ink: #e4e8ed;
-    --color-ink-2: #bbc2c8;
-    --color-muted: #9199a1;
-    --color-accent: #73b0ee;
-    --color-accent-hover: #8cc3fc;
-    --color-accent-ink: #0b1014;
-    --color-accent-tint: #1a2f46;
-    --color-focus: #73bdff;
-    --color-better: #5cc6b9;
-    --color-better-bg: #0d2f2b;
-    --color-worse: #e69461;
-    --color-worse-bg: #3d2515;
-    --color-equiv: #b4bfca;
-    --color-equiv-bg: #21272d;
-    --color-inconc: #d9ba70;
-    --color-inconc-bg: #342a13;
-    --color-error: #f17070;
-    --color-error-bg: #451e1d;
-    --color-band: #1a2f46;
-    --color-shadow: rgb(0 0 0 / 0%);
-    --weight-body: 350;
-  }
+/*
+ * Dark theme. index.html sets data-theme before first paint, from the saved
+ * preference or, by default, the system setting (see useTheme).
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-paper: #0b1014;
+  --color-surface: #13181d;
+  --color-paper-2: #191f24;
+  --color-paper-3: #232a31;
+  --color-rule: #282f35;
+  --color-rule-strong: #646d75;
+  --color-ink: #e4e8ed;
+  --color-ink-2: #bbc2c8;
+  --color-muted: #9199a1;
+  --color-accent: #73b0ee;
+  --color-accent-hover: #8cc3fc;
+  --color-accent-ink: #0b1014;
+  --color-accent-tint: #1a2f46;
+  --color-focus: #73bdff;
+  --color-better: #5cc6b9;
+  --color-better-bg: #0d2f2b;
+  --color-worse: #e69461;
+  --color-worse-bg: #3d2515;
+  --color-equiv: #b4bfca;
+  --color-equiv-bg: #21272d;
+  --color-inconc: #d9ba70;
+  --color-inconc-bg: #342a13;
+  --color-error: #f17070;
+  --color-error-bg: #451e1d;
+  --color-band: #1a2f46;
+  --color-shadow: rgb(0 0 0 / 0%);
+  --weight-body: 350;
 }
