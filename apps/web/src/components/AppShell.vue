@@ -4,6 +4,7 @@ import {
   PhCheck,
   PhCircleDashed,
   PhFlask,
+  PhGearSix,
   PhList,
   PhListChecks,
   PhSlidersHorizontal,
@@ -13,8 +14,7 @@ import {
 } from '@phosphor-icons/vue';
 import { computed, ref, watch, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import { api } from '@/api/endpoints';
-import { useResource } from '@/composables/useResource';
+import { useHealth } from '@/composables/useHealth';
 import LogoMark from './LogoMark.vue';
 import ToastRegion from './ToastRegion.vue';
 
@@ -24,6 +24,7 @@ const NAV = [
   { to: '/suites', label: 'Suites', icon: PhListChecks },
   { to: '/configs', label: 'Configs', icon: PhSlidersHorizontal },
   { to: '/skills', label: 'Skills', icon: PhBookOpen },
+  { to: '/settings', label: 'Settings', icon: PhGearSix },
 ];
 
 const route = useRoute();
@@ -36,7 +37,7 @@ watch(
 const isActive = (item: (typeof NAV)[number]): boolean =>
   item.exact ? route.path === item.to : route.path.startsWith(item.to);
 
-const health = useResource(() => api.health(), { pollMs: () => 30_000 });
+const health = useHealth();
 type CheckState = 'ok' | 'bad' | 'unknown';
 
 /** Readiness of each dependency; "unknown" while the API itself is unreachable. */
@@ -60,11 +61,16 @@ const checks = computed(() => {
           : 'run pnpm setup:hermes',
     },
     {
-      label: 'Provider key',
-      state: state(Boolean(data?.checks.providerKey)),
-      detail: !reachable ? 'unknown' : data.checks.providerKey ? 'set' : 'add to .env',
+      label: 'Provider keys',
+      state: state((data?.checks.configuredProviders.length ?? 0) > 0),
+      detail: !reachable
+        ? 'unknown'
+        : data.checks.configuredProviders.length > 0
+          ? `${String(data.checks.configuredProviders.length)} configured`
+          : 'add one in Settings',
+      to: '/settings',
     },
-  ] satisfies { label: string; state: CheckState; detail: string }[];
+  ] satisfies { label: string; state: CheckState; detail: string; to?: string }[];
 });
 const ICON: Record<CheckState, Component> = {
   ok: PhCheck,
@@ -102,7 +108,12 @@ const ICON: Record<CheckState, Component> = {
               :class="{ 'nav__link--active': isActive(item) }"
               :aria-current="isActive(item) ? 'page' : undefined"
             >
-              <component :is="item.icon" class="nav__icon" aria-hidden="true" />
+              <component
+                :is="item.icon"
+                class="nav__icon"
+                :weight="isActive(item) ? 'fill' : 'regular'"
+                aria-hidden="true"
+              />
               {{ item.label }}
             </RouterLink>
           </li>
@@ -113,7 +124,10 @@ const ICON: Record<CheckState, Component> = {
           <dt class="label">{{ check.label }}</dt>
           <dd :class="`health__${check.state}`">
             <component :is="ICON[check.state]" aria-hidden="true" />
-            {{ check.detail }}
+            <RouterLink v-if="check.to" :to="check.to" class="health__link">{{
+              check.detail
+            }}</RouterLink>
+            <template v-else>{{ check.detail }}</template>
           </dd>
         </div>
       </dl>
@@ -199,7 +213,9 @@ const ICON: Record<CheckState, Component> = {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-2xs) 0;
+  margin-inline: calc(-1 * var(--space-xs));
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-control);
   color: var(--color-ink-2);
   font-weight: 600;
   text-decoration: none;
@@ -211,7 +227,9 @@ const ICON: Record<CheckState, Component> = {
   flex: none;
 }
 
+/* Active: accent colour, a tinted background and a filled icon, so it never relies on colour alone. */
 .nav__link--active {
+  background: var(--color-accent-tint);
   color: var(--color-accent);
 }
 
@@ -250,6 +268,11 @@ const ICON: Record<CheckState, Component> = {
   width: 0.875rem;
   height: 0.875rem;
   flex: none;
+}
+
+.health__link {
+  color: inherit;
+  text-decoration-color: var(--color-rule-strong);
 }
 
 .health__ok {

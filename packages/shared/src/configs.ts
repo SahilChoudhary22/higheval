@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { idSchema, relativePathSchema, slugSchema, timestampSchema } from './common.js';
+import { providerIdSchema } from './providers.js';
 
 export const skillInputSchema = z.object({
   name: slugSchema,
@@ -26,21 +27,24 @@ export const memorySettingsSchema = z.discriminatedUnion('mode', [
 ]);
 export type MemorySettings = z.infer<typeof memorySettingsSchema>;
 
+/**
+ * Exact provider model ID. Router aliases (`openrouter/auto`, `openrouter/free`)
+ * are rejected: they may pick a different model per request, which would make
+ * a comparison meaningless.
+ */
+export const modelIdSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .refine((model) => !model.toLowerCase().startsWith('openrouter/'), {
+    message:
+      'Use an exact model ID; router aliases like openrouter/auto can change models between runs',
+  });
+
 export const modelSettingsSchema = z.object({
-  provider: z.literal('openrouter'),
-  /**
-   * Exact provider model ID. Router aliases (`openrouter/auto`, `openrouter/free`)
-   * are rejected: they may pick a different model per request, which would make
-   * a comparison meaningless.
-   */
-  model: z
-    .string()
-    .min(1)
-    .max(200)
-    .refine((model) => !model.toLowerCase().startsWith('openrouter/'), {
-      message:
-        'Use an exact model ID; router aliases like openrouter/auto can change models between runs',
-    }),
+  /** A provider from the registry; its key comes from Settings or `.env`. */
+  provider: providerIdSchema,
+  model: modelIdSchema,
 });
 export type ModelSettings = z.infer<typeof modelSettingsSchema>;
 

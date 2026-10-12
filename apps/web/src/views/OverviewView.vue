@@ -8,6 +8,7 @@ import ErrorNotice from '@/components/ErrorNotice.vue';
 import ExperimentTable from '@/components/ExperimentTable.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import SkeletonRows from '@/components/SkeletonRows.vue';
+import { useHealth } from '@/composables/useHealth';
 import { useResource } from '@/composables/useResource';
 
 const experiments = useResource(() => api.experiments.list(), {
@@ -17,7 +18,7 @@ const experiments = useResource(() => api.experiments.list(), {
 const suites = useResource(() => api.suites.list());
 const configs = useResource(() => api.configs.list());
 const skills = useResource(() => api.skills.list());
-const health = useResource(() => api.health());
+const health = useHealth();
 
 const recent = computed(() => experiments.data.value?.slice(0, 6) ?? []);
 const library = computed(() => [
@@ -47,9 +48,9 @@ const blockers = computed(() => {
     ...(checks.hermesVersion
       ? []
       : ['Hermes is not installed. Run pnpm setup:hermes, then restart the API.']),
-    ...(checks.providerKey
+    ...(checks.configuredProviders.length > 0
       ? []
-      : ['OPENROUTER_API_KEY is missing. Add it to .env, then restart the API.']),
+      : ['No provider API key is set. Add one in Settings (the samples use OpenRouter).']),
   ];
 });
 </script>
@@ -103,6 +104,12 @@ const blockers = computed(() => {
         <ul class="blockers">
           <li v-for="blocker in blockers" :key="blocker">{{ blocker }}</li>
         </ul>
+        <RouterLink
+          v-if="health.data.value?.checks.configuredProviders.length === 0"
+          to="/settings"
+          class="btn btn--compact"
+          >Open Settings</RouterLink
+        >
       </section>
 
       <section class="section" aria-labelledby="library-heading">

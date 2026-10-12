@@ -22,6 +22,7 @@ import type {
 import {
   ARMS,
   EXPERIMENT_STATUSES,
+  PROVIDER_IDS,
   RUN_ERROR_KINDS,
   RUN_STATUSES,
   TERMINATIONS,
@@ -40,6 +41,16 @@ export const skills = sqliteTable('skills', {
   description: text('description').notNull(),
   content: text('content').notNull(),
   ...timestamps,
+});
+
+/**
+ * Provider API keys saved from the UI. Stored in the local database (file
+ * mode 600) and never returned by the API; keys in `.env` are the fallback.
+ */
+export const providerKeys = sqliteTable('provider_keys', {
+  provider: text('provider', { enum: PROVIDER_IDS }).primaryKey(),
+  apiKey: text('api_key').notNull(),
+  updatedAt: text('updated_at').notNull(),
 });
 
 export const suites = sqliteTable('suites', {
@@ -72,7 +83,7 @@ export const agentConfigs = sqliteTable('agent_configs', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description').notNull(),
-  provider: text('provider', { enum: ['openrouter'] }).notNull(),
+  provider: text('provider', { enum: PROVIDER_IDS }).notNull(),
   model: text('model').notNull(),
   skillIds: text('skill_ids', { mode: 'json' }).$type<string[]>().notNull(),
   memory: text('memory', { mode: 'json' }).$type<MemorySettings>().notNull(),

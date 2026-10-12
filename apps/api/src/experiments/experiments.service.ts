@@ -5,13 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { asc, count, desc, eq } from 'drizzle-orm';
-import type {
-  Comparison,
+import {
+  PROVIDERS,
+  type AgentConfig,
+  type Comparison,
   Experiment,
-  experimentInputSchema,
-  RunProgress,
-  RunSummary,
-  Task,
+  type experimentInputSchema,
+  type RunProgress,
+  type RunSummary,
+  type Task,
 } from '@higheval/shared';
 import { randomInt } from 'node:crypto';
 import { rmSync } from 'node:fs';
@@ -21,6 +23,7 @@ import type { z } from 'zod';
 import { newId, nowIso } from '../common/ids.js';
 import { ConfigsService } from '../configs/configs.service.js';
 import { InjectDb } from '../database/database.module.js';
+import { ProviderCredentials } from '../providers/provider-credentials.service.js';
 import type { Db } from '../database/database.js';
 import { experiments, runs } from '../database/schema.js';
 import { buildComparison } from '../statistics/comparison.js';
@@ -40,6 +43,7 @@ export class ExperimentsService {
     private readonly suites: SuitesService,
     private readonly configs: ConfigsService,
     private readonly config: ConfigService<Env, true>,
+    private readonly credentials: ProviderCredentials,
   ) {}
 
   /**
@@ -52,6 +56,7 @@ export class ExperimentsService {
     const baseline = this.configs.snapshot(input.baselineConfigId);
     const candidate = this.configs.snapshot(input.candidateConfigId);
     assertIndependentJudges(suite.tasks, [baseline.model.model, candidate.model.model]);
+    this.assertKeys(suite.tasks, { baselineConfigId: baseline, candidateConfigId: candidate });
     const seed = randomInt(1, 2 ** 31 - 1);
     const id = newId();
 
@@ -94,6 +99,27 @@ export class ExperimentsService {
       tx.insert(runs).values(ordered).run();
     });
     return this.get(id);
+  }
+
+  /**
+   * Refuses a launch that could only produce setup errors: every run needs its
+   * configuration's provider key, and judged tasks need the OpenRouter key.
+   */
+  private assertKeys(
+    tasks: readonly Task[],
+    configs: Record<'baselineConfigId' | 'candidateConfigId', Pick<AgentConfig, 'model'>>,
+  ): void {
+    const issues = Object.entries(configs).flatMap(([path, { model }]) =>
+      this.credentials.key(model.provider) ? [] : [{ path, message: missingKey(model.provider) }],
+    );
+    const judged = tasks.some((task) => task.scorers.some((scorer) => scorer.type === 'llm_judge'));
+    if (judged && !this.credentials.key('openrouter')) {
+      issues.push({
+        path: 'suiteId',
+        message: `This suite uses an LLM judge. ${missingKey('openrouter')}`,
+      });
+    }
+    if (issues.length > 0) throw new BadRequestException({ message: 'Validation failed', issues });
   }
 
   list(): Experiment[] {
@@ -202,6 +228,9 @@ function shuffle<T>(items: readonly T[], random: () => number): T[] {
   }
   return result;
 }
+
+const missingKey = (provider: keyof typeof PROVIDERS): string =>
+  `No ${PROVIDERS[provider].name} API key. Add one in Settings or set ${PROVIDERS[provider].keyEnvVar} in .env.`;
 
 /**
  * An LLM judge grading its own output is biased toward it, so a judge model

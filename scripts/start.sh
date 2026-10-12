@@ -20,7 +20,7 @@ command -v uv >/dev/null || fail "uv is required to install Hermes: https://docs
 
 if [[ ! -f .env ]]; then
   install -m 600 .env.example .env
-  warn "Created .env from .env.example. Add OPENROUTER_API_KEY to run experiments."
+  warn "Created .env from .env.example. Add a provider key in Settings (or OPENROUTER_API_KEY in .env) to run experiments."
 fi
 
 log "Installing dependencies"

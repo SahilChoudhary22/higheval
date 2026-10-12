@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhSlidersHorizontal } from '@phosphor-icons/vue';
-import type { AgentConfig } from '@higheval/shared';
+import { PROVIDERS, type AgentConfig } from '@higheval/shared';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { api } from '@/api/endpoints';
@@ -84,7 +84,10 @@ function deleteConfig(config: AgentConfig): void {
                 config.name
               }}</RouterLink>
             </td>
-            <td class="mono wrap-anywhere">{{ config.model.model }}</td>
+            <td class="wrap-anywhere">
+              <span class="mono">{{ config.model.model }}</span>
+              <span class="muted model-provider">{{ PROVIDERS[config.model.provider].name }}</span>
+            </td>
             <td class="mono">{{ config.toolsets.join(', ') || 'none' }}</td>
             <td
               class="mono wrap-anywhere"
@@ -115,6 +118,11 @@ function deleteConfig(config: AgentConfig): void {
 </template>
 
 <style scoped>
+.model-provider {
+  display: block;
+  font-size: var(--text-sm);
+}
+
 .actions .btn {
   position: relative;
   z-index: var(--z-raised);

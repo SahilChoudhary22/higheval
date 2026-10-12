@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { relativePathSchema, slugSchema } from './common.js';
-import { modelSettingsSchema } from './configs.js';
+import { modelIdSchema } from './configs.js';
 
 /**
  * What a scorer inspects. `final_output` is the agent's final reply;
@@ -148,7 +148,11 @@ export const scorerSpecSchema = z.discriminatedUnion('type', [
      * Pinned judge model. It must differ from both models under test
      * (checked at launch) to avoid a model grading its own output.
      */
-    judge: modelSettingsSchema,
+    judge: z.object({
+      /** Judges call OpenRouter's chat API directly; other providers are not wired for judging yet. */
+      provider: z.literal('openrouter'),
+      model: modelIdSchema,
+    }),
     /** Instructions and context the judge needs, e.g. the policy a reply must follow. */
     rubric: z.string().min(1).max(10_000),
     /** What the judge rates, each from 1 (very poor) to 5 (excellent). */

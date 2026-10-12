@@ -55,7 +55,7 @@ export class OpenRouterJudge extends Judge {
   }
 
   async evaluate(request: JudgeRequest, signal?: AbortSignal): Promise<JudgeVerdict> {
-    const apiKey = this.credentials.openRouterKey();
+    const apiKey = this.credentials.key('openrouter');
     if (!apiKey) throw new JudgeError('No OpenRouter API key is configured for the judge.');
     const body = JSON.stringify({
       model: request.model,

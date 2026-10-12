@@ -1,15 +1,12 @@
-import { Test } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { testCredentials } from '../providers/testing.js';
 import { HealthService } from './health.service.js';
 
-async function check(env: Record<string, unknown>) {
-  const moduleRef = await Test.createTestingModule({
-    providers: [HealthService, { provide: ConfigService, useValue: new ConfigService(env) }],
-  }).compile();
-  return moduleRef.get(HealthService).check();
+function check(env: Record<string, unknown>) {
+  const { config, credentials } = testCredentials(env);
+  return new HealthService(config, credentials).check();
 }
 
 describe('HealthService', () => {
@@ -35,26 +32,26 @@ describe('HealthService', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('reports ok when the provider key and Hermes are both available', async () => {
-    const health = await check({
-      OPENROUTER_API_KEY: 'k',
+  it('reports ok when the provider key and Hermes are both available', () => {
+    const health = check({
+      OPENROUTER_API_KEY: 'test-key',
       HERMES_MANIFEST: manifest,
       MAX_CONCURRENT_RUNS: 4,
     });
     expect(health).toMatchObject({
       status: 'ok',
-      checks: { providerKey: true, hermesVersion: 'Hermes 1.0' },
+      checks: { configuredProviders: ['openrouter'], hermesVersion: 'Hermes 1.0' },
     });
   });
 
-  it('reports degraded and says what is missing', async () => {
-    const health = await check({
+  it('reports degraded and says what is missing', () => {
+    const health = check({
       HERMES_MANIFEST: join(dir, 'missing.json'),
       MAX_CONCURRENT_RUNS: 4,
     });
     expect(health).toMatchObject({
       status: 'degraded',
-      checks: { providerKey: false, hermesVersion: null },
+      checks: { configuredProviders: [], hermesVersion: null },
     });
   });
 });
