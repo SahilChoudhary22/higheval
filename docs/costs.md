@@ -56,6 +56,10 @@ The measured token counts above, multiplied by OpenRouter list prices on 12 Oct 
 
 Two takeaways. First, a cheaper per-token model is not cheaper per task if it needs more turns: Lightning's lower prices were fully offset by 63% more tokens. Second, a full two-arm, 96-run experiment costs cents on small models and a few dollars on frontier-priced ones. Using a different model's token profile is only an approximation, because models differ in verbosity and turn count. HighEval records actual tokens and API calls per run, so real costs can be read after a pilot.
 
+### LLM judge (measured)
+
+In a real judged run on the Customer conversations suite (6 runs, both arms), the judge (`cohere/north-mini-code:free`) used **one request per judged run** and about **1,250 tokens per verdict**, including its hidden reasoning. The agent's own runs on those single-reply tasks used one model call and about 3,900 tokens each, so judging adds roughly a third to the token bill and doubles the request count for conversational tasks. Cost was $0 on the free endpoint. At a frontier judge's list price ($2 / $10 per million tokens) a verdict like that would cost roughly $0.005. Judge requests, tokens and cost are reported per arm, separately from the agent's.
+
 ## 2. Compute and storage (measured on an Apple-silicon Mac)
 
 | Resource                         | Usage                                                                                                                                                                            |
