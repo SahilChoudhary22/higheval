@@ -19,7 +19,7 @@ command -v git >/dev/null || fail "git is required."
 command -v uv >/dev/null || fail "uv is required to install Hermes: https://docs.astral.sh/uv/getting-started/installation/"
 
 if [[ ! -f .env ]]; then
-  cp .env.example .env
+  install -m 600 .env.example .env
   warn "Created .env from .env.example. Add OPENROUTER_API_KEY to run experiments."
 fi
 

@@ -123,8 +123,9 @@ const blockers = computed(() => {
         <p class="muted method">
           Each task is scored 0–1 by deterministic checks. Repetitions are averaged per task, then
           the candidate − baseline differences are resampled to get a 95% interval. The candidate is
-          called better or worse only when that interval excludes zero, and equivalent only when it
-          fits inside the practical margin.
+          called better or worse only when that interval excludes zero and an exact permutation test
+          agrees, and equivalent only when the interval fits inside the practical margin with enough
+          tasks to rule out hidden differences.
         </p>
       </section>
     </aside>

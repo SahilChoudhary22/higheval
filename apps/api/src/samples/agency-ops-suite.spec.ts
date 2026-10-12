@@ -20,7 +20,7 @@ const REFERENCE: Record<string, { files?: Record<string, unknown>; output?: stri
   },
   'lead-qualification': {
     files: { 'qualified.json': { qualified: ['L-101', 'L-104', 'L-106'] } },
-    output: '3 leads qualified.',
+    output: 'Done.\nQualified: 3',
   },
   'appointment-conflicts': {
     files: {
@@ -180,6 +180,38 @@ describe('Agency operations sample suite', () => {
     expect(quick.tasks.every((task) => suite.tasks.some((full) => full.key === task.key))).toBe(
       true,
     );
+  });
+
+  it('accepts both correct roundings of an exact half and rejects a bare "3"', () => {
+    const roi = suite.tasks.find((task) => task.key === 'campaign-roi');
+    const leads = suite.tasks.find((task) => task.key === 'lead-qualification');
+    const scoreOutput = (task: typeof roi, output: string) =>
+      scoreTask(
+        task?.scorers ?? [],
+        {
+          finalOutput: output,
+          readFile: () => JSON.stringify({ qualified: ['L-101', 'L-104', 'L-106'] }),
+          toolCalls: [],
+        },
+        1,
+      ).score;
+    for (const overall of [1.87, 1.875, 1.88]) {
+      expect(
+        scoreOutput(
+          roi,
+          JSON.stringify({ best_campaign: 'Reactivation', best_roi: 3.5, overall_roi: overall }),
+        ),
+      ).toBe(1);
+    }
+    expect(
+      scoreOutput(
+        roi,
+        JSON.stringify({ best_campaign: 'Reactivation', best_roi: 3.5, overall_roi: 1.86 }),
+      ),
+    ).toBeLessThan(1);
+    expect(
+      scoreOutput(leads, 'Wrote the file. Lead L-103 has 3 contacts; 2 qualified.'),
+    ).toBeLessThan(1);
   });
 
   it('keeps expected answers out of the fixtures the agent can read', () => {

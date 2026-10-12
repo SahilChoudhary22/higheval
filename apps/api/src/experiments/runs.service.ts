@@ -2,14 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
 import type { RunDetail } from '@higheval/shared';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../config/env.schema.js';
 import { InjectDb } from '../database/database.module.js';
 import type { Db } from '../database/database.js';
 import { experiments, runEvents, runs, runScores } from '../database/schema.js';
-import { WORKSPACE_DIRNAME } from '../execution/agent-executor.js';
 import { toRunSummary } from './run-mapping.js';
+import { runWorkspaceDir } from './run-paths.js';
 import { Workspace } from './workspace.js';
 
 @Injectable()
@@ -64,13 +63,7 @@ export class RunsService {
   }
 
   private workspaceFiles(runId: string, attempt: number): RunDetail['workspaceFiles'] {
-    const directory = join(
-      this.config.get('DATA_DIR', { infer: true }),
-      'runs',
-      runId,
-      `attempt-${String(attempt)}`,
-      WORKSPACE_DIRNAME,
-    );
+    const directory = runWorkspaceDir(this.config.get('DATA_DIR', { infer: true }), runId, attempt);
     return existsSync(directory) ? new Workspace(directory).listFiles() : [];
   }
 }

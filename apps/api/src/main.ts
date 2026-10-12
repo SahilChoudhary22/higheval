@@ -1,17 +1,19 @@
 import { ConsoleLogger, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
 import type { Env } from './config/env.schema.js';
+import { configureApp } from './configure-app.js';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, {
-    logger: new ConsoleLogger({ json: process.env.LOG_FORMAT === 'json' }),
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+    bufferLogs: true,
   });
   const config = app.get<ConfigService<Env, true>>(ConfigService);
-
-  app.setGlobalPrefix('api');
-  app.enableShutdownHooks();
+  app.useLogger(new ConsoleLogger({ json: config.get('LOG_FORMAT', { infer: true }) === 'json' }));
+  configureApp(app);
 
   const host = config.get('HOST', { infer: true });
   const port = config.get('PORT', { infer: true });

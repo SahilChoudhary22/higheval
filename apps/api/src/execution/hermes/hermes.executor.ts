@@ -78,6 +78,10 @@ export class HermesExecutor extends AgentExecutor {
     let stderrTail = '';
     const stdoutLog = createWriteStream(join(request.runDir, 'stdout.jsonl'));
     const stderrLog = createWriteStream(join(request.runDir, 'stderr.log'));
+    // Evidence logs are best effort: a full disk must not crash the API.
+    for (const log of [stdoutLog, stderrLog]) {
+      log.on('error', (error) => this.logger.warn(`Could not write run log: ${error.message}`));
+    }
 
     const consume = (parsed: ReturnType<HermesStreamParser['push']>): void => {
       result ??= parsed.result;
