@@ -80,10 +80,11 @@ export const terminationSchema = z.enum(TERMINATIONS);
 export type Termination = z.infer<typeof terminationSchema>;
 
 /**
- * Infrastructure failures. Errored runs are excluded from comparisons and
+ * Failures outside the agent's control (provider, environment, process, or
+ * the platform's own scoring). Errored runs are excluded from comparisons and
  * reported as missing coverage, because they say nothing about agent quality.
  */
-export const RUN_ERROR_KINDS = ['provider', 'setup', 'crash', 'interrupted'] as const;
+export const RUN_ERROR_KINDS = ['provider', 'setup', 'crash', 'interrupted', 'scoring'] as const;
 export const runErrorKindSchema = z.enum(RUN_ERROR_KINDS);
 export type RunErrorKind = z.infer<typeof runErrorKindSchema>;
 

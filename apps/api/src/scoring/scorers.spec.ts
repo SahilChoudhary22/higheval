@@ -103,3 +103,21 @@ describe('scoreTask', () => {
     expect(result).toMatchObject({ score: 0.5, passed: true });
   });
 });
+
+const regex = (pattern: string, flags: string) =>
+  scorerSpecSchema.safeParse({ type: 'regex', target: { kind: 'final_output' }, pattern, flags });
+
+describe('regex scorer validation', () => {
+  it('accepts a valid pattern with flags', () => {
+    expect(regex('^42$', 'im').success).toBe(true);
+  });
+
+  it('rejects repeated flags, which would throw at scoring time', () => {
+    expect(regex('a', 'ii').success).toBe(false);
+  });
+
+  it('validates the pattern together with its flags', () => {
+    expect(regex('\\-', '').success).toBe(true);
+    expect(regex('\\-', 'u').success).toBe(false);
+  });
+});

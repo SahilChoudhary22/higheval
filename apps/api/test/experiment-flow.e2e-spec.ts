@@ -33,6 +33,23 @@ class FakeExecutor extends AgentExecutor {
 
   execute(job: ExecutionRequest, hooks: ExecutionHooks): Promise<ExecutionOutcome> {
     this.requests.push(job);
+    if (job.config.model.model === 'unscorable-model') {
+      // Completed, but pointing at a workspace that does not exist, so scoring fails.
+      return Promise.resolve({
+        kind: 'completed',
+        termination: 'completed',
+        finalOutput: 'done',
+        workspaceDir: join(job.runDir, 'missing'),
+        durationMs: 5,
+        exitCode: 0,
+        stderrTail: null,
+        tokens: null,
+        reportedModel: null,
+        sessionId: null,
+        apiCalls: 1,
+        costUsd: 0,
+      });
+    }
     const workspaceDir = join(job.runDir, 'work');
     mkdirSync(workspaceDir, { recursive: true });
     const strong = job.config.model.model === 'strong-model';
@@ -184,9 +201,111 @@ describe('Experiment flow (e2e)', () => {
     expect(detail.workspaceFiles).toEqual([{ path: 'answer.txt', bytes: 2 }]);
   });
 
-  it('snapshots configurations so later edits do not change a launched experiment', () => {
-    const hashes = new Set(executor.requests.map((job) => `${job.config.name}:${job.config.hash}`));
-    expect(hashes.size).toBe(2);
+  it('records a scoring failure as an errored run and still finishes the experiment', async () => {
+    const suiteId = idOf(
+      (
+        await request(server())
+          .post('/api/suites')
+          .send({ ...suite, name: 'Scoring failure' })
+          .expect(201)
+      ).body,
+    );
+    const okId = idOf(
+      (
+        await request(server())
+          .post('/api/configs')
+          .send(config('Fine', 'strong-model'))
+          .expect(201)
+      ).body,
+    );
+    const brokenId = idOf(
+      (
+        await request(server())
+          .post('/api/configs')
+          .send(config('Broken', 'unscorable-model'))
+          .expect(201)
+      ).body,
+    );
+    const created = experimentSchema.parse(
+      (
+        await request(server())
+          .post('/api/experiments')
+          .send({
+            name: 'Scoring failure',
+            suiteId,
+            baselineConfigId: okId,
+            candidateConfigId: brokenId,
+          })
+          .expect(201)
+      ).body,
+    );
+    let experiment: Experiment = created;
+    for (let attempt = 0; attempt < 100 && experiment.status !== 'completed'; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      experiment = experimentSchema.parse(
+        (await request(server()).get(`/api/experiments/${created.id}`)).body,
+      );
+    }
+    expect(experiment.status).toBe('completed');
+    expect(experiment.progress).toMatchObject({ running: 0, queued: 0, scored: 6, errored: 6 });
+    const runs = z
+      .array(runSummarySchema)
+      .parse((await request(server()).get(`/api/experiments/${created.id}/runs`).expect(200)).body);
+    expect(
+      runs.filter((run) => run.arm === 'candidate').every((run) => run.errorKind === 'scoring'),
+    ).toBe(true);
+  });
+
+  it('snapshots configurations so later edits do not change a launched experiment', async () => {
+    const suiteId = idOf(
+      (
+        await request(server())
+          .post('/api/suites')
+          .send({ ...suite, name: 'Snapshot' })
+          .expect(201)
+      ).body,
+    );
+    const baselineId = idOf(
+      (
+        await request(server())
+          .post('/api/configs')
+          .send(config('Snap A', 'weak-model'))
+          .expect(201)
+      ).body,
+    );
+    const candidateId = idOf(
+      (
+        await request(server())
+          .post('/api/configs')
+          .send(config('Snap B', 'strong-model'))
+          .expect(201)
+      ).body,
+    );
+    const launched = experimentSchema.parse(
+      (
+        await request(server())
+          .post('/api/experiments')
+          .send({
+            name: 'Snapshot',
+            suiteId,
+            baselineConfigId: baselineId,
+            candidateConfigId: candidateId,
+          })
+          .expect(201)
+      ).body,
+    );
+
+    await request(server())
+      .put(`/api/configs/${candidateId}`)
+      .send({ ...config('Snap B (edited)', 'edited-model'), toolsets: [] })
+      .expect(200);
+
+    const after = experimentSchema.parse(
+      (await request(server()).get(`/api/experiments/${launched.id}`)).body,
+    );
+    expect(after.candidate).toEqual(launched.candidate);
+    expect(after.candidate.model.model).toBe('strong-model');
+    expect(executor.requests.some((job) => job.config.model.model === 'edited-model')).toBe(false);
   });
 
   it('rejects invalid input with field-level issues', async () => {

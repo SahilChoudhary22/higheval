@@ -8,6 +8,9 @@ import type {
   RunSummary,
 } from '@higheval/shared';
 import { randomInt } from 'node:crypto';
+import { rmSync } from 'node:fs';
+import { ConfigService } from '@nestjs/config';
+import type { Env } from '../config/env.schema.js';
 import type { z } from 'zod';
 import { newId, nowIso } from '../common/ids.js';
 import { ConfigsService } from '../configs/configs.service.js';
@@ -18,6 +21,7 @@ import { buildComparison } from '../statistics/comparison.js';
 import { createRandom } from '../statistics/random.js';
 import { hashTasks, SuitesService } from '../suites/suites.service.js';
 import { toRunSummary } from './run-mapping.js';
+import { runDir } from './run-paths.js';
 
 export type ExperimentData = z.output<typeof experimentInputSchema>;
 type ExperimentRow = typeof experiments.$inferSelect;
@@ -29,6 +33,7 @@ export class ExperimentsService {
     @InjectDb() private readonly db: Db,
     private readonly suites: SuitesService,
     private readonly configs: ConfigsService,
+    private readonly config: ConfigService<Env, true>,
   ) {}
 
   /**
@@ -134,7 +139,18 @@ export class ExperimentsService {
     if (experiment.status === 'queued' || experiment.status === 'running') {
       throw new ConflictException('Cancel the experiment before deleting it');
     }
+    const runIds = this.db
+      .select({ id: runs.id, status: runs.status })
+      .from(runs)
+      .where(eq(runs.experimentId, id))
+      .all();
+    // After a cancel, agent processes take a few seconds to exit and may still write events.
+    if (runIds.some((run) => run.status === 'running')) {
+      throw new ConflictException('Runs are still stopping; try again in a few seconds');
+    }
     this.db.delete(experiments).where(eq(experiments.id, id)).run();
+    const dataDir = this.config.get('DATA_DIR', { infer: true });
+    for (const run of runIds) rmSync(runDir(dataDir, run.id), { recursive: true, force: true });
   }
 
   private toExperiment(row: ExperimentRow): Experiment {

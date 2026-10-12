@@ -5,9 +5,8 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { AgentEvent, ConfigSnapshot, Task } from '@higheval/shared';
+import type { AgentEvent, ConfigSnapshot, RunErrorKind, Task } from '@higheval/shared';
 import { and, asc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
-import { join } from 'node:path';
 import { nowIso } from '../common/ids.js';
 import type { Env } from '../config/env.schema.js';
 import { InjectDb } from '../database/database.module.js';
@@ -15,6 +14,7 @@ import type { Db } from '../database/database.js';
 import { experiments, runEvents, runs, runScores } from '../database/schema.js';
 import { AgentExecutor, type ExecutionOutcome } from '../execution/agent-executor.js';
 import { scoreTask } from '../scoring/scorers.js';
+import { runAttemptDir } from './run-paths.js';
 import { Workspace } from './workspace.js';
 
 type RunRow = typeof runs.$inferSelect;
@@ -95,28 +95,36 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
 
   private recoverInterruptedRuns(): void {
     const maxAttempts = this.config.get('MAX_RUN_ATTEMPTS', { infer: true });
-    const stranded = this.db.select().from(runs).where(eq(runs.status, 'running')).all();
-    for (const run of stranded) {
-      const retry = run.attempts < maxAttempts;
-      this.db
-        .update(runs)
-        .set(
-          retry
-            ? { status: 'queued', notBefore: null }
+    const stranded = this.db
+      .select({ run: runs, experimentStatus: experiments.status })
+      .from(runs)
+      .innerJoin(experiments, eq(runs.experimentId, experiments.id))
+      .where(eq(runs.status, 'running'))
+      .all();
+    if (stranded.length === 0) return;
+    const timestamp = nowIso();
+    this.db.transaction((tx) => {
+      for (const { run, experimentStatus } of stranded) {
+        const experimentActive = (ACTIVE_EXPERIMENT_STATUSES as readonly string[]).includes(
+          experimentStatus,
+        );
+        const update = !experimentActive
+          ? { status: 'cancelled' as const, finishedAt: timestamp }
+          : run.attempts < maxAttempts
+            ? { status: 'queued' as const, notBefore: null }
             : {
-                status: 'errored',
-                errorKind: 'interrupted',
+                status: 'errored' as const,
+                errorKind: 'interrupted' as const,
                 errorMessage: 'The server stopped while this run was in progress.',
-                finishedAt: nowIso(),
-              },
-        )
-        .where(eq(runs.id, run.id))
-        .run();
+                finishedAt: timestamp,
+              };
+        tx.update(runs).set(update).where(eq(runs.id, run.id)).run();
+      }
+    });
+    this.logger.warn(`Recovered ${String(stranded.length)} interrupted run(s)`);
+    for (const experimentId of new Set(stranded.map(({ run }) => run.experimentId))) {
+      this.finalizeIfDone(experimentId);
     }
-    if (stranded.length > 0)
-      this.logger.warn(`Recovered ${String(stranded.length)} interrupted run(s)`);
-    const experimentIds = new Set(stranded.map((run) => run.experimentId));
-    for (const experimentId of experimentIds) this.finalizeIfDone(experimentId);
   }
 
   /** Atomically picks the next eligible run and marks it running. */
@@ -159,8 +167,42 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
   }
 
   private async execute(run: RunRow, experiment: ExperimentRow): Promise<void> {
-    const task = experiment.tasks.find((candidate) => candidate.id === run.taskId);
-    if (!task) throw new Error(`Task ${run.taskId} missing from experiment snapshot`);
+    try {
+      const task = experiment.tasks.find((candidate) => candidate.id === run.taskId);
+      if (!task) {
+        this.markErrored(
+          run.id,
+          'setup',
+          `Task ${run.taskId} is missing from the experiment snapshot.`,
+        );
+        return;
+      }
+      const { outcome, toolCalls } = await this.runAgent(run, experiment, task);
+      if (this.stopped) return;
+      try {
+        this.persistOutcome(run, task, outcome, toolCalls);
+      } catch (error) {
+        // A scorer or storage failure is a platform problem, not agent behaviour:
+        // record it so the run never stays "running" and the queue keeps moving.
+        this.logger.error(
+          `Could not score run ${run.id}`,
+          error instanceof Error ? error.stack : error,
+        );
+        this.markErrored(run.id, 'scoring', `Scoring failed: ${errorMessage(error)}`);
+      }
+    } finally {
+      if (!this.stopped) {
+        this.finalizeIfDone(experiment.id);
+        this.pump();
+      }
+    }
+  }
+
+  private async runAgent(
+    run: RunRow,
+    experiment: ExperimentRow,
+    task: Task,
+  ): Promise<{ outcome: ExecutionOutcome; toolCalls: { tool: string }[] }> {
     const config: ConfigSnapshot =
       run.arm === 'baseline' ? experiment.baseline : experiment.candidate;
     const controller = new AbortController();
@@ -169,52 +211,62 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
     // A retry starts from a clean slate; the attempt count records that it happened.
     this.db.delete(runEvents).where(eq(runEvents.runId, run.id)).run();
     let sequence = 0;
+    let recording = true;
     const toolCalls: { tool: string }[] = [];
     const onEvent = (event: AgentEvent): void => {
       if (event.type === 'tool_call') toolCalls.push({ tool: event.tool });
-      this.db.insert(runEvents).values({ runId: run.id, sequence: sequence++, event }).run();
+      if (!recording) return;
+      try {
+        this.db.insert(runEvents).values({ runId: run.id, sequence: sequence++, event }).run();
+      } catch (error) {
+        // E.g. the run was deleted while its process was still shutting down.
+        // Never let a late event throw inside a stream listener.
+        recording = false;
+        this.logger.warn(`Stopped recording events for run ${run.id}: ${errorMessage(error)}`);
+      }
     };
 
-    let outcome: ExecutionOutcome;
     try {
-      outcome = await this.executor.execute(
+      const outcome = await this.executor.execute(
         {
           runId: run.id,
           prompt: task.prompt,
           fixtures: task.fixtures,
           config,
-          runDir: join(
-            this.config.get('DATA_DIR', { infer: true }),
-            'runs',
-            run.id,
-            `attempt-${String(run.attempts)}`,
-          ),
+          runDir: runAttemptDir(this.config.get('DATA_DIR', { infer: true }), run.id, run.attempts),
         },
         { signal: controller.signal, onEvent },
       );
+      return { outcome, toolCalls };
     } catch (error) {
-      outcome = {
-        kind: 'errored',
-        errorKind: 'crash',
-        errorMessage: error instanceof Error ? error.message : String(error),
-        retryable: false,
-        durationMs: 0,
-        exitCode: null,
-        stderrTail: null,
-        tokens: null,
-        reportedModel: null,
-        sessionId: null,
-        apiCalls: null,
-        costUsd: null,
+      return {
+        toolCalls,
+        outcome: {
+          kind: 'errored',
+          errorKind: 'crash',
+          errorMessage: errorMessage(error),
+          retryable: false,
+          durationMs: 0,
+          exitCode: null,
+          stderrTail: null,
+          tokens: null,
+          reportedModel: null,
+          sessionId: null,
+          apiCalls: null,
+          costUsd: null,
+        },
       };
     } finally {
       this.active.delete(run.id);
     }
+  }
 
-    if (this.stopped) return;
-    this.persistOutcome(run, task, outcome, toolCalls);
-    this.finalizeIfDone(experiment.id);
-    this.pump();
+  private markErrored(runId: string, errorKind: RunErrorKind, message: string): void {
+    this.db
+      .update(runs)
+      .set({ status: 'errored', errorKind, errorMessage: message, finishedAt: nowIso() })
+      .where(eq(runs.id, runId))
+      .run();
   }
 
   private persistOutcome(
@@ -364,4 +416,8 @@ export class ExperimentRunner implements OnApplicationBootstrap, OnApplicationSh
     }, delay);
     this.wakeTimer.unref();
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

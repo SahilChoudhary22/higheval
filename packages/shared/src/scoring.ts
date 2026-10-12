@@ -24,9 +24,9 @@ const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
 export type JsonValue =
   string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
-function isValidRegex(pattern: string): boolean {
+function compiles(pattern: string, flags = ''): boolean {
   try {
-    return new RegExp(pattern) instanceof RegExp;
+    return new RegExp(pattern, flags) instanceof RegExp;
   } catch {
     return false;
   }
@@ -47,16 +47,23 @@ export const scorerSpecSchema = z.discriminatedUnion('type', [
     value: z.string().min(1),
     caseSensitive: z.boolean().default(false),
   }),
-  z.object({
-    ...scorerBase,
-    type: z.literal('regex'),
-    target: scorerTargetSchema,
-    pattern: z.string().min(1).max(500).refine(isValidRegex, 'Invalid regular expression'),
-    flags: z
-      .string()
-      .regex(/^[imsu]*$/)
-      .default(''),
-  }),
+  z
+    .object({
+      ...scorerBase,
+      type: z.literal('regex'),
+      target: scorerTargetSchema,
+      pattern: z.string().min(1).max(500),
+      /** Any of i, m, s, u, each at most once. */
+      flags: z
+        .string()
+        .regex(/^(?!.*(.).*\1)[imsu]*$/, 'Use each of i, m, s, u at most once')
+        .default(''),
+    })
+    // Pattern and flags are validated together: "\-" is valid alone but not with "u".
+    .refine((spec) => compiles(spec.pattern, spec.flags), {
+      message: 'Invalid regular expression for these flags',
+      path: ['pattern'],
+    }),
   z.object({
     ...scorerBase,
     type: z.literal('json_valid'),
