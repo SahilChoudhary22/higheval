@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { modelIdSchema, providerIdSchema } from '@higheval/shared';
 import { z } from 'zod';
 import { REPO_ROOT } from './paths.js';
 
@@ -37,6 +38,9 @@ export const envSchema = z.object({
     .transform((value) => value === 'true'),
   /** First retry delay for LLM-judge calls that hit a rate limit; doubles each attempt. */
   JUDGE_RETRY_BASE_DELAY_MS: z.coerce.number().int().min(0).default(2_000),
+  /** Model the suite assistant (Hermes) drafts suites with. Its provider needs a key. */
+  ASSISTANT_PROVIDER: providerIdSchema.default('openrouter'),
+  ASSISTANT_MODEL: modelIdSchema.default('nvidia/nemotron-3-super-120b-a12b:free'),
   /**
    * Provider keys. All optional: keys can also be saved in the UI (Settings),
    * which take precedence. The UI starts without any and explains what is missing.

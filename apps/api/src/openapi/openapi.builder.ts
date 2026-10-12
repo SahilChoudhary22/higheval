@@ -35,6 +35,7 @@ const TAG_DESCRIPTIONS: Record<string, string> = {
   Providers: 'Model provider API keys. Keys are write-only; only a hint is returned.',
   Runs: 'Individual agent runs, for inspection.',
   Skills: 'Instruction skills a configuration can preload.',
+  'Suite drafts': 'Hermes drafts or revises a suite from a plain-language description.',
   Suites: 'Task suites and their scorers.',
 };
 
@@ -42,11 +43,12 @@ const TAG_DESCRIPTIONS: Record<string, string> = {
 const toOpenApiPath = (path: string): string => path.replaceAll(/:(\w+)/g, '{$1}');
 const pathParams = (path: string): string[] =>
   Array.from(path.matchAll(/:(\w+)/g), (match) => match[1] ?? '');
-/** `/api/experiments/:id/runs` → `Experiments`. */
+/** `/api/experiments/:id/runs` → `Experiments`; `/api/suite-drafts` → `Suite drafts`. */
 const tagOf = (path: string): string => {
   const segment = path.split('/').find((part) => part && part !== 'api' && !part.startsWith(':'));
   const name = segment === 'openapi.json' ? 'docs' : (segment ?? 'api');
-  return name.charAt(0).toUpperCase() + name.slice(1);
+  const words = name.replaceAll('-', ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
 type Io = 'input' | 'output';

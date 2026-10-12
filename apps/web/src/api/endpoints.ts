@@ -9,6 +9,7 @@ import {
   runDetailSchema,
   runSummarySchema,
   skillSchema,
+  suiteDraftSchema,
   suiteSchema,
   suiteSummarySchema,
   type AgentConfigInput,
@@ -16,6 +17,7 @@ import {
   type ProviderId,
   type ProviderKeyInput,
   type SkillInput,
+  type SuiteDraftRequest,
   type SuiteInput,
 } from '@higheval/shared';
 import { z } from 'zod';
@@ -43,6 +45,12 @@ export const api = {
     create: (input: SuiteInput) => postJson('/suites', input, suiteSchema),
     update: (id: string, input: SuiteInput) => putJson(`/suites/${id}`, input, suiteSchema),
     remove: (id: string) => deleteResource(`/suites/${id}`),
+  },
+
+  suiteDrafts: {
+    start: (input: SuiteDraftRequest) => postJson('/suite-drafts', input, suiteDraftSchema),
+    get: (id: string) => getJson(`/suite-drafts/${id}`, suiteDraftSchema),
+    cancel: (id: string) => postJson(`/suite-drafts/${id}/cancel`, {}, suiteDraftSchema),
   },
 
   skills: {
