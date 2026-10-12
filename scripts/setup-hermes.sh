@@ -42,8 +42,13 @@ if [[ "$(git -C "$REPO" rev-parse HEAD 2>/dev/null || true)" != "$HERMES_COMMIT"
   git -C "$REPO" checkout -q --detach "$HERMES_COMMIT"
 fi
 
+# Keep uv's own Python downloads and cache inside RUNTIME too, and skip the
+# ~/.local/bin shims, so nothing is written to the user's home directory.
+export UV_PYTHON_INSTALL_DIR="$RUNTIME/python"
+export UV_CACHE_DIR="$RUNTIME/cache/uv"
+
 log "Resolving Python $PYTHON_VERSION via uv"
-uv python install -q "$PYTHON_VERSION"
+uv python install -q --no-bin "$PYTHON_VERSION"
 BOOT_PY="$(uv python find "$PYTHON_VERSION")"
 
 # Hermes' package manager installs its own pinned toolchain (Python, uv, node,
@@ -58,11 +63,10 @@ log "Installing Hermes dependencies (first run takes a few minutes)"
     HERMES_HOME="$RUNTIME/install-home" \
     HERMES_RUNTIME_DIR="$RUNTIME/runtime" \
     UV_NO_CONFIG=1 \
-    UV_CACHE_DIR="$RUNTIME/cache/uv" \
     "$BOOT_PY" -m pm.cli install --without agent-browser --without cua-driver
 )
 
-facts="$(ls "$RUNTIME"/install-home/installs/*/facts.json 2>/dev/null | head -n 1)"
+facts="$(ls -t "$RUNTIME"/install-home/installs/*/facts.json 2>/dev/null | head -n 1)"
 [[ -n "$facts" ]] || fail "Dependency install did not produce facts.json"
 VENV="$("$BOOT_PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["packages"]["venv"]["environment"])' "$facts")"
 VENV_PY="$VENV/bin/python"
@@ -76,13 +80,7 @@ version="$(
 )"
 [[ "$version" == Hermes* ]] || fail "Hermes did not start: $version"
 
-cat > "$MANIFEST" <<JSON
-{
-  "commit": "$HERMES_COMMIT",
-  "repo": "$REPO",
-  "python": "$VENV_PY",
-  "runtimeDir": "$RUNTIME/runtime",
-  "version": "$version"
-}
-JSON
+# Written with a JSON serializer so paths containing quotes stay valid.
+"$BOOT_PY" -c 'import json, sys; json.dump(dict(zip(["commit", "repo", "python", "runtimeDir", "version"], sys.argv[2:])), open(sys.argv[1], "w"), indent=2)' \
+  "$MANIFEST" "$HERMES_COMMIT" "$REPO" "$VENV_PY" "$RUNTIME/runtime" "$version"
 log "Ready: $version"
