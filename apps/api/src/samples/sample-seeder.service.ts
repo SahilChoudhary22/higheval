@@ -11,6 +11,7 @@ import {
   FILE_READING_SUITE,
   HOUSE_STYLE_SKILL,
   HOUSE_STYLE_SUITE,
+  PERSONA_SUITE,
   SERVICE_CATALOG_SKILL,
   SERVICE_CATALOG_SUITE,
 } from './capability-suites.js';
@@ -46,6 +47,7 @@ export class SampleSeeder implements OnApplicationBootstrap {
     for (const suite of [
       SERVICE_CATALOG_SUITE,
       HOUSE_STYLE_SUITE,
+      PERSONA_SUITE,
       CLIENT_MEMORY_SUITE,
       FILE_READING_SUITE,
     ]) {
