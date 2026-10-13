@@ -109,25 +109,27 @@ It writes the suite and a reference solution for each task. HighEval then requir
 
 ```mermaid
 flowchart LR
-  L[Launch] -->|snapshot + hash<br/>seeded interleaving| Q[(Run queue)]
-  Q --> H[Hermes run<br/>fresh home + workspace]
-  H --> S[Scorers<br/>checks + LLM judge]
-  S --> C[Paired comparison<br/>CI · permutation test]
-  C --> V{Verdict}
-  V --> B[Better]
-  V --> W[Worse]
-  V --> E[Equivalent]
-  V --> I[Inconclusive]
+  S[Suite<br/>tasks + scorers] --> A[Baseline agent<br/>one Hermes run per task]
+  S --> B[Candidate agent<br/>one Hermes run per task]
+  A --> P[Per-task difference<br/>candidate − baseline]
+  B --> P
+  P --> V{Verdict}
 ```
 
-The verdict is fixed before any data comes in:
+1. **Freeze the inputs.** At launch, the suite and both agents are copied and fingerprinted, so later edits can't change what an experiment measured.
+2. **Run both agents on the same tasks.** Runs are interleaved in a seeded random order, each in a fresh Hermes home and workspace. Infrastructure failures (rate limits, crashes) are retried or excluded, never scored as zero.
+3. **Score every run.** Deterministic checks on JSON fields, text, files and tool calls, plus a pinned LLM judge from a different model family for conversational quality. Every check records why it passed or failed, which is what the run inspector shows.
+4. **Compare task by task.** The average of candidate − baseline, with a 95% confidence interval from 10,000 bootstrap resamples, and an exact permutation test for how often a gap this large appears when the change does nothing.
+5. **Apply a rule fixed in advance:**
 
-| Verdict         | Requires                                                                                                                         |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Better or worse | The 95% interval excludes zero **and** the exact permutation test agrees (p ≤ 0.05).                                             |
-| Equivalent      | The interval lies inside the practical margin **and** the suite has enough tasks to rule out a hidden difference (≥ 3 ÷ margin). |
-| Not enough data | Fewer than 5 paired tasks.                                                                                                       |
-| Inconclusive    | Anything else.                                                                                                                   |
+| Verdict         | Requires                                                                                                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Better or worse | The 95% interval excludes zero **and** the permutation test agrees (p ≤ 0.05).                                                                                                                    |
+| Equivalent      | The interval fits inside the practical margin (default ±0.05) **and** there are at least 3 ÷ margin tasks: 60 at the default. Smaller suites can't claim "no difference" and report inconclusive. |
+| Inconclusive    | Anything else: the evidence can't tell yet.                                                                                                                                                       |
+| Not enough data | Fewer than 5 tasks compared.                                                                                                                                                                      |
+
+In the [model-change experiment](docs/experiments/model-change.md), Lightning lost 3 of 16 tasks and won none. That looks worse, but with only 3 tasks differing, a split this lopsided happens by chance 25% of the time, so HighEval reports **inconclusive** rather than overclaiming.
 
 [docs/design.md](docs/design.md) covers the architecture, the isolation guarantees (and the live test that proves them), failure classification, and the alternatives considered.
 
