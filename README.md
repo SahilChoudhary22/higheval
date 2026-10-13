@@ -72,7 +72,7 @@ One command does the setup. It:
 4. Installs the pinned Hermes runtime into `./.hermes-runtime`. This happens once, takes about a minute and about 1.3 GB, and leaves your home directory untouched.
 5. Serves the app at **http://127.0.0.1:3000**.
 
-Open **Settings** and paste your OpenRouter key; it's verified with the provider before it's saved. The database is seeded with sample suites, skills and configurations, including pairs that differ in one setting (a skill, memory or tools), so you can launch an experiment right away.
+Open **Settings** and paste your OpenRouter key; it's verified with the provider before it's saved. On your own instance, Settings is fully editable. The hosted demo is different: its keys are read-only (`PROVIDER_KEYS_READ_ONLY=true`), so visitors can test them but not replace them, because one set of keys serves every visitor. To use your own key, run HighEval locally. The database is seeded with sample suites, skills and configurations, including pairs that differ in one setting (a skill, memory or tools), so you can launch an experiment right away.
 
 ### Try it in a minute
 
@@ -230,7 +230,7 @@ What protects a hosted instance:
 
 - **Agents are confined to the container.** Their tools can run commands, so the container runs as an unprivileged user with no Linux capabilities, and the host never sees its files.
 - **Every page and API route needs a login.** Login is required whenever the app listens beyond loopback; it uses signed, HttpOnly session cookies and limits failed attempts.
-- **Keys can be locked.** `PROVIDER_KEYS_READ_ONLY=true` stops visitors changing the provider keys you configured.
+- **Keys can be locked.** Keys belong to the instance, not to each visitor, so a key saved in Settings would bill every visitor's runs to that key's owner. `PROVIDER_KEYS_READ_ONLY=true` makes Settings test-only, so visitors can't replace the keys you configured; the hosted demo runs this way. Locally the flag is off and you manage your own keys.
 
 ## Development
 
@@ -279,6 +279,8 @@ docs/             design, limitations, costs, experiment reports
 - **A sandbox per run:** for untrusted agents and any shared deployment, each run gets a disposable container or microVM. Only its workspace is mounted, network egress is limited to the model provider and resources are capped. See [Path to production](docs/design.md#path-to-production).
 - **Pairwise judging, calibrated against human labels, and multi-turn conversations** (designed in [docs/design.md](docs/design.md#evaluating-conversational-agents)).
 - **Scale-out:** separate workers with rate-limit budgets per provider, Postgres and live progress over server-sent events.
+- **Bring your own key on hosted instances:** a visitor's key used only for the experiments they launch, held for their session and never stored.
+- **More agent runtimes:** an executor for another harness, with that harness's own agent settings, next to Hermes.
 
 ## License
 
