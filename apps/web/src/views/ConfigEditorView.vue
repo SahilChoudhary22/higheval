@@ -508,7 +508,8 @@ async function save(): Promise<void> {
       </div>
       <p class="muted agent-files__intro">
         The files Hermes builds an agent's character from. Import them from a Hermes home
-        (<code>~/.hermes</code>) or an OpenClaw workspace: they're read in your browser, and only
+        (<code>~/.hermes</code>) or an OpenClaw workspace, using the same mapping as Hermes' own
+        OpenClaw migration; the agent still runs on Hermes. Files are read in your browser, and only
         <code>SOUL.md</code>, <code>AGENTS.md</code>, <code>MEMORY.md</code>, <code>USER.md</code>
         and OpenClaw's daily notes are used.
       </p>
