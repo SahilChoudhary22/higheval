@@ -264,19 +264,19 @@ docs/             design, limitations, costs, experiment reports
 
 ## Documentation
 
-| Document                           | Contents                                                                                               |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| [Design](docs/design.md)           | Architecture, key decisions and the alternatives considered, data model, assumptions, testing strategy |
-| [Limitations](docs/limitations.md) | Known limits of the evidence, the execution environment and the product                                |
-| [Costs](docs/costs.md)             | Measured and estimated costs of models, compute, hosting and people's time                             |
-| [Experiments](docs/experiments)    | Reports and raw evidence from the real experiments                                                     |
+| Document                           | Contents                                                                                                                   |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| [Design](docs/design.md)           | Architecture, key decisions and the alternatives considered, path to production, data model, assumptions, testing strategy |
+| [Limitations](docs/limitations.md) | Known limits of the evidence, the execution environment and the product                                                    |
+| [Costs](docs/costs.md)             | Measured and estimated costs of models, compute, hosting and people's time                                                 |
+| [Experiments](docs/experiments)    | Reports and raw evidence from the real experiments                                                                         |
 
 ## Roadmap
 
 - **MCP server:** expose suites, experiments and verdicts as tools, so an agent (Hermes included) can run its own evaluations.
-- **Sandboxing:** run each agent in a container through Hermes' Docker terminal backend, for untrusted agents and tasks.
+- **A sandbox per run:** for untrusted agents and any shared deployment, each run gets a disposable container or microVM. Only its workspace is mounted, network egress is limited to the model provider and resources are capped. See [Path to production](docs/design.md#path-to-production).
 - **Pairwise judging, calibrated against human labels, and multi-turn conversations** (designed in [docs/design.md](docs/design.md#evaluating-conversational-agents)).
-- **Scale-out:** a worker queue, Postgres and live progress over server-sent events.
+- **Scale-out:** separate workers with rate-limit budgets per provider, Postgres and live progress over server-sent events.
 
 ## License
 
