@@ -4,14 +4,14 @@ Figures marked **measured** come from the experiments in [experiments/](experime
 
 ## Summary
 
-| Item                                                                   | Cost                                                                       |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Model inference for the reported experiments (free endpoints)          | **$0** (measured)                                                          |
-| Same experiments at paid list prices                                   | **≈ $0.002 per run**, ≈ $0.18 per 96-run experiment (estimate)             |
-| A 96-run experiment on a frontier-priced model ($2 / $10 per M tokens) | **≈ $3** (estimate)                                                        |
-| Infrastructure                                                         | **$0 extra** locally; ≈ $5–10 / month for an always-on small VM, if wanted |
-| Wall-clock time per experiment                                         | ~22 min for 96 runs at concurrency 3 (measured)                            |
-| Drafting a suite with HighEval AI (free endpoint)                      | **$0**; 16–23 requests and 1.5–5 min per draft (measured)                  |
+| Item                                                                   | Cost                                                                                                     |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Model inference for the reported experiments (free endpoints)          | **$0** (measured)                                                                                        |
+| Same experiments at paid list prices                                   | **≈ $0.002 per run**, ≈ $0.18 per 96-run experiment (estimate)                                           |
+| A 96-run experiment on a frontier-priced model ($2 / $10 per M tokens) | **≈ $3** (estimate)                                                                                      |
+| Infrastructure                                                         | **$0 extra** locally; ≈ $5–10 / month for an always-on small VM, if wanted                               |
+| Wall-clock time per experiment                                         | ~22 min for 96 runs at concurrency 3 (measured)                                                          |
+| Drafting a suite with HighEval AI                                      | **$0** on a free endpoint (1.5–5 min); **≈ $0.008** and under a minute on DeepSeek V4.1 Flash (measured) |
 
 ## 1. Model inference
 
@@ -64,14 +64,16 @@ In a real judged run on the Customer conversations suite (6 runs, both arms), th
 
 ### Suite assistant (measured)
 
-Two real drafts with the default assistant model (`nvidia/nemotron-3-super-120b-a12b:free`):
+Real drafts with the default free model (`nvidia/nemotron-3-super-120b-a12b:free`), and with DeepSeek V4.1 Flash, a cheap paid model that the hosted demo uses because a person is waiting:
 
-| Draft                       | Attempts | Model requests | Tokens (of which cached) | Wall-clock |
-| --------------------------- | -------: | -------------: | -----------------------: | ---------: |
-| 3 tasks (dental front desk) |        2 |             23 |              439k (334k) |   4 m 53 s |
-| 2 tasks (gym billing)       |        1 |             16 |              307k (254k) |   1 m 26 s |
+| Draft                              | Model                  | Attempts | Model requests | Tokens (of which cached) | Wall-clock | Cost      |
+| ---------------------------------- | ---------------------- | -------: | -------------: | -----------------------: | ---------: | --------- |
+| 3 tasks (dental front desk)        | Nemotron 3 Super, free |        2 |             23 |              439k (334k) |   4 m 53 s | $0        |
+| 2 tasks (gym billing)              | Nemotron 3 Super, free |        1 |             16 |              307k (254k) |   1 m 26 s | $0        |
+| Add 1 task to an 8-task suite      | DeepSeek V4.1 Flash    |        1 |              9 |              173k (148k) |       51 s | ≈ $0.0083 |
+| Same request, after prompt changes | DeepSeek V4.1 Flash    |        1 |              8 |              173k (147k) |       45 s | ≈ $0.0072 |
 
-A draft is one or more full agent runs with file and terminal tools, so it costs about as much as five to ten experiment runs. Most tokens are the schema, example and skill re-read on each turn, which prompt caching absorbs. At Claude Sonnet 5.5's list prices the larger draft would cost about $0.40. Writing the same suite by hand takes 30–60 minutes (see People time).
+DeepSeek costs are Hermes' estimates from list prices; OpenRouter does not report an actual cost for these calls. A draft is one or more full agent runs with file and terminal tools, so it costs about as much as five to ten experiment runs. Most tokens are the schema, example and skill resent on each turn, which prompt caching absorbs. Since the drafter's inputs moved into its prompt, it spends no requests reading files. At Claude Sonnet 5.5's list prices the larger free-model draft would cost about $0.40. Writing the same suite by hand takes 30–60 minutes (see People time).
 
 ## 2. Compute and storage (measured on an Apple-silicon Mac)
 
@@ -89,7 +91,20 @@ Workloads are I/O-bound on the model provider. A modest machine (2 vCPU, 2 GB RA
 ## 3. Hosting
 
 - **Local (default):** no cost beyond the machine you already have. Everything runs from `pnpm start` in one process, with no database server or queue to operate.
-- **Always-on demo:** any small Linux VM or single-board computer with Docker and ~4 GB free disk, using the included `compose.yaml` (≈ $5–10 / month on common VPS providers, $0 on hardware you own). Put authentication in front before exposing it: anyone who can launch experiments can spend your provider quota.
+- **Always-on demo:** any small Linux VM or single-board computer with Docker and ~4 GB free disk, using the included `compose.yaml` (≈ $5–10 / month on common VPS providers, $0 on hardware you own). The demo for this submission runs on an ARM64 single-board computer at home, published through Tailscale Funnel's free tier, so it costs nothing beyond model usage. Its sign-in matters: anyone who can launch experiments can spend your provider quota.
+
+### At production scale (estimate)
+
+The production setup in [design.md](design.md#path-to-production) changes what dominates the bill only slightly, because runs spend most of their time waiting on the model:
+
+| Item                                       | Assumption                                | Monthly cost |
+| ------------------------------------------ | ----------------------------------------- | -----------: |
+| Model inference, small paid model          | 20 experiments a day × 96 runs × $0.002   |       ≈ $115 |
+| Model inference, frontier-priced model     | Same volume at ≈ $0.03 per run            |     ≈ $1,700 |
+| Sandboxed workers                          | 2–3 small VMs running 8–16 sandboxes each |    ≈ $60–150 |
+| Postgres, object storage, logs and metrics | Managed, small                            |    ≈ $50–100 |
+
+The model is the cost driver by one to two orders of magnitude, so the levers that matter are the ones HighEval already reports: requests and tokens per run, a short pilot before a large experiment, and enough tasks rather than many repetitions.
 
 ## 4. People time
 

@@ -2,7 +2,7 @@
 
 HighEval answers one question with evidence: **after changing an agent's model, skills, memory or tools, did it get better, worse, or stay the same?** It runs the same task suite under two [Hermes Agent](https://github.com/NousResearch/hermes-agent) configurations, scores every run with deterministic checks (and a pinned LLM judge where a task needs one), and reports a paired comparison with an uncertainty interval and a pre-registered decision rule.
 
-This document covers the architecture, the main decisions and the alternatives considered. Known limits are in [limitations.md](limitations.md) and running costs in [costs.md](costs.md).
+This document covers the architecture, the main decisions and the alternatives considered, and what would change for production. Known limits are in [limitations.md](limitations.md) and running costs in [costs.md](costs.md).
 
 ## Architecture
 
@@ -93,7 +93,7 @@ Hermes only indexes skills for an agent that has its skill tools (`skills_list`,
 
 Expected answers live only in scorer definitions in the database, never in the files given to the agent; a unit test enforces this for the sample suite.
 
-**What this does not cover.** Hermes' `file` and `terminal` tools accept absolute paths and run as the user who started HighEval, so an agent _could_ deliberately read outside its workspace: other runs' workspaces, or the SQLite database holding the scorers. No run in the reported experiments did so (the inspector records every tool call and path), but it is a threat to validity for untrusted agents. The fix is to run Hermes in a container; see [limitations.md](limitations.md).
+**What this does not cover.** Hermes' `file` and `terminal` tools accept absolute paths and run as the user who started HighEval, so an agent _could_ deliberately read outside its workspace: other runs' workspaces, or the SQLite database holding the scorers. No run in the reported experiments did so (the inspector records every tool call and path), but it is a threat to validity for untrusted agents. The fix is a sandbox per run, described in [Path to production](#path-to-production).
 
 ### Agent files
 
@@ -224,6 +224,48 @@ Most customer-facing agents are conversational, so "is reply B better than reply
 3. **Multi-turn scripted conversations.** Add `turns` to a task and continue the same Hermes session for each scripted user turn (`hermes chat --resume <session>` in the run's home), scoring the transcript as a whole.
 4. **Judge variance.** Re-judge a sample of replies to estimate how much of a score difference is the judge's own noise.
 
+## Path to production
+
+HighEval is built as a single-process tool that one person runs locally or as a small shared demo. Most of the core carries over to a production service unchanged: the snapshots and hashes, the statistics, the scorers, the executor interface and the failure taxonomy. What changes is mainly around execution, in this order of priority.
+
+### 1. Sandbox every run
+
+Today every agent runs as the user who started HighEval, or as the container's unprivileged user in the Docker deployment. Runs therefore share one filesystem with each other and with HighEval's own data, and they have open network access. That is acceptable for trusted agents on your own machine. For agents or tasks someone else wrote, or for any shared service, it is not, for two reasons:
+
+- **Safety.** An agent with `terminal` can run arbitrary commands, write anywhere it can reach and call any host.
+- **Validity.** An agent could read the scorers (and so the expected answers) from the database, or another run's workspace, and a result would no longer measure the agent.
+
+In production, each run would get its own disposable sandbox:
+
+| Control         | Production setting                                                                                                                                                                                                                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Boundary        | A fresh container under gVisor, or a Firecracker microVM, per run. Hermes' Docker terminal backend (`terminal.backend: docker`) is the natural seam: Hermes' file tools go through the same terminal environment, so file and shell access are confined together. |
+| Filesystem      | Only that run's workspace is mounted, with a read-only root. Scorers, the database and other runs are never visible. Scoring reads the workspace from outside after the run ends, as it does today.                                                               |
+| Network         | Deny by default. Egress goes only to the model provider, through a proxy that holds the provider key, so the agent never sees the key and cannot reach anything else. Tasks that need the web get an explicit allowlist, recorded in the snapshot.                |
+| Resources       | CPU, memory, process count and disk quotas per run, alongside the existing wall-clock timeout, so a runaway agent cannot starve the others.                                                                                                                       |
+| Privileges      | Non-root, no Linux capabilities, a seccomp profile, and no host mounts or Docker socket.                                                                                                                                                                          |
+| Reproducibility | A pinned image digest that includes the Hermes commit, recorded in the snapshot and hash like the configuration.                                                                                                                                                  |
+
+The sandbox is also an evaluation control, not only a security one. When "what the agent could see" is enforced by the sandbox, it becomes a guarantee rather than an observation from the run logs.
+
+### 2. Split the API from the workers
+
+- **Queue.** The API only accepts requests and schedules runs. Workers claim runs from a queue: Postgres `SKIP LOCKED` keeps the current claim-in-a-transaction design, or a broker such as Redis can be used.
+- **Scaling.** Workers scale horizontally, and a crashed worker's runs are re-queued, as on restart today.
+- **Rate limits.** Concurrency becomes a budget per provider and model (a token bucket in front of each), instead of one global limit. Free-tier and paid quotas are then honoured across all workers.
+
+### 3. Storage, accounts and money
+
+- **Storage.** Postgres replaces SQLite. Run artifacts (workspaces, raw streams) move to object storage with a retention policy; scores, events and snapshots stay in the database.
+- **Accounts.** SSO with per-team workspaces and roles replaces the single shared login, with an audit log of who launched what.
+- **Keys and spend.** Provider keys move to a secrets manager. Each team gets a spend cap, enforced before launch from the per-run cost estimate and during the run from reported cost.
+
+### 4. Operations
+
+- **Metrics.** Runs by outcome and error kind, provider latency and 429 rates, queue depth and cost per experiment, with alerts on spikes in errored runs, which signal provider trouble rather than agent quality.
+- **Delivery.** Live progress moves to server-sent events instead of polling.
+- **Regression gate.** CI calls the API to run a suite against a candidate agent and fails the build on a _worse_ verdict.
+
 ## Data model
 
 ```mermaid
@@ -267,13 +309,13 @@ erDiagram
 
 ## Testing strategy
 
-| Layer                            | What it proves                                                                                                                                                                                                                                                                          |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit (Vitest)                    | Scorers, JSON extraction, statistics (exact p-values, degenerate and seeded cases), stream parsing across arbitrary chunk boundaries, exit classification, process control (no shell interpolation, group kill, timeout), workspace path safety, run planning                           |
-| Sample-suite reference solutions | Every task scores exactly 1 for a correct answer and rejects plausible wrong ones; no answer leaks into fixtures; each capability task scores 1 with its capability and 0 without, and each capability config differs from its baseline in exactly one setting                          |
-| API e2e (fake executor)          | Launch → interleaved execution → scoring → comparison → run detail through HTTP; validation errors; a scoring failure ends as an errored run; editing a config after launch leaves the experiment's snapshot unchanged; foreign-Host, cross-site and form-encoded requests are rejected |
-| API e2e (contract and features)  | Every route appears in the OpenAPI document and all references resolve; provider keys are verified, stored write-only and refused at launch when missing; suite drafts run end to end with a scripted executor and save unchanged                                                       |
-| Assistant (scripted executor)    | A draft is retried with the problems found until its reference passes; revisions receive the current suite; failures, cancellation and missing keys are reported                                                                                                                        |
-| Web component (fake timers)      | The experiment page keeps runs and verdict live even when they load before the experiment; form fields announce their errors and focus the first invalid one; the suite assistant polls, loads the draft and switches to revision                                                       |
-| Live (`test:live`, opt-in)       | The real Hermes runtime with a real model: tool use, no-tools, skill isolation, built-in skill selection, memory isolation, no host-context leakage                                                                                                                                     |
-| CI                               | Format, lint (type-aware oxlint + ESLint for Vue), typecheck, unit + e2e tests with coverage (API: 92% of lines, thresholds enforced), build                                                                                                                                            |
+| Layer                            | What it proves                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit (Vitest)                    | Scorers, JSON extraction, statistics (exact p-values, degenerate and seeded cases), stream parsing across arbitrary chunk boundaries, exit classification, process control (no shell interpolation, group kill, timeout), workspace path safety, run planning                                                                                                               |
+| Sample-suite reference solutions | Every task scores exactly 1 for a correct answer and rejects plausible wrong ones; no answer leaks into fixtures; each capability task scores 1 with its capability and 0 without, and each capability config differs from its baseline in exactly one setting                                                                                                              |
+| API e2e (fake executor)          | Launch → interleaved execution → scoring → comparison → run detail through HTTP; validation errors; a scoring failure ends as an errored run; rate-limited runs retry and a daily quota does not; errored runs re-run on request; editing a config after launch leaves the experiment's snapshot unchanged; foreign-Host, cross-site and form-encoded requests are rejected |
+| API e2e (contract and features)  | Every route appears in the OpenAPI document and all references resolve; provider keys are verified, stored write-only and refused at launch when missing; suite drafts run end to end with a scripted executor and save unchanged                                                                                                                                           |
+| Assistant (scripted executor)    | A draft is retried with the problems found until its reference passes; revisions receive the current suite; failures, cancellation and missing keys are reported                                                                                                                                                                                                            |
+| Web component (fake timers)      | The experiment page keeps runs and verdict live even when they load before the experiment; form fields announce their errors and focus the first invalid one; the suite assistant polls, previews the draft with a summary of its changes, and applies it only on request                                                                                                   |
+| Live (`test:live`, opt-in)       | The real Hermes runtime with a real model: tool use, no-tools, skill isolation, built-in skill selection, memory isolation, no host-context leakage                                                                                                                                                                                                                         |
+| CI                               | Format, lint (type-aware oxlint + ESLint for Vue), typecheck, unit + e2e tests with coverage (API: 92% of lines, thresholds enforced), build                                                                                                                                                                                                                                |
